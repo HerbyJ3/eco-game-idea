@@ -8,6 +8,7 @@ var clock: Clock
 var sky: MarsSky
 var persona: Persona
 var buildings: Buildings
+var powers: Powers
 var beings: Array[Being] = []
 var colony: Colony
 var t: float
@@ -23,6 +24,8 @@ var founders: Array = []
 var fixed_step: float
 var max_steps_per_advance: int
 var _accum := 0.0
+## Next elapsed-sol boundary (n) whose first step resets shorts_this_sol.
+var _next_sol_boundary := 1
 ## Float slack so 0.05-hour steps add up to whole hours.
 const STEP_EPS := 1e-9
 
@@ -39,6 +42,9 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	fixed_step = cfg.fixed_step_hours
 	t = clock.start_hour
 	buildings = Buildings.new()
+	buildings.now = t
+	powers = Powers.new(buildings)
+	buildings.powers = powers
 	colony = Colony.new(beings, buildings, rng, clock.sol_h)
 	_log_cap = int(SimData.colony().log_cap)
 	_init_stats()
@@ -57,6 +63,8 @@ func _init_stats() -> void:
 		"turn_backs_exhausted": 0, "builds_started": 0, "builds_finished": 0,
 		"need_regolith": 0, "waiting_for_builders": 0, "ice_dry": 0, "scouts_found": 0,
 		"founder_role_miss": 0, "births_at_capacity": 0, "cooldown_violations": 0,
+		"shorts_this_sol": 0, "max_shorts_per_sol": 0, "max_offline_h": 0.0,
+		"demand_over_steps": 0, "step_count": 0,
 	}
 
 
@@ -134,8 +142,11 @@ func advance(hours: float) -> int:
 ## One fixed step. Phase order: spec section 5 (phases not yet built are absent).
 func step() -> void:
 	t += fixed_step
+	buildings.now = t
 	step_index += 1
 	colony.step_stocks(fixed_step)
+	_sol_boundary()
+	_manage_power()
 	for w in colony.air_food_warnings(t):
 		_log(w.kind, w.text)
 	for w in colony.drain_ice(t, fixed_step):
@@ -147,3 +158,40 @@ func step() -> void:
 	if silent and not colony.extinct:
 		_log("colony_silent", "The colony has fallen silent.")
 	colony.extinct = silent
+	_sample_power_stats()
+
+
+## First step with t - start_hour >= n x sol_hours - STEP_EPS starts sol n (spec section 3).
+## Done before phase 3 so a short on the boundary step counts in the new sol.
+func _sol_boundary() -> void:
+	if t - clock.start_hour >= _next_sol_boundary * clock.sol_h - STEP_EPS:
+		_next_sol_boundary += 1
+		stats.shorts_this_sol = 0
+
+
+## Phase 3: apply one short or re-online, then log and count it.
+func _manage_power() -> void:
+	var ev := buildings.manage_power(t, rng)
+	if ev.is_empty():
+		return
+	var b: Buildings.Building = ev.building
+	var label: String = buildings.cfg.kinds[b.kind].label
+	if ev.kind == "short":
+		stats.shorts += 1
+		stats.shorts_this_sol += 1
+		stats.max_shorts_per_sol = maxi(int(stats.max_shorts_per_sol), int(stats.shorts_this_sol))
+		_log("short", "%s shorted out." % label, {"building_id": b.id})
+	else:
+		stats.reonlines += 1
+		stats.max_offline_h = maxf(float(stats.max_offline_h), float(ev.offline_h))
+		_log("back_online", "%s is back online." % label, {"building_id": b.id})
+
+
+## Phase 11 (power part).
+func _sample_power_stats() -> void:
+	stats.step_count += 1
+	if buildings.demand() > buildings.supply():
+		stats.demand_over_steps += 1
+	for b in buildings.list:
+		if b.offline and b.offline_since != null:
+			stats.max_offline_h = maxf(float(stats.max_offline_h), t - float(b.offline_since))

@@ -630,6 +630,11 @@ Log kinds: `founders_landed`, `ground_broken`, `building_done`, `short`, `back_o
 3. A birth cooldown of 1 sol is a 2.2x brake per habitat (section 10.1), not a cap; the first balance run will tell if it needs to be 2 or 3 sols (Herby decides).
 4. Target 6's 2% threshold is provisional and is recalibrated from the baseline run.
 
+## Implementation notes (step 4)
+- `shorts_this_sol` resets right after `t += dt` on a sol-boundary step, before phase 3, so a short on the boundary step counts in the new sol.
+- `max_offline_h` folds in `t - offline_since` at the moment a building comes back online, so the final dark spell (for example 3.05 h) is kept even though phase 11 already sees the building online.
+- `Buildings.now` is pushed in by SimWorld whenever `t` changes, and `Powers` holds Buildings through a WeakRef. Neither may hold a strong reference back to the world, or every SimWorld leaks.
+
 ## Changelog
 - 2026-10-03: first version (game-designer).
 - 2026-10-03: revision after code-reviewer findings. Added: EVA arrival table and `finish_eva`/`enter` (6.5b), `to_door` corridor choice, "site gone" enters at once; footprint and construction-rate and yield test arithmetic fixed (step sizes, energy read after drain); explicit timer comparators with `STEP_EPS` and declared deviation from strict `>`; measurable balance stats and sol definition (section 16, 13); cooldown arithmetic corrected (about 43 h, 1.76 sols, 2.2x); sol-2 claim softened; target 6 measured in hours; worst-case air margin with the d + 0.8r bound; wording fixes (phase 6, exhausted test, wake chance draw, EVA move order); declared deviations list (go_sleep distance, work points, build timer, mining reach key `resources.mining.reach_px`); `kinds.*.label` row and machine-readable key-path list; single founder count; persona shape `{traits, role, description}`; Task 0 coupling note dropped; `sim/powers.gd` added to the code map; warning cadence (494th step) and waiting warning moved to phase 9. Reviewer sign-off (step 2): pending re-review.
