@@ -650,6 +650,14 @@ Log kinds: `founders_landed`, `ground_broken`, `building_done`, `short`, `back_o
 - A corridor's "a" end is `p1`, the parent side. `from_a = true` means walking from the parent to the child.
 - `add_being` (the test seam) leaves `wait_h` at 0 and a flat 0.5 persona. Founders get `wait_h` U(0, 2).
 
+## Implementation notes (step 7)
+- API names: `SimWorld.start_site(kind, spot = {}) -> bool`, `SimWorld.choose_kind() -> String`, `Buildings.site` (null or the site record; a being's `job` is that record), `Buildings.build_cost(kind)`, `Being.suit_kind()`.
+- The `food_net < 0.25` rule in `choose_kind` stays as a guard, as in the prototype. With the shipped numbers the `o2_net` rule always fires first, so a test lowers food production to reach it.
+- The suit is chosen at suit-up and kept until the being enters a building. A builder walking home after a shift still wears the construction suit, even though `job` is already null. Store it on the being (for example `suit`), and have `suit_kind()` return it while outside.
+- `stats.need_regolith` and `stats.waiting_for_builders` count logged lines. `hours_waiting_regolith` adds the check interval (5 h) at every failed check.
+- A new worker's first wander target is its current position, so it begins with a pause, as in mining. This is intended.
+- The job is set when a builder joins from the parent building. A builder heading to the parent from elsewhere has no job yet.
+
 ## Changelog
 - 2026-10-03: first version (game-designer).
 - 2026-10-03: revision after code-reviewer findings. Added: EVA arrival table and `finish_eva`/`enter` (6.5b), `to_door` corridor choice, "site gone" enters at once; footprint and construction-rate and yield test arithmetic fixed (step sizes, energy read after drain); explicit timer comparators with `STEP_EPS` and declared deviation from strict `>`; measurable balance stats and sol definition (section 16, 13); cooldown arithmetic corrected (about 43 h, 1.76 sols, 2.2x); sol-2 claim softened; target 6 measured in hours; worst-case air margin with the d + 0.8r bound; wording fixes (phase 6, exhausted test, wake chance draw, EVA move order); declared deviations list (go_sleep distance, work points, build timer, mining reach key `resources.mining.reach_px`); `kinds.*.label` row and machine-readable key-path list; single founder count; persona shape `{traits, role, description}`; Task 0 coupling note dropped; `sim/powers.gd` added to the code map; warning cadence (494th step) and waiting warning moved to phase 9. Reviewer sign-off (step 2): pending re-review.
