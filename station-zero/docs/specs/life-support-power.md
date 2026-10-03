@@ -635,6 +635,14 @@ Log kinds: `founders_landed`, `ground_broken`, `building_done`, `short`, `back_o
 - `max_offline_h` folds in `t - offline_since` at the moment a building comes back online, so the final dark spell (for example 3.05 h) is kept even though phase 11 already sees the building online.
 - `Buildings.now` is pushed in by SimWorld whenever `t` changes, and `Powers` holds Buildings through a WeakRef. Neither may hold a strong reference back to the world, or every SimWorld leaks.
 
+## Implementation notes (step 5)
+- Blank test worlds have `scouting_enabled = false`; founder worlds have it on. A blank world is a test seam, and scouting would otherwise draw rng every step in power tests with no ice fields.
+- The dry-up replacement spawn uses the scouting range (90 to 170 px).
+- Centring rounds half up: `floor(x + 0.5)`.
+- "Within 2 tiles" means separation of at least 2. The founder corridor rects are (12,4,7,3), (5,10,3,6) and (-7,4,7,3).
+- The spawn invariant test uses 500 seeds x 20 spawns, not 40, to keep it near 2.5 s.
+- Scouting does not guarantee 2 reachable fields at every moment. That is measured statistically by balance target 7, not asserted per step.
+
 ## Changelog
 - 2026-10-03: first version (game-designer).
 - 2026-10-03: revision after code-reviewer findings. Added: EVA arrival table and `finish_eva`/`enter` (6.5b), `to_door` corridor choice, "site gone" enters at once; footprint and construction-rate and yield test arithmetic fixed (step sizes, energy read after drain); explicit timer comparators with `STEP_EPS` and declared deviation from strict `>`; measurable balance stats and sol definition (section 16, 13); cooldown arithmetic corrected (about 43 h, 1.76 sols, 2.2x); sol-2 claim softened; target 6 measured in hours; worst-case air margin with the d + 0.8r bound; wording fixes (phase 6, exhausted test, wake chance draw, EVA move order); declared deviations list (go_sleep distance, work points, build timer, mining reach key `resources.mining.reach_px`); `kinds.*.label` row and machine-readable key-path list; single founder count; persona shape `{traits, role, description}`; Task 0 coupling note dropped; `sim/powers.gd` added to the code map; warning cadence (494th step) and waiting warning moved to phase 9. Reviewer sign-off (step 2): pending re-review.
