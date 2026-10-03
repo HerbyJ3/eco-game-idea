@@ -643,6 +643,13 @@ Log kinds: `founders_landed`, `ground_broken`, `building_done`, `short`, `back_o
 - The spawn invariant test uses 500 seeds x 20 spawns, not 40, to keep it near 2.5 s.
 - Scouting does not guarantee 2 reachable fields at every moment. That is measured statistically by balance target 7, not asserted per step.
 
+## Implementation notes (step 6)
+- Sleep and wake thresholds are compared **after** this step's phase 6 drain, as for every other energy read. Test inputs sit off the boundary accordingly: 28.06 and 28.07, and 65.1.
+- The starving-sleep "77/4 = 19.25 h" case cannot happen, because by day a sleeper above 75 may wake. The test is 70 to 97 at night: 6.75 h, 135 steps.
+- The 5-sol no-EVA unit test accepts an asleep share of 6 to 20%. The equilibrium is about 1.3/12.3 = 10.6%, the hand calc of 11.8% was high, and the stub measured 9.3 to 9.5%. Balance target 8 (window share 5 to 30%) is unchanged.
+- A corridor's "a" end is `p1`, the parent side. `from_a = true` means walking from the parent to the child.
+- `add_being` (the test seam) leaves `wait_h` at 0 and a flat 0.5 persona. Founders get `wait_h` U(0, 2).
+
 ## Changelog
 - 2026-10-03: first version (game-designer).
 - 2026-10-03: revision after code-reviewer findings. Added: EVA arrival table and `finish_eva`/`enter` (6.5b), `to_door` corridor choice, "site gone" enters at once; footprint and construction-rate and yield test arithmetic fixed (step sizes, energy read after drain); explicit timer comparators with `STEP_EPS` and declared deviation from strict `>`; measurable balance stats and sol definition (section 16, 13); cooldown arithmetic corrected (about 43 h, 1.76 sols, 2.2x); sol-2 claim softened; target 6 measured in hours; worst-case air margin with the d + 0.8r bound; wording fixes (phase 6, exhausted test, wake chance draw, EVA move order); declared deviations list (go_sleep distance, work points, build timer, mining reach key `resources.mining.reach_px`); `kinds.*.label` row and machine-readable key-path list; single founder count; persona shape `{traits, role, description}`; Task 0 coupling note dropped; `sim/powers.gd` added to the code map; warning cadence (494th step) and waiting warning moved to phase 9. Reviewer sign-off (step 2): pending re-review.
