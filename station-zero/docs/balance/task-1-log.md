@@ -175,3 +175,87 @@ targets for seed 2026 (300 sols):
   T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
 RESULT FAIL (target 9 determinism: table sha256 2645033a417ec400)
 ```
+
+## Run 2: targets updated by owner decisions (no data changes)
+
+Commit eb26832. The targets follow the owner decisions in task-1-plan.md: no population caps, ice running dry is pressure, and the first new reactor is due by sol 15. All data/ values are unchanged from the baseline.
+
+Command: `godot --headless --path station-zero --script res://tests/balance_run.gd -- --seed N --sols 300` (five seeds run in parallel on 4 cores).
+
+| Seed | Wall time | Result | Final pop | Thirst deaths | Ice ran dry |
+|---|---|---|---|---|---|
+| 42 | 221 s | PASS | 164 | 10 | yes |
+| 7 | 97 s | PASS | 72 | 0 | no |
+| 99 | 232 s | PASS | 157 | 22 | yes |
+| 1234 | 219 s | PASS | 142 | 0 | no |
+| 2026 | 210 s | PASS | 156 | 5 | yes |
+
+Step 11 (the balance loop) needed no data change: all targets pass on all five seeds.
+
+### Verdicts per seed
+
+Seed 42:
+```
+  T1 PASS run min pop 7 (needs >= 5), final pop 164
+  T2 PASS deaths 10 (air 0 thirst 10 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 167, first_birth_sol 13, at_capacity 0, cooldown_violations 0, pop@30=19, pop@100=57, pop@300=164
+  T4 PASS min O2 261.5, food 203.1; ice ran dry (pressure): min ice 0.0, ice>30 0.0, thirst deaths 10; max ice/target 0.60, regolith/target 0.63
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 5 (<=15)
+  T6 PASS limited 5120.3 h = 69.21% (>=2% provisional; 4 of 5 seeds), site busy 68.8%; waiting_regolith 1340.0 h, site_no_crew 3780.3 h
+  T7 PASS turn_backs_air 0, exhausted 666, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 2274
+  T8 PASS row avg energy 54.3..59.6 (40..90), row asleep 10.6..11.0% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+RESULT PASS (target 9 determinism: table sha256 02032b2388529913)
+```
+Seed 7:
+```
+  T1 PASS run min pop 7 (needs >= 5), final pop 72
+  T2 PASS deaths 0 (air 0 thirst 0 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 65, first_birth_sol 19, at_capacity 0, cooldown_violations 0, pop@30=12, pop@100=32, pop@300=72
+  T4 PASS min O2 261.5, food 203.1; ice never ran dry: min ice 45.6, ice>30 60.9, thirst deaths 0; max ice/target 1.02, regolith/target 1.39
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 10 (<=15)
+  T6 PASS limited 1404.9 h = 18.99% (>=2% provisional; 4 of 5 seeds), site busy 26.9%; waiting_regolith 0.0 h, site_no_crew 1404.9 h
+  T7 PASS turn_backs_air 0, exhausted 242, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 853
+  T8 PASS row avg energy 54.4..61.2 (40..90), row asleep 10.6..11.1% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+RESULT PASS (target 9 determinism: table sha256 830c7d0c441823f5)
+```
+Seed 99:
+```
+  T1 PASS run min pop 7 (needs >= 5), final pop 157
+  T2 PASS deaths 22 (air 0 thirst 22 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 172, first_birth_sol 26, at_capacity 0, cooldown_violations 0, pop@30=10, pop@100=72, pop@300=157
+  T4 PASS min O2 262.5, food 203.1; ice ran dry (pressure): min ice 0.0, ice>30 0.0, thirst deaths 22; max ice/target 0.60, regolith/target 0.84
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 11 (<=15)
+  T6 PASS limited 5210.4 h = 70.43% (>=2% provisional; 4 of 5 seeds), site busy 78.7%; waiting_regolith 820.0 h, site_no_crew 4390.4 h
+  T7 PASS turn_backs_air 0, exhausted 645, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 2297
+  T8 PASS row avg energy 54.4..59.3 (40..90), row asleep 10.5..11.2% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+RESULT PASS (target 9 determinism: table sha256 0e3e83a7108140ef)
+```
+Seed 1234:
+```
+  T1 PASS run min pop 7 (needs >= 5), final pop 142
+  T2 PASS deaths 0 (air 0 thirst 0 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 135, first_birth_sol 21, at_capacity 0, cooldown_violations 0, pop@30=12, pop@100=65, pop@300=142
+  T4 PASS min O2 262.5, food 203.1; ice never ran dry: min ice 50.4, ice>30 70.2, thirst deaths 0; max ice/target 0.96, regolith/target 1.37
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 11 (<=15)
+  T6 PASS limited 2821.1 h = 38.13% (>=2% provisional; 4 of 5 seeds), site busy 48.4%; waiting_regolith 325.0 h, site_no_crew 2496.1 h
+  T7 PASS turn_backs_air 0, exhausted 646, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 2394
+  T8 PASS row avg energy 53.8..60.7 (40..90), row asleep 10.4..11.2% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+RESULT PASS (target 9 determinism: table sha256 bca6eb2ca93ba0c1)
+```
+Seed 2026:
+```
+  T1 PASS run min pop 7 (needs >= 5), final pop 156
+  T2 PASS deaths 5 (air 0 thirst 5 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 154, first_birth_sol 18, at_capacity 0, cooldown_violations 0, pop@30=12, pop@100=47, pop@300=156
+  T4 PASS min O2 261.5, food 203.1; ice ran dry (pressure): min ice 0.0, ice>30 0.0, thirst deaths 5; max ice/target 0.90, regolith/target 1.48
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 13 (<=15)
+  T6 PASS limited 3672.4 h = 49.64% (>=2% provisional; 4 of 5 seeds), site busy 59.3%; waiting_regolith 505.0 h, site_no_crew 3167.4 h
+  T7 PASS turn_backs_air 0, exhausted 589, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 2144
+  T8 PASS row avg energy 54.3..60.2 (40..90), row asleep 10.6..11.1% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+RESULT PASS (target 9 determinism: table sha256 2645033a417ec400)
+```
