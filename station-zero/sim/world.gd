@@ -36,6 +36,15 @@ var _next_sol_boundary := 1
 var _sol_started := false
 ## Float slack so 0.05-hour steps add up to whole hours.
 const STEP_EPS := 1e-9
+## Fields kept in stats.window (spec section 16). Sums and maxima restart at 0, minima at null.
+## Measurement definitions (spec section 16), not tunables: stock minima count from sol 5, ice from 30.
+const STATS_FROM_SOL := 5
+const STATS_ICE_FROM_SOL := 30
+const WINDOW_ZERO_KEYS := ["max_shorts_per_sol", "max_offline_h", "max_sleep_h", "being_steps",
+		"asleep_being_steps", "energy_sum", "demand_over_steps", "step_count", "sol_samples",
+		"reachable_ok_samples", "hours_waiting_regolith", "hours_site_no_crew", "site_busy_h",
+		"max_ice_over_target", "max_regolith_over_target"]
+const WINDOW_NULL_KEYS := ["min_pop", "min_oxygen", "min_food", "min_ice", "min_ice_after30"]
 
 
 ## `options.blank = true` builds an empty world (no founders) for tests, which then use
@@ -63,6 +72,7 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 		_create_founders()
 		resources.spawn_founder_sites()
 		_log("founders_landed", "%d founders landed." % founders.size())
+		stats.pop_by_sol.append(colony.pop())
 
 
 func _init_stats() -> void:
@@ -81,7 +91,39 @@ func _init_stats() -> void:
 		"hours_waiting_regolith": 0.0, "hours_site_no_crew": 0.0, "site_busy_h": 0.0,
 		"first_new_reactor_sol": null, "first_birth_sol": null,
 		"being_steps": 0, "asleep_being_steps": 0, "energy_sum": 0.0, "max_sleep_h": 0.0,
+		"pop_by_sol": [], "min_pop": null,
+		"min_oxygen": null, "min_food": null, "min_ice": null, "min_ice_after30": null,
+		"max_ice_over_target": 0.0, "max_regolith_over_target": 0.0,
 	}
+	reset_window()
+
+
+## Starts a fresh balance window (spec section 16). `stats.window` holds the windowed measured
+## fields; the run-wide copies in `stats` are never reset. A Dictionary has no methods, so this is
+## SimWorld.reset_window() rather than stats.reset_window().
+func reset_window() -> void:
+	var win := {}
+	stats["window"] = win
+	for k in WINDOW_ZERO_KEYS:
+		win[k] = 0.0 if stats[k] is float else 0
+	for k in WINDOW_NULL_KEYS:
+		win[k] = null
+
+
+## Applies a measured value to the run-wide field and to the current window.
+func _stat_add(key: String, delta: float) -> void:
+	stats[key] += delta
+	stats.window[key] += delta
+
+
+func _stat_max(key: String, v: float) -> void:
+	stats[key] = maxf(float(stats[key]), v)
+	stats.window[key] = maxf(float(stats.window[key]), v)
+
+
+func _stat_min(key: String, v: float) -> void:
+	stats[key] = v if stats[key] == null else minf(float(stats[key]), v)
+	stats.window[key] = v if stats.window[key] == null else minf(float(stats.window[key]), v)
 
 
 ## Elapsed sols since start_hour; sol 0 is the first (spec section 3).
@@ -128,6 +170,10 @@ func _kill(b: Being, cause: String) -> void:
 	beings.erase(b)
 	var key := cause.replace(" ", "_")
 	stats.deaths[key] = int(stats.deaths.get(key, 0)) + 1
+	var shortage := cause in ["air", "thirst", "hunger"]
+	var known := shortage or cause == "suffocated outside"
+	if not known or (shortage and colony.oxygen > 0.0 and colony.ice > 0.0 and colony.food > 0.0):
+		stats.deaths_unexplained += 1
 	stats.deaths_list.append({"t": t, "sol": sol(), "being_id": b.id, "name": b.name, "cause": cause})
 	_log("died", "%s died (%s)." % [b.name, cause], {"being_id": b.id, "cause": cause})
 
@@ -214,9 +260,10 @@ func step() -> void:
 	_sample_power_stats()
 	_sample_being_stats()
 	if _sol_started:
-		stats.sol_samples += 1
+		stats.pop_by_sol.append(colony.pop())
+		_stat_add("sol_samples", 1)
 		if resources.reachable_ice_count() >= int(SimData.resources().scout.min_reachable):
-			stats.reachable_ok_samples += 1
+			_stat_add("reachable_ok_samples", 1)
 
 
 ## Removes up to `amount` ice from a field and returns what was taken. A field that runs dry leaves
@@ -257,22 +304,22 @@ func _manage_power() -> void:
 	if ev.kind == "short":
 		stats.shorts += 1
 		stats.shorts_this_sol += 1
-		stats.max_shorts_per_sol = maxi(int(stats.max_shorts_per_sol), int(stats.shorts_this_sol))
+		_stat_max("max_shorts_per_sol", float(stats.shorts_this_sol))
 		_log("short", "%s shorted out." % label, {"building_id": b.id})
 	else:
 		stats.reonlines += 1
-		stats.max_offline_h = maxf(float(stats.max_offline_h), float(ev.offline_h))
+		_stat_max("max_offline_h", float(ev.offline_h))
 		_log("back_online", "%s is back online." % label, {"building_id": b.id})
 
 
 ## Phase 11 (power part).
 func _sample_power_stats() -> void:
-	stats.step_count += 1
+	_stat_add("step_count", 1)
 	if buildings.demand() > buildings.supply():
-		stats.demand_over_steps += 1
+		_stat_add("demand_over_steps", 1)
 	for b in buildings.list:
 		if b.offline and b.offline_since != null:
-			stats.max_offline_h = maxf(float(stats.max_offline_h), t - float(b.offline_since))
+			_stat_max("max_offline_h", t - float(b.offline_since))
 
 
 ## Phase 6: every being alive at the start of the phase, ascending id.
@@ -285,11 +332,21 @@ func _update_beings() -> void:
 ## Phase 11 (being part).
 func _sample_being_stats() -> void:
 	for b in beings:
-		stats.being_steps += 1
-		stats.energy_sum += b.energy
+		_stat_add("being_steps", 1)
+		_stat_add("energy_sum", b.energy)
 		if b.state == "sleep":
-			stats.asleep_being_steps += 1
-			stats.max_sleep_h = maxf(float(stats.max_sleep_h), t - float(b.sleep_started_t))
+			_stat_add("asleep_being_steps", 1)
+			_stat_max("max_sleep_h", t - float(b.sleep_started_t))
+	_stat_min("min_pop", float(beings.size()))
+	var elapsed := sol()
+	if elapsed >= STATS_FROM_SOL:
+		_stat_min("min_oxygen", colony.oxygen)
+		_stat_min("min_food", colony.food)
+		_stat_min("min_ice", colony.ice)
+	if elapsed >= STATS_ICE_FROM_SOL:
+		_stat_min("min_ice_after30", colony.ice)
+	_stat_max("max_ice_over_target", colony.ice / colony.ice_target())
+	_stat_max("max_regolith_over_target", colony.regolith / colony.regolith_target())
 
 
 # ---------------------------------------------------------------- construction (spec 7.4, 7.5)
@@ -363,7 +420,7 @@ func _build_decision() -> void:
 		return
 	var kind := choose_kind()
 	if colony.regolith < buildings.build_cost(kind):
-		stats.hours_waiting_regolith += float(bd.check_interval_h)
+		_stat_add("hours_waiting_regolith", float(bd.check_interval_h))
 		if colony.need_regolith_due(t):
 			stats.need_regolith += 1
 			_log("need_regolith", "More regolith is needed to build.")
@@ -381,9 +438,9 @@ func _construction_progress() -> void:
 	for b in beings:
 		if b.state == "work" and b.job == site:
 			crew.append(b)
-	stats.site_busy_h += fixed_step
+	_stat_add("site_busy_h", fixed_step)
 	if crew.is_empty():
-		stats.hours_site_no_crew += fixed_step
+		_stat_add("hours_site_no_crew", fixed_step)
 		var idle_h := float(buildings.cfg.build.waiting_site_idle_sols) * clock.sol_h
 		if t - site.last_work_t > idle_h + STEP_EPS and colony.waiting_due(t):
 			stats.waiting_for_builders += 1
