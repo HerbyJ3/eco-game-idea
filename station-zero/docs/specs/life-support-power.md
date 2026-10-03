@@ -658,6 +658,17 @@ Log kinds: `founders_landed`, `ground_broken`, `building_done`, `short`, `back_o
 - A new worker's first wander target is its current position, so it begins with a pause, as in mining. This is intended.
 - The job is set when a builder joins from the parent building. A builder heading to the parent from elsewhere has no job yet.
 
+## Implementation notes (step 8)
+- **Heavy footprints:** `heavy = construction suit on, or load > 0`. A builder in the construction suit leaves heavy prints on the whole trip, including the walk home with `job == null`. This is consistent with the step 7 rule that the suit stays on until the builder enters.
+- **Partial load on turn-back:** the load is taken from the field, and `field.amount` drops by the load, so ice is never free. If that empties the field, the usual dry-up rule applies.
+- **Site kind:** every Site has a `kind` (`ice` or `pit`). A hauler deposits by `mine.site.kind`, so a load from a field that dried is still ice.
+- **Turn-back logs:** an air turn-back logs `suit_low_air` and an exhausted turn-back logs `exhausted`, each once per turn-back. The 3 h repeat interval can never fire, because `returning` blocks a second turn-back. It is kept only as a guard.
+- **Turn-back path:** a builder's path is `[p1]`, then `enter(parent)` on arrival. A miner's path is `[mine.door]`, then `haul` (with a load) or `enter`. `mine` is null once the miner is home.
+- **Boundaries:** lamp boundaries are tested at ±1e-6. Air on arrival after a turn-back is 2.45 to 2.5 h (step granularity).
+- **Trip filter:** the formula is the spec's, 2(d + r)/16 + 6. The plan's "2d/16 + 6" was shorthand.
+- **Mining wander:** checks the distance to its target before moving (prototype L646).
+- **choose_site:** lives on SimWorld, because it reads colony stocks and the rng.
+
 ## Changelog
 - 2026-10-03: first version (game-designer).
 - 2026-10-03: revision after code-reviewer findings. Added: EVA arrival table and `finish_eva`/`enter` (6.5b), `to_door` corridor choice, "site gone" enters at once; footprint and construction-rate and yield test arithmetic fixed (step sizes, energy read after drain); explicit timer comparators with `STEP_EPS` and declared deviation from strict `>`; measurable balance stats and sol definition (section 16, 13); cooldown arithmetic corrected (about 43 h, 1.76 sols, 2.2x); sol-2 claim softened; target 6 measured in hours; worst-case air margin with the d + 0.8r bound; wording fixes (phase 6, exhausted test, wake chance draw, EVA move order); declared deviations list (go_sleep distance, work points, build timer, mining reach key `resources.mining.reach_px`); `kinds.*.label` row and machine-readable key-path list; single founder count; persona shape `{traits, role, description}`; Task 0 coupling note dropped; `sim/powers.gd` added to the code map; warning cadence (494th step) and waiting warning moved to phase 9. Reviewer sign-off (step 2): pending re-review.
