@@ -188,7 +188,7 @@ Construction sites draw 2 while being built. Builders choose what to build from 
 - Ice is the colony's water. No ice: no births, and later, deaths from thirst.
 - Regolith pays for construction.
 
-### Life support and power (Task 1, in progress, see section 8)
+### Life support and power (Task 1, done, see section 8)
 
 - Green rooms: +1.4 oxygen and +1.0 food per hour each. Beings use 0.05 oxygen and 0.035 food per hour.
 - No oxygen: deaths every few hours. No food: slower deaths. No water: deaths.
@@ -279,7 +279,10 @@ Prototype artifact: https://claude.ai/artifact/LEHS7X1zfj4qLXDbTfYyHQ
 - [x] **0. Godot project setup.** Folder structure, autoloads, a simulation core that runs headless, a renderer that only displays it. Port the calendar, charts and personas first, with unit tests that match section 3.
   - Done October 2026. Godot 4.5 project in `station-zero/`. Run the tests with `godot --headless --path station-zero --script res://tests/run_tests.gd` (33 tests). Plan: `station-zero/docs/tasks/task-0-plan.md`. Spec and resolved ambiguities: `station-zero/docs/specs/sky-persona.md`.
   - What we learned: (1) The comment "at dawn rising = sun sign" holds only at lon 0. At Jezero, rise = sign(Ls + lon). (2) Seed 42 gives 15,481 unique charts in 20,000 births. Role shares are builder .315, social .281, tender .204 and curious .200; the in-game longitude range gives the same shares. (3) Mars charts never reach the lower trait clamp. Sociability tops out at .68. (4) `Sky` is a built-in Godot class, so the sky class is `MarsSky`. (5) GDScript can't use float `%`, so use `fposmod`.
-- [ ] **1. Life support and power.** Green room oxygen and food, power budget with shorts, suit tanks, footprints, construction suits, helmet lamps, per-being energy and sleep. **Balance it with headless runs.**
+- [x] **1. Life support and power.** Green room oxygen and food, power budget with shorts, suit tanks, footprints, construction suits, helmet lamps, per-being energy and sleep. **Balance it with headless runs.**
+  - Done October 2026. Final code review: "Task 1 approved", no blocking findings. Full suite: 308 tests, 30,949 checks, 0 failures (about 70 s), run with `godot --headless --path station-zero --script res://tests/run_tests.gd`. All 8 per-seed balance targets pass on seeds 42, 7, 99, 1234 and 2026 at 300 sols with no data changes. Determinism holds (seed 7, 300 sols, table sha256 830c7d0c441823f5). Plan and owner decisions: `station-zero/docs/tasks/task-1-plan.md`. Balance log: `station-zero/docs/balance/task-1-log.md`. View: text HUD with speed keys plus a debug dot map.
+  - Owner decisions (Herby): births keep the 1-sol cooldown; population is uncapped on purpose; ice running dry is pressure, not failure; first new reactor due by sol 15.
+  - What we learned: (1) At 300 sols population ends at 72 to 164. Ice ran dry on 3 of 5 seeds (5 to 22 thirst deaths), with no other deaths, zero power shorts and zero air turn-backs. (2) A 300-sol run takes 76 to 232 s because fixed_step stays 0.05 h. (3) The short and re-online path never fires in balance runs, so power flapping is untested at scale. (4) HUD speeds 100x and 1000x hit the 2,000-steps-per-frame cap in large colonies. (5) Interiors have no x,y positions (A9). (6) Construction suit, helmet lamp and footprint visuals exist only as sim data, for Task 2. (7) Review follow-ups fixed: log carries clock_sol, a resumed mine intent re-checks the trip limit, Site.dug accumulates, balance_run exits 1 when a target fails.
 - [ ] **2. Sprite set.** Slice and import the three character sheets, the workshop, green room and the two interiors. Animate doors and lights.
 - [ ] **3. Age system.** Landing and Settlement ages, announced in the log.
 - [ ] **4. Relationships and trust.** Driven by personality.
