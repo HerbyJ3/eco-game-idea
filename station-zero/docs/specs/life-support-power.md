@@ -192,7 +192,7 @@ Live sites = pits, plus ice fields with amount > 0, whose `trip_time(from neares
 - Trip filter (`trip_time < 0.85 x 36 = 30.6`, i.e. site centre within 196.8 px of the launch door with the 6 h overhead) applies at choice time and spawn time.
 - **Worst-case air margin** (target 7). A miner's farthest point from the door is the field centre distance d plus up to 0.8 r (wander). The spawn rule gives d + r < 196.8, so d + 0.8 r < 196.8 - 0.2 r, at most 193.6 px (r = 16, the worst case). Air use: out 193.6/16 = 12.1 h + shift 9 h + back 12.1 h + return margin 2.5 h = 35.7 h against a 36 h tank, so the margin at the end of the longest shift is **about 0.3 h** (0.5 h for r = 24 at d = 172.8, where d + 0.8r = 192). Any loosening of `trip_filter` (0.9 gives d up to about 187 px and a turn-back at the end of a 9 h shift), `trip_overhead_h`, `mining.shift_h` max or `return_margin_h`, or a wider wander radius, makes air turn-backs possible and breaks target 7: change them only together with this calculation.
 - Footprints: every outside move (EVA, mining wander, construction wander) adds `moved` to `step_acc_px`; when `step_acc_px >= 2.2 - STEP_EPS`: reset to 0 (not subtract, L581), flip `foot_side`, add a print at the position offset 0.7 px perpendicular to the heading on that side; `heavy = job != null or load > 0`; oldest dropped past 2,200; prints older than 2.5 sols (61.649 h) are removed in phase 11. (Deviation: the prototype left prints only for EVA and mining; builders shuffling at the site now leave heavy prints too, matching HANDOFF "every suited being".)
-### Tests (tests/test_suits.gd, tests/test_layout.gd)
+### Tests (tests/test_eva.gd, tests/test_layout.gd)
 - Suit-up: oxygen 100 -> 99, `air_h = 36`; at oxygen 0.4 it clamps to 0 and the tank is still 36.
 - Death: a being outside with `air_h = 0.04` after one step (-0.05) is at -0.01 and dies, cause `suffocated outside`, removed, `stats.deaths.suffocated_outside = 1`, log line.
 - Turn-back: a miner 160 px from the door turns back when `air_h < 160/16 + 2.5 = 12.5`, not at 12.6; walking home needs 10 h, arriving with >= 2.5 h; builder returns by [`p1`, inside], not via `p2`.
@@ -674,6 +674,14 @@ These override the section 13 targets where they differ:
 - **Target 3:** no population caps. It checks births at capacity = 0, cooldown violations = 0 and first birth no earlier than sol 2. Population is reported only.
 - **Target 4:** min oxygen and min food must stay above 0, and ice and regolith must stay below 3 x target. Ice running dry is reported as pressure, not failed.
 - **Target 5:** the first new reactor is due by sol 15.
+
+## Final review follow-ups (step 13)
+- Log entries and `deaths_list` carry both `sol` (elapsed since landing, 0-based, used by stats) and `clock_sol` (`Clock.sol_index`, 1-based, rolls at Mars midnight). The HUD shows `clock_sol`, so the log matches the clock.
+- A resumed mine intent re-applies the trip filter and cancels if the launch door moved too far.
+- `Site.dug` accumulates everything dug from the site, including partial loads.
+- `balance_run.gd` exits 1 when any target fails.
+- Exempt from the literal rule: the measurement windows `STATS_FROM_SOL` (5) and `STATS_ICE_FROM_SOL` (30) in world.gd. They define what the targets measure, not how the colony behaves.
+- The suit, EVA, mining and footprint tests live in `tests/test_eva.gd`.
 
 ## Changelog
 - 2026-10-03: first version (game-designer).

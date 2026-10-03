@@ -172,7 +172,7 @@ Tests and runs:
 - docs/balance/task-1-log.md lists baseline and every one-parameter run with the result.
 Files that must exist:
 - docs/specs/life-support-power.md, docs/tasks/task-1-plan.md, docs/balance/task-1-log.md.
-- data/{colony,buildings,beings,suits,resources}.json; sim/{colony,buildings,being,resources}.gd with real logic (placeholders replaced), sim/world.gd wiring; tests/{test_colony,test_power,test_layout,test_beings,test_construction,test_suits,test_births,test_determinism}.gd and tests/balance_run.gd.
+- data/{colony,buildings,beings,suits,resources}.json; sim/{colony,buildings,being,resources}.gd with real logic (placeholders replaced), sim/world.gd wiring; tests/{test_colony,test_power,test_layout,test_beings,test_construction,test_eva,test_births,test_determinism}.gd and tests/balance_run.gd.
 - view/ text HUD only reads the sim.
 Reviewer (code-reviewer) checks:
 - No tunable number in sim/*.gd; no Node or draw API in sim/; no `randi`/`randf` outside `SimRng`; view has no logic.

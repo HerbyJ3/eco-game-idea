@@ -517,6 +517,7 @@ func _turn_back(w: SimWorld, reason: String) -> void:
 			load = w.rng.randf_range(float(pl[0]), float(pl[1]))
 			if site.kind == "ice":
 				load = w.take_ice(site, load)
+			site.dug += load
 		after = "haul" if load > 0.0 else "enter"
 		if after == "enter":
 			mine = null
@@ -561,7 +562,8 @@ func _resume_mine_intent(w: SimWorld) -> bool:
 		return false
 	var site: Resources.Site = mine_intent
 	var launch := w.resources.launch_for(site)
-	if launch == null or (site.kind == "ice" and site.amount <= 0.0):
+	if launch == null or (site.kind == "ice" and site.amount <= 0.0) \
+			or not (w.resources.trip_time(site) < w.resources.trip_limit()):
 		mine_intent = null
 		return false
 	return _head_for_launch(w, site, launch, true)
@@ -672,6 +674,7 @@ func _end_mining(w: SimWorld) -> void:
 			* (float(ef.energy_base) + energy / float(ef.energy_divisor))
 	if site.kind == "ice":
 		amount = w.take_ice(site, amount)
+	site.dug += amount
 	load = amount
 	state = "eva"
 	after = "haul"

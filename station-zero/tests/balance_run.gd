@@ -1,6 +1,6 @@
 extends SceneTree
 ## Balance run. godot --headless --path station-zero --script res://tests/balance_run.gd -- --seed N --sols N [--param path=value ...]
-## Always exits 0; the verdict is in the output. See tests/balance_lib.gd.
+## Exits 0 when every target passes, 1 otherwise (spec section 15); the verdicts are in the output. See tests/balance_lib.gd.
 
 
 func _init() -> void:
@@ -31,6 +31,10 @@ func _init() -> void:
 					print("PARAM ERROR: expected path=value, got %s" % args[i])
 		i += 1
 	var res: Dictionary = lib.run(seed_in, sols, params, every)
+	var all_pass := true
 	for line in res.lines:
 		print(line)
-	quit(0)
+	for v: Dictionary in res.verdicts:
+		if v.verdict == "FAIL":
+			all_pass = false
+	quit(0 if all_pass else 1)

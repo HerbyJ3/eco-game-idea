@@ -132,7 +132,7 @@ func sol() -> int:
 
 
 func _log(kind: String, text: String, extra: Dictionary = {}) -> void:
-	var e := {"t": t, "sol": sol(), "kind": kind, "text": text}
+	var e := {"t": t, "sol": sol(), "clock_sol": clock.sol_index(t), "kind": kind, "text": text}
 	e.merge(extra)
 	log.append(e)
 	if log.size() > _log_cap:
@@ -174,7 +174,7 @@ func _kill(b: Being, cause: String) -> void:
 	var known := shortage or cause == "suffocated outside"
 	if not known or (shortage and colony.oxygen > 0.0 and colony.ice > 0.0 and colony.food > 0.0):
 		stats.deaths_unexplained += 1
-	stats.deaths_list.append({"t": t, "sol": sol(), "being_id": b.id, "name": b.name, "cause": cause})
+	stats.deaths_list.append({"t": t, "sol": sol(), "clock_sol": clock.sol_index(t), "being_id": b.id, "name": b.name, "cause": cause})
 	_log("died", "%s died (%s)." % [b.name, cause], {"being_id": b.id, "cause": cause})
 
 

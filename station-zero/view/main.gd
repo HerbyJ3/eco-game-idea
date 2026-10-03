@@ -178,5 +178,5 @@ func _beings_text(w: SimWorld) -> String:
 func _log_text(w: SimWorld) -> String:
 	var lines: PackedStringArray = ["Log"]
 	for e: Dictionary in w.log.slice(maxi(0, w.log.size() - LOG_LINES)):
-		lines.append("  sol %d  %s" % [int(e.sol), e.text])
+		lines.append("  sol %d  %s" % [int(e.clock_sol), e.text])
 	return "\n".join(lines)

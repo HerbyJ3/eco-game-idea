@@ -2065,3 +2065,46 @@ func test_founder_colony_runs_without_air_turn_backs_or_suffocation(t) -> void:
 		for b in w.beings:
 			if b.air_h != null:
 				t.check(float(b.air_h) > 0.0, "seed %d: everybody outside has air" % seed_in)
+
+
+# ---------------------------------------------------------------- final review follow-ups (step 13)
+
+func test_resumed_intent_cancels_when_the_launch_door_moved_beyond_the_trip_limit(t) -> void:
+	var h := _world(93)
+	var w: SimWorld = h.w
+	# Reachable from the A door, too far from the R door.
+	var spot: Vector2 = A_DOOR + Vector2(0.0, 174.0)
+	var f := w.resources.add_ice_field(spot.x, spot.y, 300.0, 16.0)
+	var ra := w.resources.launch_for(f)
+	t.check(ra != null and w.resources.trip_time(f) < w.resources.trip_limit(), "control: trip from the A door fits a tank")
+	w.set_offline(int(h.A), true)
+	w.set_offline(int(h.W), true)
+	t.check(not (w.resources.trip_time(f) < w.resources.trip_limit()), "with A and the workshop dark the nearest door is too far")
+	_hour(w, 12.0)
+	w.t += DT
+	var b := w.add_being(int(h.R), "social")
+	b.energy = 100.0
+	b.mine_intent = f
+	var o2: float = w.colony.oxygen
+	b.decide(w)
+	t.check(b.mine_intent == null, "the intent is cancelled")
+	t.check(b.mine == null and not b.suit_up, "no trip starts")
+	t.near(w.colony.oxygen, o2, 1e-12, "no oxygen spent")
+
+
+func test_site_dug_accumulates_what_is_dug(t) -> void:
+	var w := SimWorld.new(42)
+	for i in 2000:
+		w.step()
+	var dug := 0.0
+	for s: Resources.Site in w.resources.ice_fields + w.resources.pits:
+		dug += s.dug
+	t.check(int(w.stats.get("mining_trips", 0)) > 0, "control: mining happened")
+	t.check(dug > 0.0, "dug totals grow with mining (%.1f)" % dug)
+
+
+func test_log_carries_the_clock_sol(t) -> void:
+	var w := SimWorld.new(42)
+	var e: Dictionary = w.log[0]
+	t.eq(int(e.clock_sol), 1, "founders landed on clock sol 1")
+	t.eq(int(e.sol), 0, "elapsed sol stays 0-based")
