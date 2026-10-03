@@ -6,6 +6,8 @@ extends RefCounted
 
 ## An ice field or a regolith pit. Pits have infinite amount.
 class Site extends RefCounted:
+	## "ice" or "pit". A hauler deposits by kind, so a load from a field that dried is still ice.
+	var kind := "pit"
 	var x: float
 	var y: float
 	var amount := INF
@@ -16,6 +18,16 @@ class Site extends RefCounted:
 	func pos() -> Vector2:
 		return Vector2(x, y)
 
+## One boot print (spec 8.5). `heavy` marks a being in the construction suit or carrying a load.
+class Footprint extends RefCounted:
+	var x: float
+	var y: float
+	var heading: float
+	var t: float
+	var heavy: bool
+
+## Oldest first, newest last; capped at suits.footprint.cap.
+var footprints: Array[Footprint] = []
 var ice_fields: Array[Site] = []
 var pits: Array[Site] = []
 var cfg: Dictionary
@@ -36,6 +48,7 @@ func _init(buildings_in: Buildings, rng_in: SimRng) -> void:
 
 func add_ice_field(x: float, y: float, amount: float, r: float) -> Site:
 	var f := Site.new()
+	f.kind = "ice"
 	f.x = x
 	f.y = y
 	f.amount = amount
@@ -121,6 +134,7 @@ func spawn_site(kind: String, dist_range: Array) -> Site:
 		s.x = p.x
 		s.y = p.y
 		if is_ice:
+			s.kind = "ice"
 			var a: Array = cfg.ice_field.amount
 			var rr: Array = cfg.ice_field.radius_px
 			s.amount = _rng.randf_range(float(a[0]), float(a[1]))
@@ -187,3 +201,26 @@ func respawn_if_short() -> Site:
 	if reachable_ice_count() >= int(cfg.scout.min_reachable):
 		return null
 	return spawn_site("ice", cfg.spawn.ice_px)
+
+
+# ---------------------------------------------------------------- footprints (spec 8.5)
+
+func add_footprint(x: float, y: float, heading: float, t: float, heavy: bool) -> void:
+	var f := Footprint.new()
+	f.x = x
+	f.y = y
+	f.heading = heading
+	f.t = t
+	f.heavy = heavy
+	footprints.append(f)
+	while footprints.size() > int(suits.footprint.cap):
+		footprints.pop_front()
+
+
+## Phase 11: drops prints older than `fade_h` (elapsed-since comparator, spec section 3).
+func expire_footprints(t: float, fade_h: float) -> void:
+	var keep: Array[Footprint] = []
+	for f in footprints:
+		if not (t - f.t > fade_h + SimWorld.STEP_EPS):
+			keep.append(f)
+	footprints = keep

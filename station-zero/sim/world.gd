@@ -209,6 +209,7 @@ func step() -> void:
 	if silent and not colony.extinct:
 		_log("colony_silent", "The colony has fallen silent.")
 	colony.extinct = silent
+	resources.expire_footprints(t, float(SimData.suits().footprint.fade_sols) * clock.sol_h)
 	_sample_power_stats()
 	_sample_being_stats()
 	if _sol_started:
@@ -406,3 +407,40 @@ func _construction_progress() -> void:
 	buildings.site = null
 	for b in crew:
 		b.enter(self, sb.id)
+
+
+# ---------------------------------------------------------------- mining (spec 8.2)
+
+## Which site a miner heads for, or null. Lives here (not in Resources) because it reads the colony
+## stocks and the rng. Draws one chance only when ice >= ice_urgent_below and live ice fields exist,
+## then one pick of the pool.
+func choose_site() -> Resources.Site:
+	var wn: Dictionary = SimData.resources().want
+	var limit := resources.trip_limit()
+	var live_ice: Array[Resources.Site] = []
+	for f in resources.ice_fields:
+		if f.amount > 0.0 and resources.trip_time(f) < limit:
+			live_ice.append(f)
+	var live_pits: Array[Resources.Site] = []
+	for p in resources.pits:
+		if resources.trip_time(p) < limit:
+			live_pits.append(p)
+	var ice_target := colony.ice_target()
+	var reg_target := colony.regolith_target()
+	var ice_need := 1.0 - minf(1.0, colony.ice / ice_target)
+	var reg_need := 1.0 - minf(1.0, colony.regolith / reg_target)
+	var want_ice := colony.ice < float(wn.ice_urgent_below)
+	if not want_ice and not live_ice.is_empty():
+		want_ice = rng.chance((ice_need + float(wn.ice_bias)) / (ice_need + reg_need + float(wn.need_sum_bias)))
+	var pool: Array[Resources.Site] = live_ice
+	var is_ice := true
+	if not (want_ice and not live_ice.is_empty()) and not live_pits.is_empty():
+		pool = live_pits
+		is_ice = false
+	if pool.is_empty():
+		return null
+	if is_ice and colony.ice > float(wn.stop_factor) * ice_target:
+		return null
+	if not is_ice and colony.regolith > float(wn.stop_factor) * reg_target:
+		return null
+	return rng.pick(pool)

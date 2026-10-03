@@ -42,6 +42,8 @@ var wander_target := Vector2.ZERO
 ## True from a builder's suit-up until it enters a building: the suit is kept for the walk home
 ## after the shift, even though `job` is already null (step 7 notes).
 var construction_suit := false
+## When the last `suit_low_air` line was logged for this being (guard for the repeat interval).
+var _low_air_logged_t := -1e9
 
 
 ## What the view draws (spec section 4): none inside; construction for a builder's suit, from
@@ -52,6 +54,16 @@ func suit_kind() -> String:
 		"eva", "work", "mining":
 			return "construction" if construction_suit or job != null else "eva"
 	return "none"
+
+
+## Outside means one of the suited states (spec section 4).
+func is_outside() -> bool:
+	return state == "eva" or state == "work" or state == "mining"
+
+
+## The lamp is on only outside and at night (spec A10).
+func lamp_on(w: SimWorld) -> bool:
+	return is_outside() and is_night(w)
 
 
 ## True while the being is in a building (sleepers count). Used by shortage victims and births.
@@ -117,14 +129,19 @@ static func is_night(w: SimWorld) -> bool:
 
 ## ---------------------------------------------------------------- phase 6 (spec 6.3)
 
-## One being's update for one step. Mining (step 8) adds an arm to the match; step 8 also adds the
-## air tick and the turn-backs between the drain and the match (spec 6.3 items 3 and 4).
+## One being's update for one step (spec 6.3): drain, exhausted check, air tick and low-air check,
+## then the state arm.
 func update(w: SimWorld, dt: float) -> void:
 	var e: Dictionary = _cfg().energy
 	if state == "sleep":
 		_sleep_step(w, dt)
 		return
 	energy = clampf(energy - drain_per_h() * dt, 0.0, float(e.max))
+	if is_outside():
+		if _can_turn_back() and energy < float(e.exhausted_turn_back):
+			_turn_back(w, "exhausted")
+		if not _air_tick(w, dt):
+			return
 	match state:
 		"transit":
 			_transit_step(w, dt)
@@ -132,6 +149,8 @@ func update(w: SimWorld, dt: float) -> void:
 			_eva_step(w, dt)
 		"work":
 			_work_step(w, dt)
+		"mining":
+			_mining_step(w, dt)
 		"idle":
 			wait_h -= dt
 			if wait_h <= SimWorld.STEP_EPS:
@@ -178,9 +197,12 @@ func enter(w: SimWorld, to_building: int) -> void:
 	wait_h = w.fixed_step if sleep_intent else idle_wait(w.rng)
 
 
-## When to_door elapses (spec 6.2 order): (a) miner suit-up (step 8), (b) builder suit-up at the
-## corridor end p1, (c) enter the tunnel.
+## When to_door elapses (spec 6.2 order): (a) miner suit-up at the building door, (b) builder
+## suit-up at the corridor end p1, (c) enter the tunnel.
 func _door_action(w: SimWorld) -> void:
+	if suit_up and mine != null:
+		_suit_up_miner(w)
+		return
 	if suit_up and job != null:
 		_suit_up_builder(w)
 		return
@@ -212,7 +234,7 @@ func go_sleep(w: SimWorld) -> void:
 	wait_h = door_time(w.rng)
 
 
-## Spec 6.4. Branches 3 and 4 (mining) arrive in step 8, between joining and travel.
+## Spec 6.4: sleep, join construction, resume a mine intent, new mining attempt, restless travel.
 func decide(w: SimWorld) -> void:
 	var e: Dictionary = _cfg().energy
 	var go := sleep_intent or energy < float(e.sleep_below)
@@ -222,6 +244,10 @@ func decide(w: SimWorld) -> void:
 		go_sleep(w)
 		return
 	if _try_join_construction(w):
+		return
+	if _resume_mine_intent(w):
+		return
+	if _try_new_mining(w):
 		return
 	if _restless_travel(w):
 		return
@@ -340,8 +366,7 @@ func _suit_up_builder(w: SimWorld) -> void:
 	path = [p1, p2, w.buildings.work_point(sb, w.rng)]
 
 
-## Walk along `path` at EVA speed (spec 6.3 item 5, `eva`). Step 8 hangs the air tick, footprints
-## and turn-backs on this same walk.
+## Walk along `path` at EVA speed (spec 6.3 item 5, `eva`), leaving footprints.
 func _eva_step(w: SimWorld, dt: float) -> void:
 	if path == null or path.is_empty():
 		_finish_eva(w)
@@ -355,7 +380,9 @@ func _eva_step(w: SimWorld, dt: float) -> void:
 		if path.is_empty():
 			_finish_eva(w)
 		return
-	_step_toward(pos, target, minf(float(su.eva_speed_px_h) * dt, d))
+	var moved := minf(float(su.eva_speed_px_h) * dt, d)
+	_step_toward(pos, target, moved)
+	_leave_prints(w, moved)
 
 
 func _step_toward(pos: Vector2, target: Vector2, dist: float) -> void:
@@ -365,8 +392,26 @@ func _step_toward(pos: Vector2, target: Vector2, dist: float) -> void:
 	y = np.y
 
 
-## Spec 6.5b. Only the `work`, `enter` and null rows exist so far; `mine` and `haul` are step 8.
+## Spec 6.5b: what happens when an EVA path ends, by `after`.
 func _finish_eva(w: SimWorld) -> void:
+	if after == "mine":
+		var rm: Dictionary = SimData.resources().mining
+		state = "mining"
+		work_left_h = w.rng.randf_range(float(rm.shift_h[0]), float(rm.shift_h[1]))
+		wait_h = 0.0
+		wander_target = Vector2(x, y)
+		return
+	if after == "haul":
+		var site: Resources.Site = mine.site
+		if site.kind == "ice":
+			w.colony.ice += load
+		else:
+			w.colony.regolith += load
+		load = 0.0
+		var home := int(mine.home_id)
+		mine = null
+		enter(w, home)
+		return
 	if after == "work":
 		var site := w.buildings.site
 		if site != null and job == site:
@@ -415,4 +460,219 @@ func _work_step(w: SimWorld, dt: float) -> void:
 		wait_h = w.rng.randf_range(float(ww[0]), float(ww[1]))
 		wander_target = w.buildings.work_point(sb, w.rng)
 		return
-	_step_toward(pos, wander_target, minf(float(su.work_speed_construction_px_h) * dt, d))
+	var moved := minf(float(su.work_speed_construction_px_h) * dt, d)
+	_step_toward(pos, wander_target, moved)
+	_leave_prints(w, moved)
+
+
+# ---------------------------------------------------------------- air and turn-backs (spec 6.3, 8.5)
+
+## Only a being heading out or working may turn back; one already `returning` may not.
+func _can_turn_back() -> bool:
+	if returning:
+		return false
+	return state == "mining" or state == "work" or (state == "eva" and (after == "mine" or after == "work"))
+
+
+## Where a being walks home to: the door of its launch building (miners), the corridor end p1 on
+## the parent side (builders).
+func _home_door(w: SimWorld) -> Vector2:
+	if mine != null:
+		return mine.door
+	return w.buildings.get_building(int(job.building_id)).corridor.p1
+
+
+## Phase 6 item 4. Returns false if the being died (and was removed).
+func _air_tick(w: SimWorld, dt: float) -> bool:
+	air_h = float(air_h) - dt
+	if float(air_h) <= 0.0:
+		w._kill(self, "suffocated outside")
+		return false
+	if _can_turn_back():
+		var su: Dictionary = SimData.suits()
+		var dist := Vector2(x, y).distance_to(_home_door(w))
+		if float(air_h) < dist / float(su.eva_speed_px_h) + float(su.return_margin_h):
+			_turn_back(w, "low air")
+	return true
+
+
+## Walk straight home. A miner still digging takes a partial load (removed from the field); the
+## air log has a repeat guard, though `returning` means a second turn-back cannot occur.
+func _turn_back(w: SimWorld, reason: String) -> void:
+	var su: Dictionary = SimData.suits()
+	var home := _home_door(w)
+	returning = true
+	if reason == "low air":
+		w.stats.turn_backs_air += 1
+		if w.t - _low_air_logged_t > float(su.low_air_log_repeat_h) + SimWorld.STEP_EPS:
+			_low_air_logged_t = w.t
+			w._log("suit_low_air", "%s is turning back, low on air." % name, {"being_id": id})
+	else:
+		w.stats.turn_backs_exhausted += 1
+		w._log("exhausted", "%s is exhausted and heading home." % name, {"being_id": id})
+	if mine != null:
+		if state == "mining":
+			var pl: Array = SimData.resources().mining.partial_load
+			var site: Resources.Site = mine.site
+			load = w.rng.randf_range(float(pl[0]), float(pl[1]))
+			if site.kind == "ice":
+				load = w.take_ice(site, load)
+		after = "haul" if load > 0.0 else "enter"
+		if after == "enter":
+			mine = null
+	else:
+		after = "enter"
+		job = null
+	path = [home]
+	state = "eva"
+
+
+# ---------------------------------------------------------------- footprints (spec 8.5)
+
+## Adds the distance moved; every spacing_px the accumulator resets (not subtracts), the side
+## flips and a print is left offset perpendicular to the heading. Heavy: construction suit or load.
+func _leave_prints(w: SimWorld, moved: float) -> void:
+	var fp: Dictionary = SimData.suits().footprint
+	step_acc_px += moved
+	if step_acc_px < float(fp.spacing_px) - SimWorld.STEP_EPS:
+		return
+	step_acc_px = 0.0
+	foot_side = -foot_side
+	var h := float(heading)
+	var off := Vector2(-sin(h), cos(h)) * float(fp.side_offset_px) * float(foot_side)
+	w.resources.add_footprint(float(x) + off.x, float(y) + off.y, h, w.t, construction_suit or load > 0.0)
+
+
+# ---------------------------------------------------------------- mining (spec 6.4, 6.5, 8.3)
+
+func start_mining(w: SimWorld, site: Resources.Site) -> void:
+	mine = {"site": site, "door": w.buildings.get_building(building_id).door(float(w.buildings.cfg.tile_px)),
+			"home_id": building_id}
+	mine_intent = null
+	suit_up = true
+	state = "to_door"
+	wait_h = door_time(w.rng)
+
+
+## Spec 6.4 branch 3: cancel when no launch building or the field is dry; start mining if the
+## launch building is here; else hop toward it (no hop: cancel).
+func _resume_mine_intent(w: SimWorld) -> bool:
+	if mine_intent == null:
+		return false
+	var site: Resources.Site = mine_intent
+	var launch := w.resources.launch_for(site)
+	if launch == null or (site.kind == "ice" and site.amount <= 0.0):
+		mine_intent = null
+		return false
+	return _head_for_launch(w, site, launch, true)
+
+
+## Spec 6.4 branch 4. The chance is drawn only when sites exist, there is no mine, and oxygen
+## is above the gate; then choose_site.
+func _try_new_mining(w: SimWorld) -> bool:
+	var rs: Dictionary = SimData.resources()
+	if w.resources.ice_fields.is_empty() and w.resources.pits.is_empty():
+		return false
+	if mine != null or w.colony.oxygen <= float(rs.mine_attempt.o2_gate):
+		return false
+	var mw: Dictionary = rs.mine_will
+	var will := float(mw.steady) * _trait("steady") + float(mw.drive) * _trait("drive") \
+			+ float(mw.restless) * _trait("restless")
+	var need_max := maxf(0.0, maxf(1.0 - w.colony.ice / w.colony.ice_target(),
+			1.0 - w.colony.regolith / w.colony.regolith_target()))
+	var ma: Dictionary = rs.mine_attempt
+	if not w.rng.chance(float(ma.chance) * will * (float(ma.floor) + (1.0 - float(ma.floor)) * need_max)):
+		return false
+	var site := w.choose_site()
+	if site == null:
+		return false
+	var launch := w.resources.launch_for(site)
+	if launch == null:
+		return false
+	return _head_for_launch(w, site, launch, false)
+
+
+## Mine here if this is the launch building, else set the intent and hop toward it.
+func _head_for_launch(w: SimWorld, site: Resources.Site, launch: Buildings.Building, resuming: bool) -> bool:
+	if launch.id == building_id:
+		start_mining(w, site)
+		return true
+	var hop := w.buildings.next_hop(building_id, launch.id)
+	if hop == 0:
+		if resuming:
+			mine_intent = null
+		return false
+	mine_intent = site
+	corridor_id = hop
+	state = "to_door"
+	wait_h = door_time(w.rng)
+	return true
+
+
+## Spec 6.5 for miners, at the building door: spend colony oxygen, fill the tank, walk out.
+func _suit_up_miner(w: SimWorld) -> void:
+	var su: Dictionary = SimData.suits()
+	var rm: Dictionary = SimData.resources().mining
+	w.colony.oxygen = maxf(0.0, w.colony.oxygen - float(su.fill_colony_o2))
+	suit_up = false
+	construction_suit = false
+	var site: Resources.Site = mine.site
+	var door: Vector2 = mine.door
+	air_h = float(su.tank_h)
+	x = door.x
+	y = door.y
+	w.stats.mining_trips += 1
+	var arrive := _field_point(w, site, rm.arrive_radius_frac)
+	heading = (arrive - door).angle()
+	state = "eva"
+	after = "mine"
+	path = [door, arrive]
+
+
+## A point inside the field: angle, then radius fraction (y squashed), in that draw order.
+func _field_point(w: SimWorld, site: Resources.Site, frac_range: Array) -> Vector2:
+	var rm: Dictionary = SimData.resources().mining
+	var ang := w.rng.randf_range(0.0, TAU)
+	var frac := w.rng.randf_range(float(frac_range[0]), float(frac_range[1]))
+	return Vector2(site.x + cos(ang) * site.r * frac,
+			site.y + sin(ang) * site.r * frac * float(rm.wander_y_scale))
+
+
+## Spec 8.3: wander inside the field; at the end of the shift or when the ice is gone, haul.
+func _mining_step(w: SimWorld, dt: float) -> void:
+	var rm: Dictionary = SimData.resources().mining
+	var site: Resources.Site = mine.site
+	work_left_h -= dt
+	if work_left_h <= 0.0 or (site.kind == "ice" and site.amount <= 0.0):
+		_end_mining(w)
+		return
+	if wait_h > 0.0:
+		wait_h -= dt
+		return
+	var pos := Vector2(x, y)
+	var d := pos.distance_to(wander_target)
+	if d < float(rm.reach_px):
+		var ww: Array = rm.wander_wait_h
+		wait_h = w.rng.randf_range(float(ww[0]), float(ww[1]))
+		wander_target = _field_point(w, site, rm.wander_radius_frac)
+		return
+	var moved := minf(float(SimData.suits().work_speed_mining_px_h) * dt, d)
+	_step_toward(pos, wander_target, moved)
+	_leave_prints(w, moved)
+
+
+## Yield = U(range) x (0.7 + 0.6 drive) x (0.55 + energy/220), energy read after this step's drain.
+func _end_mining(w: SimWorld) -> void:
+	var rm: Dictionary = SimData.resources().mining
+	var ef: Dictionary = _cfg().effort
+	var site: Resources.Site = mine.site
+	var yr: Array = rm.yield_ice if site.kind == "ice" else rm.yield_regolith
+	var amount := w.rng.randf_range(float(yr[0]), float(yr[1])) \
+			* (float(rm.drive_base) + float(rm.drive_coef) * _trait("drive")) \
+			* (float(ef.energy_base) + energy / float(ef.energy_divisor))
+	if site.kind == "ice":
+		amount = w.take_ice(site, amount)
+	load = amount
+	state = "eva"
+	after = "haul"
+	path = [Vector2(mine.door)]
