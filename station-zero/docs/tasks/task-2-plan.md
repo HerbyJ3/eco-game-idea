@@ -104,3 +104,8 @@ Approved at revision 3. Harness nits to fix when the showcase setups are built:
 2. Lamp shots at exactly 19:00 are unreliable, because `--hour` lands within ±0.025 h. Use 19.5, or set `t` directly. S-11 needs the same fix.
 3. Texture headroom is about 3.6 MB under 48 MB. Adjust once the real manifest sizes exist.
 4. `--until` runs after `--steps`.
+
+## Pipeline notes (steps 5-8)
+- Selection outline: the PNG outline mask is clipped by the tight crop. The view draws the selection outline from the sprite's alpha at runtime (a dilation or offset pass in a shader), so outlines are never boxes. The outline PNGs remain only as a fallback.
+- The comms and archive placeholder windows are not detected, because the tint fails the blue test, so they don't glow at night. This is acceptable for placeholders. The real art fixes it.
+- The reactor accent mask includes the yellow hazard stripes, as the prototype rule does.

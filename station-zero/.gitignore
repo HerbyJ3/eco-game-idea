@@ -1,1 +1,4 @@
 .godot/
+assets/processed/**/*.import
+__pycache__/
+*.pyc

@@ -27,9 +27,13 @@
       "defringe_edge_r_minus_g_max": 20,
       "gray_bg_tolerance": 24,
       "wall_probe_points": 3,
+      "interior_corner_radius_px": 6,
       "pure_r_min": 200,
       "pure_b_min": 200,
-      "pure_g_max": 80
+      "pure_g_max": 80,
+      "pocket_mean_r_min": 190,
+      "pocket_mean_b_min": 160,
+      "pocket_mean_g_max": 90
     },
     "sheet": {
       "grid_snap_px": 256,
@@ -44,13 +48,15 @@
       "value_max": 0.95,
       "outline_value_max": 0.30,
       "min_changed_fraction": 0.95,
+      "min_component_px": 20,
       "roles": { "builder": "#d9733f", "curious": "#8d70d6", "social": "#3fb3c2", "tender": "#6cb85a" }
     },
     "door": {
       "fill_top_rgb": [20, 16, 22],
       "fill_bottom_rgb": [52, 44, 48],
       "rect_tolerance": 0.04,
-      "center_dark_luma_max": 90
+      "center_dark_luma_max": 90,
+      "measure": { "search_frac": 0.03, "min_edge_luma": 20, "peak_frac": 0.3, "side_trim_frac": 0.15, "min_size_frac": 0.5 }
     },
     "masks": {
       "luma_weights": [0.3, 0.59, 0.11],
