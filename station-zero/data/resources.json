@@ -23,6 +23,7 @@
     "arrive_radius_frac": [0.3, 0.8],
     "wander_radius_frac": [0.2, 0.8],
     "wander_y_scale": 0.7,
+    "reach_px": 0.6,
     "wander_wait_h": [0.6, 2]
   },
   "mine_will": { "steady": 0.45, "drive": 0.35, "restless": 0.2 },
