@@ -1,16 +1,18 @@
 {
   "schema": 1,
   "kinds": {
-    "reactor":    { "accent": "amber", "color": "#ffb347", "roof_color": "#5f5b57", "raw_exterior": "reactor_exterior.png",   "raw_interior": "reactor_interior.png",   "door_mode": "split",  "door_rect": [0.4211, 0.7496, 0.5802, 0.8706], "door_rect_provisional": false },
-    "habitat":    { "accent": "cyan",  "color": "#4ff0ff", "roof_color": "#d9d3c9", "raw_exterior": "habitat_exterior.png",   "raw_interior": "habitat_interior.png",   "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": false },
-    "workshop":   { "accent": "pink",  "color": "#ff4f7b", "roof_color": "#b8b0a4", "raw_exterior": "workshop_exterior.png",  "raw_interior": "workshop_interior.png",  "door_mode": "rollup", "door_rect": [0.323, 0.680, 0.677, 0.882],     "door_rect_provisional": true },
-    "green_room": { "accent": "none",  "color": "#8dff6a", "roof_color": "#5f8a63", "raw_exterior": "greenroom_exterior.png", "raw_interior": "greenroom_interior.png", "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": true },
-    "archive":    { "accent": "cyan",  "color": "#a98bff", "roof_color": "#a29ea3", "raw_exterior": "archive_exterior.png",   "raw_interior": "archive_interior.png",   "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": true },
-    "comms":      { "accent": "amber", "color": "#ffe066", "roof_color": "#c9c2b7", "raw_exterior": "comms_exterior.png",     "raw_interior": "comms_interior.png",     "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": true }
+    "reactor":    { "accent": "amber", "accent_placeholder": "amber", "color": "#ffb347", "roof_color": "#5f5b57", "raw_exterior": "reactor_exterior.png",   "raw_interior": "reactor_interior.png",   "door_mode": "split",  "door_rect": [0.4211, 0.7496, 0.5802, 0.8706], "door_rect_provisional": false },
+    "habitat":    { "accent": "cyan", "accent_placeholder": "cyan",  "color": "#4ff0ff", "roof_color": "#d9d3c9", "raw_exterior": "habitat_exterior.png",   "raw_interior": "habitat_interior.png",   "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": false },
+    "workshop":   { "accent": "pink", "accent_placeholder": "pink",  "color": "#ff4f7b", "roof_color": "#b8b0a4", "raw_exterior": "workshop_exterior.png",  "raw_interior": "workshop_interior.png",  "door_mode": "rollup", "door_rect": [0.323, 0.680, 0.677, 0.882],     "door_rect_provisional": true },
+    "green_room": { "accent": "none", "accent_placeholder": "none",  "color": "#8dff6a", "roof_color": "#5f8a63", "raw_exterior": "greenroom_exterior.png", "raw_interior": "greenroom_interior.png", "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": true },
+    "archive":    { "accent": "violet", "accent_placeholder": "cyan",  "color": "#a98bff", "roof_color": "#a29ea3", "raw_exterior": "archive_exterior.png",   "raw_interior": "archive_interior.png",   "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": true },
+    "comms":      { "accent": "cyan", "accent_placeholder": "amber", "color": "#ffe066", "roof_color": "#c9c2b7", "raw_exterior": "comms_exterior.png",     "raw_interior": "comms_interior.png",     "door_mode": "split",  "door_rect": [0.4362, 0.6895, 0.5627, 0.8714], "door_rect_provisional": true }
   },
   "pipeline": {
+    "raw_dirs": ["assets/raw", "../station-zero-handoff/assets/raw"],
+    "raw_ignore": ["old_pixel_habitat_test.png"],
     "building_width_px": 384,
-    "interior_width_px": 768,
+    "interior_width_px": 512,
     "character_cell_px": 128,
     "character_height_in_cell_px": 112,
     "character_pivot_px": [64, 120],
@@ -24,7 +26,10 @@
       "enclosed_min_px": 200,
       "defringe_edge_r_minus_g_max": 20,
       "gray_bg_tolerance": 24,
-      "wall_probe_points": 3
+      "wall_probe_points": 3,
+      "pure_r_min": 200,
+      "pure_b_min": 200,
+      "pure_g_max": 80
     },
     "sheet": {
       "grid_snap_px": 256,
@@ -53,8 +58,9 @@
       "windows": { "b_min": 130, "r_max": 100, "g_min": 55, "g_max": 175, "b_minus_g_min": 35, "color": [255, 205, 140] },
       "accent_cyan":  { "b_min": 185, "g_min": 150, "r_max": 150, "b_minus_r_min": 70, "color": [90, 230, 255] },
       "accent_amber": { "r_min": 200, "g_min": 100, "g_max": 215, "b_max": 120, "r_minus_b_min": 110, "color": [255, 175, 60] },
+      "accent_violet": { "r_min": 120, "r_max": 190, "b_min": 200, "g_max": 150, "color": [190, 150, 255] },
       "accent_pink":  { "r_min": 200, "g_max": 150, "b_min": 70, "b_max": 170, "r_minus_g_min": 90, "color": [255, 110, 140] },
-      "outline": { "radius_px": 5, "alpha_min": 100, "color": [255, 244, 222] },
+      "outline": { "radius_px": 5, "radius_ref_width_px": 384, "alpha_min": 100, "color": [255, 244, 222] },
       "ghost": { "color": [110, 205, 255], "alpha_scale": 0.75 },
       "gray": { "r_mul": 0.62, "r_add": 30, "g_mul": 0.64, "g_add": 32, "b_mul": 0.70, "b_add": 38 },
       "shadow_rgb": [28, 10, 4]
@@ -64,6 +70,33 @@
       "archive": { "base": "habitat", "tint_rgb": [170, 130, 230], "tint_strength": 0.35 },
       "interior": { "floor_color": "#2a272c", "tile_px": 48, "tile_alpha": 0.03, "bar_h_px": 10, "label_font_px": 28 },
       "min_unique_colors": 8
+    }
+  },
+  "optional": {
+    "raw_decals": "terrain_decals.png",
+    "raw_sleeping": "sheet_colonist_sleeping.png",
+    "decals": {
+      "grid": [2, 2],
+      "order": ["ice", "pit", "rocks", "crater"],
+      "width_px": 256,
+      "ice_width_over_r": 2.6,
+      "pit_width_over_w": 1.5,
+      "scatter_seed": 4242,
+      "scatter_cell_px": 64,
+      "rock_per_cell": 0.5,
+      "crater_per_cell": 0.06,
+      "rock_width_px": [3, 6],
+      "crater_width_px": [12, 24],
+      "clearance_building_px": 12,
+      "clearance_site_px": 20,
+      "rock_fallback_color": "#7a4a30",
+      "crater_fallback_color": "#4a2412"
+    },
+    "sleeping": {
+      "grid": [2, 2],
+      "poses": 4,
+      "cell_px": 160,
+      "pivot_px": [80, 80]
     }
   },
   "fit": {
@@ -113,7 +146,8 @@
     "ground_r_px": 2.6,
     "ground_alpha": 0.07,
     "ground_offset_px": 2.6,
-    "fade_s": 0.4
+    "fade_s": 0.4,
+    "visual_night_min": 1.0
   },
   "door": {
     "ease_rate_per_s": 4,
@@ -300,6 +334,7 @@
     "body_color": "#a89e92",
     "highlight_color": "#d4ccc0",
     "rib_color": "#887e73",
+    "unbuilt_color_fallback": "#e8d9a8",
     "unbuilt_alpha": 0.55,
     "unbuilt_dash_px": [2, 2],
     "unbuilt_line_w_px": 0.6
@@ -321,6 +356,9 @@
       "left_span": 0.55,
       "sparkle_count": 6,
       "sparkle_angle_step_rad": 1.7,
+      "sparkle_hash_mul": 37,
+      "sparkle_hash_mod": 10,
+      "sparkle_y_squash": 0.6,
       "sparkle_radius_frac": 0.5,
       "sparkle_threshold": 0.6,
       "sparkle_size_px": 0.8,
@@ -378,6 +416,7 @@
     "draw_calls_max": 150,
     "outside_sprite_pool_max": 120,
     "texture_memory_mb_max": 48,
+    "texture_memory_mb_expected": 44.2,
     "mipmap_overhead": 1.34,
     "frame_ms_info": 8.0,
     "population_test": 160,
