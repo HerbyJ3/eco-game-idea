@@ -71,7 +71,7 @@ func eq(actual: Variant, expected: Variant, msg: String = "") -> void:
 func near(actual: float, expected: float, eps: float, msg: String = "") -> void:
 	_checks += 1
 	if absf(actual - expected) > eps:
-		_fail("%s expected %.9f +/- %g, got %.9f" % [msg, expected, eps, actual])
+		_fail("%s expected %.9f +/- %s, got %.9f" % [msg, expected, str(eps), actual])
 
 
 func between(actual: float, lo: float, hi: float, msg: String = "") -> void:

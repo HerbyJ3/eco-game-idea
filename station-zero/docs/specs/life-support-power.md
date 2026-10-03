@@ -157,7 +157,7 @@ Work state (builder on site): `work_left_h = U(8, 16)` on arrival; wanders betwe
 Work points and the EVA arrival point (deviation from L1338, which keeps y near the rising wall seam for art): a uniform random point inside the building rectangle inset 5 px (`work_point_inset_px`) on every side. The seam is a view concern (Task 2).
 Waiting (phase 9): if a site has had no crew for more than 1 sol (`t - last_work_t > 1 sol + STEP_EPS`), log `waiting_for_builders`, repeat after 1 sol.
 ### Tests (tests/test_power.gd, tests/test_construction.gd)
-- Supply/draw: 1 reactor + habitat + workshop + green room = draw 11, supply 14, margin 3. Add a site: draw 13. Add archive and comms: draw 18 > 14, one non-reactor goes dark per step until draw <= 14.
+- Supply/draw: 1 reactor + habitat + workshop + green room = draw 11, supply 14, margin 3. Add a site: draw 13. Add archive and comms on top of the site: draw 18 > 14 (16 without the site), one non-reactor goes dark per step until draw <= 14.
 - Over-limit shorts exactly one non-reactor building per step, never a reactor, never a site; with no candidates nothing happens.
 - Newest-vs-random (corrected): P(newest) = 0.6 + 0.4/n. With n = 10 candidates and 1,000 seeded trials the newest fraction is in 0.60..0.68 (expected 0.64); with n = 4 it is in 0.65..0.75 (expected 0.70).
 - Re-online: an offline habitat (draw 3) with draw 8, supply 14: 8 + 3 = 11 <= 13.3 and hold passed -> online; at draw 11 (11 + 3 = 14 > 13.3) -> stays offline; at 60 steps after a short -> stays offline, at 61 -> online; ascending id order with two offline; only one re-online per step.
