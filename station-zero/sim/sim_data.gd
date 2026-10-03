@@ -36,3 +36,15 @@ static func persona() -> Dictionary:
 
 static func sim() -> Dictionary:
 	return load_json("sim.json")
+
+
+static func colony() -> Dictionary:
+	return load_json("colony.json")
+
+
+static func buildings() -> Dictionary:
+	return load_json("buildings.json")
+
+
+static func beings() -> Dictionary:
+	return load_json("beings.json")

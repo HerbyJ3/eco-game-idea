@@ -7,7 +7,17 @@ var rng: SimRng
 var clock: Clock
 var sky: MarsSky
 var persona: Persona
+var buildings: Buildings
+var beings: Array[Being] = []
+var colony: Colony
 var t: float
+var step_index := 0
+## Event log, newest last, capped at colony.log_cap. Entries: {t, sol, kind, text, being_id?}.
+var log: Array = []
+## Run-wide counters (spec section 16). Never derived from the log.
+var stats: Dictionary = {}
+var _next_being_id := 1
+var _log_cap: int
 ## Earth-born founders: [{born, lon, chart, persona}]. Charts stay inside the sim.
 var founders: Array = []
 var fixed_step: float
@@ -17,7 +27,9 @@ var _accum := 0.0
 const STEP_EPS := 1e-9
 
 
-func _init(seed_in: Variant = null) -> void:
+## `options.blank = true` builds an empty world (no founders) for tests, which then use
+## add_building, add_being and direct field writes.
+func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	var cfg := SimData.sim()
 	rng = SimRng.new(int(seed_in) if seed_in != null else int(cfg.default_seed))
 	max_steps_per_advance = int(cfg.max_steps_per_frame)
@@ -26,7 +38,74 @@ func _init(seed_in: Variant = null) -> void:
 	persona = Persona.new()
 	fixed_step = cfg.fixed_step_hours
 	t = clock.start_hour
-	_create_founders()
+	buildings = Buildings.new()
+	colony = Colony.new(beings, buildings, rng, clock.sol_h)
+	_log_cap = int(SimData.colony().log_cap)
+	_init_stats()
+	if not options.get("blank", false):
+		_create_founders()
+		_log("founders_landed", "%d founders landed." % founders.size())
+
+
+func _init_stats() -> void:
+	stats = {
+		"births": 0,
+		"deaths": {"air": 0, "thirst": 0, "hunger": 0, "suffocated_outside": 0, "other": 0},
+		"deaths_list": [],
+		"deaths_unexplained": 0,
+		"shorts": 0, "reonlines": 0, "mining_trips": 0, "turn_backs_air": 0,
+		"turn_backs_exhausted": 0, "builds_started": 0, "builds_finished": 0,
+		"need_regolith": 0, "waiting_for_builders": 0, "ice_dry": 0, "scouts_found": 0,
+		"founder_role_miss": 0, "births_at_capacity": 0, "cooldown_violations": 0,
+	}
+
+
+## Elapsed sols since start_hour; sol 0 is the first (spec section 3).
+func sol() -> int:
+	return int(floor((t - clock.start_hour + STEP_EPS) / clock.sol_h))
+
+
+func _log(kind: String, text: String, extra: Dictionary = {}) -> void:
+	var e := {"t": t, "sol": sol(), "kind": kind, "text": text}
+	e.merge(extra)
+	log.append(e)
+	if log.size() > _log_cap:
+		log.pop_front()
+
+
+## Test seam: adds a building (finished by default) and returns its id.
+func add_building(kind: String, tx: int = 0, ty: int = 0, built: float = 1.0) -> int:
+	return buildings.add(kind, tx, ty, built).id
+
+
+func set_offline(building_id: int, offline: bool) -> void:
+	var b := buildings.get_building(building_id)
+	b.offline = offline
+	b.offline_since = t if offline else null
+
+
+## Test seam: a neutral-persona being placed in a building, energy drawn from the world rng.
+func add_being(building_id: int, role: String = "builder") -> Being:
+	var b := Being.new()
+	b.id = _next_being_id
+	_next_being_id += 1
+	b.persona = Being.flat_persona(role)
+	b.role = role
+	b.name = Being.make_name(rng)
+	b.born_t = t
+	var e: Array = SimData.beings().energy.start
+	b.energy = rng.randf_range(float(e[0]), float(e[1]))
+	b.building_id = building_id
+	beings.append(b)
+	return b
+
+
+func _kill(b: Being, cause: String) -> void:
+	beings.erase(b)
+	var key := cause.replace(" ", "_")
+	stats.deaths[key] = int(stats.deaths.get(key, 0)) + 1
+	stats.deaths_list.append({"t": t, "sol": sol(), "being_id": b.id, "name": b.name, "cause": cause})
+	_log("died", "%s died (%s)." % [b.name, cause], {"being_id": b.id, "cause": cause})
 
 
 func _create_founders() -> void:
@@ -52,5 +131,19 @@ func advance(hours: float) -> int:
 	return steps
 
 
+## One fixed step. Phase order: spec section 5 (phases not yet built are absent).
 func step() -> void:
 	t += fixed_step
+	step_index += 1
+	colony.step_stocks(fixed_step)
+	for w in colony.air_food_warnings(t):
+		_log(w.kind, w.text)
+	for w in colony.drain_ice(t, fixed_step):
+		_log(w.kind, w.text)
+	var death := colony.shortage_check(fixed_step)
+	if not death.is_empty():
+		_kill(death.victim, death.cause)
+	var silent := colony.pop() == 0
+	if silent and not colony.extinct:
+		_log("colony_silent", "The colony has fallen silent.")
+	colony.extinct = silent
