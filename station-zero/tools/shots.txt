@@ -1,0 +1,4 @@
+# name | args for tools/shot.gd (--out is added by shots.sh)
+landing_dawn  | --seed 42 --steps 0 --hour 6 --zoom 2
+landing_night | --seed 42 --steps 0 --hour 23 --zoom 2
+sol20_seed42  | --seed 42 --steps 9864 --hour 12 --zoom 2
