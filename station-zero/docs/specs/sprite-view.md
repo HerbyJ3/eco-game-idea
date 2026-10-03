@@ -24,8 +24,8 @@ Per being: `id`, `role` (`builder`, `social`, `curious`, `tender`), `earth_born`
 Per building: `id`, `kind`, `tx`, `ty`, `tw`, `th`, `built` (0..1), `offline`, `door(tile_px)` = `((tx + tw/2) x tile_px, (ty + th) x tile_px)` (bottom centre of the footprint; `tile_px` = 8 from `buildings.json`), corridor (`p1`, `p2`, `len`; a corridor has no `built` of its own, the view uses the **owning building's** `built`).
 World: `t`, `w.clock.mars_hour(w.t)` in [0, 24), `buildings.site`, `resources.ice_fields` (`x`, `y`, `r`, `amount`, `start`), `resources.pits` (`x`, `y`, `r`, `dug`), `resources.footprints` (`x`, `y`, `heading`, `t`, `heavy`).
 **A9**: beings inside a building have no `x`, `y`. Interior positions are invented by the view (section 7.3), cosmetic, deterministic by being id, never fed back. Beings in `transit` are drawn in the corridor at `p1 + (p2 - p1) x s` with `s = transit_t` if `from_a`, else `1 - transit_t` (proto L1095-1098).
-Mars hour for light is `w.clock.mars_hour(w.t)`. The sim's **night** (`beings.night`: 21.5 to 5.5) drives `lamp_on`; the light curve of section 5.1 is the prototype's visual curve (fully dark from 19 to 5).
-**Owner decision (Herby, 2026-10-03): helmet lamps come on when the screen gets dark.** The view lamp target is `lamp_on(w)` OR (being outside AND visual night factor `night >= art.lamp.visual_night_min` 1.0). On the section 5.1 curve `night` is exactly 1 for 19:00 up to and including 05:00, so lamps are on from 19:00 until 05:00 and fade off just after. The sim's `lamp_on` stays the sim authority and still turns lamps on at 21.5 to 5.5 (always inside the visual window, so the OR adds only 19:00 to 21.5 and the 05:00 edge). Aligning the sim's night with the visual night is a Task 3 candidate; `sim/` is untouched in Task 2.
+Mars hour for light is `w.clock.mars_hour(w.t)`. The sim's **night** (`beings.night`: 21.5 to 5.5) drives `lamp_on`; the light curve of section 5.1 is a separate visual curve whose full-dark window (21:30 to 05:30) is exactly the sim's night.
+**Owner decision (Herby, 2026-10-03), final day/night schedule:** "from 19:00 the screen starts a slow transition to dark; by 21:30 it gets dark. At 19:00 the lamp can start with a low-light version, then at 21:30 full brightness." Concretely, every time is in `art.json`: full day until 19:00 (`light.dusk_start_h`); a slow ramp to full dark from 19:00 to 21:30 (`light.dark_start_h`, which is when the sim's night begins); full dark until 05:30 (`light.dark_end_h`, when the sim's night ends); a slow ramp back to full day from 05:30 to 07:00 (`light.day_start_h`). **The dawn ramp is the coordinator's mirror of the owner's dusk and is an assumption to confirm with the owner.** Window glow, accents and the day, dusk and night tints all follow the same night factor. Helmet lamps (beings outside): intensity 1.0 whenever the sim's `lamp_on(w)` is true (21:30 to 05:30); otherwise `art.lamp.low` 0.3 + (1 - low) x ramp across the 19:00 to 21:30 ramp (low at 19:00, 1.0 at 21:30), and across the 05:30 to 07:00 ramp it falls from 1.0 to 0 (off at 07:00); 0 in daytime. Exact formula in 4.4. Aligning anything else in the sim's night is out of scope; `sim/` is untouched in Task 2.
 
 ## 3. Pipeline outputs
 Command: `python3 tools/build_all.py` (raw to processed, one command, byte-identical on a second run). Raw inputs in `assets/raw/`, outputs in `assets/processed/`. Pillow only; Lanczos for every resize; no random numbers anywhere in the pipeline.
@@ -120,7 +120,7 @@ View model = plain data in, plain data out; no Node, no sim write. Contract name
 
 ### 4.1 Fit rule (owner decision)
 `fit_sprite(footprint, sprite_size, pivot_norm)`. Footprint rect F = `(tx x 8, ty x 8, tw x 8, th x 8)` px, expanded by `fit.box_pad_px` 0. Scale `s = min(F.w / sprite.w, F.h / sprite.h)` (one scale for both axes, never stretched). Size = `(sprite.w x s, sprite.h x s)`. Place the pivot at `(F.x + F.w/2, F.y + F.h)` (bottom edge centre = the sim door point). If `fit.clamp_inside` is true, shift horizontally so the sprite stays inside F (the door x may differ from 0.5 by under 1%). Result: the sprite never leaves F (tolerance `fit.epsilon_px` 0.001) and its door x equals the sim door x within the clamp. Leftover space (top, or both sides) is the foundation pad: F filled with `fit.pad_color` `#6f6157` at alpha 0.6, corner radius 2 px, drawn under shadows. Example: habitat 13x9 tiles is F 104x72; sprite 384x244 gives s = min(0.2708, 0.2951) = 0.2708, drawn 104x66, 6 px of pad above.
-Side effects to check on shots s02, s06 and s07: (1) a 10x10 footprint (80x80) draws the same sprite at 80x51, so the pad is about 29 px tall, 36% of the footprint; (2) the drawn door sits about 8 px (world) above the sim door line, because the door rect's bottom is at about 0.87 of the sprite height and the apron fills the rest; beings leaving the door appear on the apron, not inside the door frame.
+Side effects to check on shots s02, s07 and s08: (1) a 10x10 footprint (80x80) draws the same sprite at 80x51, so the pad is about 29 px tall, 36% of the footprint; (2) the drawn door sits about 8 px (world) above the sim door line, because the door rect's bottom is at about 0.87 of the sprite height and the apron fills the rest; beings leaving the door appear on the apron, not inside the door frame.
 The same transform draws all of `base`, the masks, ghost, gray, outline and shadow, and the door rect: `door_world = origin + door_rect x size`. The footprint rect stays the logic rectangle (tap hit test, site stakes, work area).
 Interiors fit inside the **exterior sprite rect** with the same rule (pivot `(interiors.<kind>.door[0], 1.0)` at the exterior sprite's bottom centre). Aspect ratios differ, so the interior may leave a pad strip; interior slots (normalized to the interior image) transform with it.
 Sim sizes are 10..14 x 8..10 tiles (aspect 1.0 to 1.75) against a roughly 1.57 art aspect: the limiting side changes with the rect; this replaces the "stretch up to 25%" resolution of plan A4.
@@ -146,25 +146,32 @@ Sheet by `suit_kind`: `none` = jumpsuit recolored by `role`; `eva` = eva; `const
 | `moving` | `walk_front_k`, `walk_back_k`, or `walk_side_k` by facing, k from section 4.3 | transit and interior walks included |
 | otherwise | `idle_front` (`idle_side` is used only inside the dig alternation) | construction suit uses its `idle_front` |
 Scale: `colonist.height_px` 7.6 world px for Earth-born; `earth_born == false` multiplies by `colonist.mars_born_scale` 1.1 (8.36 px). The pivot (feet) stays on the position, so a Mars-born being grows upward only; shadow ellipse (`colonist.shadow`: rx 1.8, ry 0.55, dy 0.15 px, alpha 0.33, colour `#1e0a04`) and lamp radii scale with it. Sprite scale = `height_px x born_factor / character_height_in_cell_px`. Inside an open building the being is drawn at `colonist.interior_scale` 1.9 x its normal size (the interior art is drawn at human scale, a bunk is 2.4x a sleeper otherwise).
-Helmet lamp: when the lamp target (below) is on and the being is outside with suit not `none`, an additive glow at the frame's `lamp_anchor_px` (mirrored with the sprite): outer disc `lamp.outer_r_px` 2.2 at alpha 0.22 `#fff1cf`, core `lamp.core_r_px` 0.55 at alpha 0.95 white, ground pool `lamp.ground_r_px` 2.6 at alpha 0.07, offset `lamp.ground_offset_px` 2.6 px in the facing direction at the feet. Intensity ramps with `lamp.fade_s` 0.4 s toward the **lamp target** = `lamp_on(w)` OR (being outside AND `night >= lamp.visual_night_min` 1.0 on the 5.1 curve), the owner decision of section 2 (lamps on from 19:00 to 05:00 inclusive, plus the sim's own 21.5 to 5.5 window). Proto L1609-1613 drew the lamp when `night > 0.15` scaled by the continuous night factor; the port uses the boolean target with a 0.4 s fade. Dropped from the prototype: the mining and weld glints (proto L1608 and L1614, random bright flashes while digging or welding); the weld arc flash of 5.6 and dig dust cover them.
+Helmet lamp: when the lamp target (below) is on and the being is outside with suit not `none`, an additive glow at the frame's `lamp_anchor_px` (mirrored with the sprite): outer disc `lamp.outer_r_px` 2.2 at alpha 0.22 `#fff1cf`, core `lamp.core_r_px` 0.55 at alpha 0.95 white, ground pool `lamp.ground_r_px` 2.6 at alpha 0.07, offset `lamp.ground_offset_px` 2.6 px in the facing direction at the feet. The glow alpha terms above are multiplied by the lamp intensity `lamp_level`, which eases toward its target with `lamp.fade_s` 0.4 s (smoothing the step at 19:00 and at on/off edges). **Target** (owner decision, section 2), with `N` the night factor of 5.1 and `h` the Mars hour: 0 for a being inside; else 1.0 if `lamp_on(w)`; else `lamp.low + (1 - lamp.low) x N` for 19 <= h < 21.5 (0.3 at 19:00, 1.0 at 21:30); else `N` for 5.5 <= h < 7 (1.0 at 05:30, 0 at 07:00); else 0. Values: 18.99 gives 0, 19.0 gives 0.3, 20.25 gives 0.65, 21.5 gives 1.0, 2.0 gives 1.0, 5.5 gives 1.0, 6.25 gives 0.5, 7.0 gives 0. Proto L1609-1613 drew the lamp when `night > 0.15` scaled by the continuous night factor; the port adds the low-light start and the sim's `lamp_on` as the full-brightness rule. Dropped from the prototype: the mining and weld glints (proto L1608 and L1614, random bright flashes while digging or welding); the weld arc flash of 5.6 and dig dust cover them.
 
 ## 5. Buildings: doors, light, offline, construction, sparks
 ### 5.1 Light curve (proto L1063-1065, L1075)
 `light(h)` with `h` = Mars hour:
-- `L(h)` = 0 if `h < 5` or `h >= 19`; `(h - 5)/2` for 5 <= h < 7; 1 for 7 <= h < 17; `(19 - h)/2` for 17 <= h < 19 (`light.dawn_h` [5, 7], `light.dusk_h` [17, 19]).
-- `dusk(h)` = max(0, 1 - |h - 6.2| / 1.3, 1 - |h - 17.8| / 1.3) (`light.dusk_center_h`, `light.dusk_half_width_h`).
-- `night = 1 - L`.
-Full-screen multiply tint layers, in this order: day `#ffe6cc` at alpha 0.18 x L; dusk `#7e98dc` at alpha 0.42 x dusk (skipped when dusk is 0); night `#262b52` at alpha 0.86 x night. Expected values, checked by T-L1:
-| h | L | dusk | night |
+Owner schedule (section 2), replacing the prototype's 5/7/17/19 curve. The **night factor** `N(h)` (0 = full day, 1 = full dark):
+- `N = 0` for `day_start_h` 7.0 <= h <= `dusk_start_h` 19.0 (full day through 19:00 inclusive; the ramp starts just after);
+- `N = (h - 19) / (21.5 - 19)` for 19 < h < `dark_start_h` 21.5 (slow dusk ramp, linear);
+- `N = 1` for h >= 21.5 or h <= `dark_end_h` 5.5 (full dark, the sim's night);
+- `N = (7 - h) / (7 - 5.5)` for 5.5 < h < 7 (slow dawn ramp; **the dawn ramp is an assumption to confirm with the owner**).
+- `L = 1 - N` (daylight); `dusk = dusk_bump_gain x N x (1 - N)` = 4 N (1 - N), a blue bump that peaks (1.0) mid-ramp and is 0 at full day and full dark.
+Full-screen multiply tint layers, in this order: day `#ffe6cc` at alpha 0.18 x L; dusk `#7e98dc` at alpha 0.42 x dusk (skipped when dusk is 0); night `#262b52` at alpha 0.86 x N. Windows, accents, door strip, door glow and corridor lamps use the same `N`. Expected values, checked by T-L1:
+| h | N | L | dusk |
 | --- | --- | --- | --- |
-| 3 | 0 | 0 | 1 |
-| 4 | 0 | 0 | 1 |
-| 5 | 0 | 0.076923 | 1 |
-| 6 | 0.5 | 0.846154 | 0.5 |
-| 12 | 1 | 0 | 0 |
-| 18 | 0.5 | 0.846154 | 0.5 |
-| 19 | 0 | 0.076923 | 1 |
-| 21 | 0 | 0 | 1 |
+| 3 | 1 | 0 | 0 |
+| 5.5 | 1 | 0 | 0 |
+| 6 | 0.666667 | 0.333333 | 0.888889 |
+| 6.25 | 0.5 | 0.5 | 1 |
+| 7 | 0 | 1 | 0 |
+| 12 | 0 | 1 | 0 |
+| 18.99 | 0 | 1 | 0 |
+| 19 | 0 | 1 | 0 |
+| 20.25 | 0.5 | 0.5 | 1 |
+| 21 | 0.8 | 0.2 | 0.64 |
+| 21.5 | 1 | 0 | 0 |
+| 23 | 1 | 0 | 0 |
 Shadow vector: `dx = clamp((h - 12)/6, -1.4, 1.4) x 9` px, `dy = -6` px, alpha `0.32 x L`. Building shadow = the shadow mask drawn at offset `(dx, dy x 0.6)` and alpha `shadow.alpha x L x 1.4`; corridor shadow offset scaled 0.4, colour `#320e04`. At h = 12 dx is 0; at 6 it is -9; at 18 it is +9; at 4 it is -12.0 (not yet clamped: -1.333 x 9); at 3 it clamps to -12.6 (-1.4 x 9).
 
 ### 5.2 Doors (proto L1040-1060)
@@ -302,8 +309,8 @@ Godot tests in `tests/test_view_model.gd` and `tests/test_assets_import.gd` (run
 - **T-W2 Interpolation**: render position is the lerp of the last two samples; with no new sample it holds the last.
 - **T-P1 Pose table**: one row per case of 4.4 (state, suit_kind, load, wait_h, after, returning, moving) to the expected `{sheet, frame, mirror, rotate}`; weld alternates at 6 Hz (frames at t = 0 and t = 1/12 s differ); dig alternates at 2 Hz; sleep uses `character.sleeping.<role>.<id mod 4>` unrotated when the manifest entry is real and the rotated `idle_front` (-90) when it is a placeholder; missing `idle_side` for construction falls back to `idle_front`.
 - **T-P2 Scale**: `earth_born == false` is exactly 1.1 x the Earth-born scale; the feet position is unchanged; interior scale 1.9 x.
-- **T-LAMP Lamp**: the target is `lamp_on` OR (outside AND `night >= 1.0`). With `lamp_on` false: at Mars hour 18.99 target off (night 0.995), 19.0 on, 23 on, 4.99 on, 5.0 on (night is exactly 1 at the curve edge), 5.01 off, 12 off. With `lamp_on` true (hour 21.5, 2) on. A being inside never glows, even at 23. Intensity reaches 1 after 0.4 s on and 0 after 0.4 s off; the glow is requested only for suit_kind eva or construction, at the frame's lamp anchor.
-- **T-L1 Light**: `L`, `dusk`, `night` equal the table in 5.1 at 3, 4, 5, 6, 12, 18, 19, 21 (1e-6) and the same values as the prototype formulas; tint alphas follow; shadow `dx` at 12, 6, 18, 4, 3 = 0, -9, 9, -12.0, -12.6 (the clamp case).
+- **T-LAMP Lamp**: target level for a being outside (lamp_on taken from the sim rule, true for hours >= 21.5 or < 5.5): 18.99 gives 0, 19.0 gives 0.3 (`lamp.low`), 20.25 gives 0.65 (midpoint), 21.0 gives 0.86, 21.5 gives 1.0, 23 gives 1.0, 2.0 gives 1.0, 5.5 gives 1.0, 6.25 gives 0.5 (midpoint of the falling ramp), 7.0 gives 0, 12 gives 0 (1e-6). A being inside gets 0 at every one of those hours. The level eased with `lamp.fade_s` 0.4 s reaches the target within 1% after 2 s and never overshoots; the glow is requested only for suit_kind eva or construction, at the frame's lamp anchor; glow alpha scales with the level.
+- **T-L1 Light**: `N`, `L`, `dusk` equal the table in 5.1 at every listed hour (1e-6); explicitly full day (`N` = 0) at 18.99 and at 7.0, the ramp starting after 19.0 (`N` at 19.01 is 0.004), full dark (`N` = 1) at 21.5 and at 5.5; `N` is monotone non-decreasing over 19 to 21.5 and non-increasing over 5.5 to 7; tint alphas follow (night tint 0.86 x N, day 0.18 x L, dusk 0.42 x dusk); window glow alpha at hour 20.25 is half of its value at 23 (same `N`); shadow `dx` at 12, 6, 18, 4, 3 = 0, -9, 9, -12.0, -12.6 (the clamp case).
 - **T-D1 Door**: open 0 stays 0 with no being; a miner in `to_door` with `suit_up` in this building sets want 1 (a builder with a `job` doing the same does not); an outside being with `suit_kind() == "eva"` and `building_id` = this building within 17.9 px of `door(8)` sets want 1, at 18.1 px want 0, and still 1 on the return trip when `mine` is null (fixture with `mine = null`); a construction-suit builder never does; per 1/60 s frames the door reaches at least 0.95 within 44 frames (0.73 s) and returns below 0.05 within 44 frames; the result is identical for sim speeds 1x and 1000x (it depends only on dt); `dt` above 0.1 is clamped.
 - **T-D2 Door geometry**: `split` leaf offsets at open 0.5 are half-width x 0.5 x 0.92 each way; `rollup` offset at open 1 is 0.92 x door height up; offsets clip to the rect.
 - **T-A1 Accent pulse**: alpha at hour 12 stays between 0.08 and 0.30 over a pulse period and at hour 23 between 0.38 and 0.83 (before `vis`); the reactor pulse period is 2 pi / 1.8 s, others 2 pi / 1.1 s; two buildings with different ids are out of phase.
@@ -322,38 +329,44 @@ Godot tests in `tests/test_view_model.gd` and `tests/test_assets_import.gd` (run
 - **T-PERF**: at 160 beings the model update median is at most 2.0 ms; node count at most 300; texture memory at most 48 MB (hand estimate 44.2 MB); pool overflow 0; draw calls and node count printed.
 ### Shots (`tools/shots.sh`, `data/art.json shots.list`, approach in section 3 of the plan)
 - **S-1** every shot is 1280x720 and not uniform (at least 50 distinct colours).
-- **S-2** day vs night: mean luma of the window-mask region is higher in `s05` than `s02` by at least 20 levels; mean luma of the whole frame is lower at night.
-- **S-3** offline: in `s09` the offline habitat's accent-mask region is darker than the online reactor's.
-- **S-4** doors: pixel difference inside the door rect between `s06` and `s07` is above a threshold (leaves moved).
-- **S-5** construction: the opaque painted height is monotone over `s10` to `s14` (`s14` = full sprite minus scaffolding); `s11` has the stake colour `#e8d9a8`; `s12` contains the spark colours when crew >= 1.
-- **S-6** Mars-born: in `s17` the bounding box height ratio of the two beings is 1.1 +-0.03.
-- **S-7** footprints: `s19` count of footprint-coloured pixels above zero and the drawn-print counter equals the sim count.
-- **S-8** selection: `s20` has outline-colour pixels `(255, 244, 222)` hugging the habitat and no straight rectangle (a sampled outline pixel at the bounding-box corner of the footprint is absent).
-- **S-9** roof open: `s21`, `s22`, `s23` differ from `s02` inside the building rect and show beings; `s24` all six roofs open.
-- **S-10** placeholder: `s25` comms differs from `s02`'s comms and carries the red beacon colour at least half the sampled frames.
+- **S-2** day vs night: mean frame luma falls along `s04` (18.99) > `s05` (20.25) > `s06` (23); `s04` equals `s02` within noise (full day at 18.99); mean luma of the window-mask region is higher in `s06` than `s02` by at least 20 levels and at `s05` is between the two.
+- **S-3** offline: in `s10` the offline habitat's accent-mask region is darker than the online reactor's.
+- **S-4** doors: pixel difference inside the door rect between `s07` and `s08` is above a threshold (leaves moved).
+- **S-5** construction: the opaque painted height is monotone over `s11` to `s15` (`s15` = full sprite minus scaffolding); `s12` has the stake colour `#e8d9a8`; `s13` contains the spark colours when crew >= 1.
+- **S-6** Mars-born: in `s19` the bounding box height ratio of the two beings is 1.1 +-0.03.
+- **S-7** footprints: `s21` count of footprint-coloured pixels above zero and the drawn-print counter equals the sim count.
+- **S-8** selection: `s22` has outline-colour pixels `(255, 244, 222)` hugging the habitat and no straight rectangle (a sampled outline pixel at the bounding-box corner of the footprint is absent).
+- **S-9** roof open: `s23`, `s24`, `s25` differ from `s02` inside the building rect and show beings; `s26` all six roofs open.
+- **S-10** placeholder: `s27` comms differs from `s02`'s comms and carries the red beacon colour at least half the sampled frames.
+- **S-11** lamps: in `s17` (19:00, low) the lamp glow pixels are dimmer than in `s18` (23:00, full) by at least 20% in mean brightness at the lamp anchor.
 Shots are never a pass/fail gate except S-1; judgment is the main session and Herby.
 
 ## 12. Screenshot list (sim moments)
-Command (verified by the main session): `xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-driver opengl3 --path station-zero --script res://tools/shot.gd -- --seed 42 --hours 120 --zoom 3 --out path.png`; the whole list from `tools/shots.sh`. Not `--headless` (dummy renderer, no pixels). Output to `docs/shots/task-2/` with a manifest of (id, seed, sim hours reached, zoom, camera centre).
-Sources: `showcase` = a blank world with the six buildings of `art.showcase` (all built, online, doors at the bottom edges, no corridors), time set so `Clock.mars_hour` equals the shot's `mars_hour`; `run` = the real sim at the seed, stepped until `until` holds (up to `shots.max_run_hours` 400 h), the actual hour reached is recorded.
-| Id | Source and moment | Zoom | Shows |
+Harness (exists: `tools/shot.gd`, `tools/shots.sh`, `tools/shots.txt`, `tools/shot_setups.gd`). Command: `xvfb-run -a -s "-screen 0 1280x720x24" godot --rendering-driver opengl3 --path station-zero --script res://tools/shot.gd -- --seed 42 --steps 0 --hour 12 --zoom 3 --center 212,108 --out path.png [--size 1280x720] [--setup name]`. Arguments: `--seed`, `--steps` (fixed sim steps first), `--hour` (then step until `Clock.mars_hour` reaches H, at most one sol, never writes `t`), `--zoom`, `--center x,y` (world px), `--out`, `--size`, `--setup` (a name registered in `tools/shot_setups.gd`, applied before stepping). There is **no `--hours`**. Not `--headless` (dummy renderer, no pixels). `tools/shots.sh` runs the lines of `tools/shots.txt` (`name | args`); output `docs/shots/task-2/<name>.png`, one summary line per shot (seed, sol, Mars hour, steps, size).
+`data/art.json` `shots.list` is the data source for `tools/shots.txt`: each entry maps to the harness arguments (`setup`, `seed`, `steps`, `hour`, `zoom`, `center` resolved through `shots.centers` to numeric x,y, `size` from `shots.width_px` x `shots.height_px`). One sol is 493.19 steps (24.6597 h / 0.05 h), so "sol 3" is `--steps 1480`. Shots whose moment is a condition (a site at a given `built`, a being mining, a footprint count) use the entry's `until` (up to `shots.max_steps` 8,000). Four harness extensions are requested from the godot-engineer, none needed by the existing arguments: (1) `--until key=value` for the `until` predicates `site_built_ge`, `crew_ge`, `any_state`, `footprints_ge`; (2) symbolic `--center` values `site`, `footprints`, `being_outside` resolved from the world; (3) `--view key=value` for the view-side states in `view` (`debug_map`, `select`, `peek`, `art_set`), applied through a scene method such as `apply_shot_view` when present; (4) the named setups below. Until they land, those shots fall back to a fixed `--steps` count and the numeric centres.
+Setups (`tools/shot_setups.gd`): `founders` (exists), `showcase` (a blank world with the six buildings of `art.showcase`: all built and online, doors at the bottom edges, no corridors), `showcase_offline` (habitat and workshop offline), `showcase_door_habitat` and `showcase_door_workshop` (a miner in `to_door` with `suit_up` in that building, so the door opens), `showcase_suits` (one EVA miner, one construction-suit builder, one jumpsuit in a tunnel, near `showcase_beings`), `showcase_born_pair` (an Earth-born and a Mars-born EVA being of the same role, side by side), `showcase_interior_habitat` (6 beings inside, 3 asleep), `showcase_interior_comms` (4 beings), `showcase_interior_workshop` (3 beings). All set state through the sim's own API; the view reads it like any other state.
+| Id | Setup, moment | Zoom | Shows |
 | --- | --- | --- | --- |
-| s01 | run seed 42, 24 h, debug map view | 2.0 | HUD plus debug map still works |
-| s02, s03, s04, s05 | showcase at Mars hour 12, 6, 18, 23 | 2.6 | all six exteriors day, dawn, dusk, night |
-| s06, s07 | showcase hour 12, habitat door closed then open | 6.0 | split door |
-| s08 | showcase hour 12, workshop door open | 6.0 | roll-up door |
-| s09 | showcase hour 23, habitat and workshop offline | 2.6 | offline dark next to lit buildings |
-| s10 to s14 | run seed 42, first site (a reactor) at built 0.0, 0.30, 0.60 (crew at least 1), 0.90, 0.97 | 4.0 | stakes and ghost, slab and walls, paint and sparks, scaffold coming down |
-| s15, s16 | showcase hour 12 and 23, one EVA miner, one builder (construction suit), one jumpsuit in a tunnel | 6.0 | three suit kinds, lamps at night |
-| s17 | showcase hour 12, Earth-born and Mars-born side by side, same role | 6.0 | 1.1x |
-| s18 | run seed 42 until a being is in state `mining` | 3.0 | mining trip with dust |
-| s19 | run seed 42, sol 3 and at least 20 footprints | 2.5 | footprints |
-| s20 | showcase, habitat selected | 4.0 | silhouette outline |
-| s21, s22, s23 | showcase, habitat (6 beings), comms (4), workshop (3, placeholder interior unless generated) roof open | 4.0 | interiors and slots |
-| s24 | showcase at zoom 5.6, no selection | 5.6 | zoom cut |
-| s25 | showcase with `art_set: placeholder` | 2.6 | placeholder set |
-| s26, s27 | run 24 h at zoom 0.6; showcase reactor at zoom 6.0 | 0.6, 6.0 | camera limits |
-The `until` predicates are: `site_built_ge`, `crew_ge`, `any_state`, `sol_ge`, `footprints_ge`, `hours`.
+| s01 | founders, 480 steps, debug map on | 2.0 | HUD plus debug map still works |
+| s02 | showcase, hour 12 | 2.6 | all six exteriors, day |
+| s03 | showcase, hour 6.25 | 2.6 | mid dawn ramp |
+| s04 | showcase, hour 18.99 | 2.6 | still full day |
+| s05 | showcase, hour 20.25 | 2.6 | mid dusk ramp |
+| s06 | showcase, hour 23 | 2.6 | night, windows and accents lit |
+| s07, s08 | showcase, hour 12, habitat door closed; showcase_door_habitat, open | 6.0 | split door |
+| s09 | showcase_door_workshop, hour 12 | 6.0 | roll-up door |
+| s10 | showcase_offline, hour 23 | 2.6 | offline dark next to lit buildings |
+| s11 to s15 | founders seed 42, first site (a reactor) at built 0.0, 0.30, 0.60 (crew at least 1), 0.90, 0.97 | 4.0 | stakes and ghost, slab and walls, paint and sparks, scaffold coming down |
+| s16, s17, s18 | showcase_suits at hour 12, 19, 23 | 6.0 | three suit kinds; lamp off, low, full |
+| s19 | showcase_born_pair, hour 12 | 6.0 | 1.1x |
+| s20 | founders until a being is in state `mining` | 3.0 | mining trip with dust |
+| s21 | founders, 1480 steps and at least 20 footprints | 2.5 | footprints |
+| s22 | showcase, habitat selected | 4.0 | silhouette outline |
+| s23, s24, s25 | showcase_interior_habitat, _comms, _workshop, roof open (workshop placeholder interior unless generated) | 4.0 | interiors and slots |
+| s26 | showcase at zoom 5.6, no selection | 5.6 | zoom cut |
+| s27 | showcase with `art_set: placeholder` | 2.6 | placeholder set |
+| s28, s29 | founders 480 steps at zoom 0.6; showcase reactor at zoom 6.0 | 0.6, 6.0 | camera limits |
+The `until` predicates are: `site_built_ge`, `crew_ge`, `any_state`, `footprints_ge`.
 
 ## 13. Tunables (JSON key path under `data/art.json`, unit, starting value)
 `art.schema` (integer, 1) versions the file; a test fails if it is missing or not 1.
@@ -407,11 +420,12 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 | lamp.outer_r_px / outer_alpha / outer_color | px / alpha / hex | 2.2 / 0.22 / #fff1cf |
 | lamp.core_r_px / core_alpha / core_color | px / alpha / hex | 0.55 / 0.95 / #ffffff |
 | lamp.ground_r_px / ground_alpha / ground_offset_px / fade_s | px / alpha / px / s | 2.6 / 0.07 / 2.6 / 0.4 |
-| lamp.visual_night_min | night factor (1 = fully dark: 19:00 to 05:00 on the curve) | 1.0 |
+| lamp.low | lamp level at the start of the 19:00 ramp (0..1) | 0.3 |
 | door.ease_rate_per_s / max_dt_s / radius_px / travel_frac | 1/s / s / px / frac | 4 / 0.1 / 18 / 0.92 |
 | door.glow_min_open / glow_radius_frac / glow_alpha / glow_night_base / glow_color | frac / x / alpha / x / hex | 0.05 / 0.6 / 0.25 / 0.4 / #ffe2b0 |
-| light.dawn_h / dusk_h | Mars h | [5,7] / [17,19] |
-| light.dusk_center_h / dusk_half_width_h | Mars h | [6.2,17.8] / 1.3 |
+| light.dusk_start_h / dark_start_h | Mars h (full day until, then ramp to full dark at) | 19.0 / 21.5 |
+| light.dark_end_h / day_start_h | Mars h (full dark until, then ramp to full day at; dawn is an assumption) | 5.5 / 7.0 |
+| light.dusk_bump_gain | x (dusk = gain x N x (1 - N)) | 4 |
 | light.day_tint / dusk_tint / night_tint (color, alpha) | hex, alpha | #ffe6cc 0.18 / #7e98dc 0.42 / #262b52 0.86 |
 | light.shadow.dx_hour_divisor / dx_clamp / dx_scale_px / dy_px / alpha | h / x / px / px / alpha | 6 / 1.4 / 9 / -6 / 0.32 |
 | light.shadow.building_dy_scale / building_alpha_scale / corridor_scale / color | x / x / x / hex | 0.6 / 1.4 / 0.4 / #320e04 |
@@ -468,7 +482,8 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 | perf.outside_sprite_pool_max / texture_memory_mb_max / texture_memory_mb_expected / mipmap_overhead | count / MB / MB / x | 120 / 48 / 44.2 / 1.34 |
 | perf.frame_ms_info / population_test / model_frames_test | ms / beings / frames | 8.0 / 160 / 10000 |
 | showcase.buildings | tiles | six rects in the file |
-| shots.width_px / height_px / crop_scale / max_run_hours / list | px / px / x / h / list | 1280 / 720 / 2 / 400 / 27 shots |
+| shots.width_px / height_px / crop_scale / max_steps | px / px / x / sim steps | 1280 / 720 / 2 / 8000 |
+| shots.centers / shots.list | world px / entries | named centres / 29 shots |
 
 ## 14. Edge cases
 - `built` jumps (a site completes between refreshes): the view switches from the site draw to the finished draw in the same refresh; no scaffold remains. A site can never go backwards; if it does (a test fixture), the phases follow `built`.
@@ -486,18 +501,19 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 - Colonist carrying regolith shows the ice block frame (Q4).
 - Interiors for kinds with no art yet: placeholder (3.8); roof-open still works and shows the slots of `default` (or the `art.interiors.<kind>` override).
 - An optional raw (decals, sleeping poses) that appears later: the pipeline is rerun, the manifest flips to real, the view uses it with no code change.
-- A 10x10 footprint leaves a tall pad above the sprite and the drawn door sits about 8 px above the sim door line (4.1 side effects); judged on s02, s06, s07.
+- A 10x10 footprint leaves a tall pad above the sprite and the drawn door sits about 8 px above the sim door line (4.1 side effects); judged on s02, s07, s08.
 
 ## 15. Open questions, all decided (owner and coordinator)
 - **Q1** Keying: HANDOFF threshold for border-connected regions, plus near-pure magenta removed everywhere (3.4 rules 1 and 1b; P-3).
 - **Q2** Accents: real and placeholder class per kind (comms cyan / amber, archive violet / cyan, green room none); violet class added (3.6, P-7).
 - **Q3** `zoom_max` 6.0 accepted.
 - **Q4** Regolith load shows the ice block: accepted as a known limitation.
-- **Q5** `interior_scale` 1.9 is the starting value, to be judged on shots s21 to s23.
+- **Q5** `interior_scale` 1.9 is the starting value, to be judged on shots s23 to s25.
 - **Q6** Door rects: the pipeline measures each, falling back to the `art.json` rect with a warning (3.6, P-6).
 - **Q7** Interior slots by eye for habitat and comms, plus the `art.interiors.<kind>` override path (7.2).
-- **Q8** Owner decision (Herby): helmet lamps come on when the screen gets dark, 19:00 to 05:00 on the visual curve, OR the sim's `lamp_on` (section 2, 4.4, T-LAMP). Sim night alignment is a Task 3 candidate.
+- **Q8** Owner decision (Herby), final schedule: screen ramps to dark 19:00 to 21:30, lamps low at 19:00 and full at 21:30 (section 2, 4.4, 5.1, T-L1, T-LAMP). **Still to confirm with the owner: the mirrored dawn** (full dark to 05:30, ramp to full day by 07:00, lamps falling from 05:30 to off at 07:00), which is the coordinator's assumption.
 
 ## Changelog
 - 2026-10-03 draft by game-designer. Pending: code-reviewer sign-off against HANDOFF sections 2 and 6 and the cited prototype lines.
-- 2026-10-03 revision 2 (code-reviewer findings B1-B7 and 10 non-blocking, owner decisions Q1-Q8). B1 `pipeline.raw_dirs` and `raw_ignore`; B2 `art.optional` (decals, sleeping poses), presence rule, `raw_sha256`, P-13, P-14, P-15; B3 violet class and real/placeholder accent per kind, P-7 for every kind with an accent; B4 shadow dx at h=4 is -12.0, clamp case at h=3 is -12.6; B5 walk phase clamp without pose jump (deviation from proto L1446 noted); B6 `interior_width_px` 512, budget 48 MB with a 44.2 MB hand estimate; B7 keying rule 1 plus 1b (near-pure magenta everywhere, P-3). Non-blocking: field names (`door(tile_px)`, `w.clock.mars_hour(w.t)`, owning building's `built`), door rule on `suit_kind()` and `building_id` not `mine`, A-label sources, prototype citation fixes (door fill, sleeper offset, lamp threshold, dropped glints, sparkle squash and hash constants into art.json), fit side effects, deterministic accumulator emission and T-C2, interior outline radius scaling, unbuilt dash colour, `art.schema`, interiors override path, magenta-corner fallback, `pillow_version` in the manifest. Owner decision on lamps: on from 19:00 to 05:00 (`lamp.visual_night_min` 1.0) OR `lamp_on`.
+- 2026-10-03 revision 2 (code-reviewer findings B1-B7 and 10 non-blocking, owner decisions Q1-Q8). B1 `pipeline.raw_dirs` and `raw_ignore`; B2 `art.optional` (decals, sleeping poses), presence rule, `raw_sha256`, P-13, P-14, P-15; B3 violet class and real/placeholder accent per kind, P-7 for every kind with an accent; B4 shadow dx at h=4 is -12.0, clamp case at h=3 is -12.6; B5 walk phase clamp without pose jump (deviation from proto L1446 noted); B6 `interior_width_px` 512, budget 48 MB with a 44.2 MB hand estimate; B7 keying rule 1 plus 1b (near-pure magenta everywhere, P-3). Non-blocking: field names (`door(tile_px)`, `w.clock.mars_hour(w.t)`, owning building's `built`), door rule on `suit_kind()` and `building_id` not `mine`, A-label sources, prototype citation fixes (door fill, sleeper offset, lamp threshold, dropped glints, sparkle squash and hash constants into art.json), fit side effects, deterministic accumulator emission and T-C2, interior outline radius scaling, unbuilt dash colour, `art.schema`, interiors override path, magenta-corner fallback, `pillow_version` in the manifest. (The interim lamp rule of this revision, on from 19:00 to 05:00, is superseded by revision 3.)
+- 2026-10-03 revision 3 (owner's final light and lamp schedule). Light curve rewritten (5.1): full day through 19:00, linear ramp to full dark at 21:30 (sim night start), full dark until 05:30 (sim night end), ramp to full day at 07:00 (the dawn mirror is the coordinator's assumption, flagged for the owner). Night factor N drives tints, windows, accents; dusk tint is 4 N (1 - N). New `art.light` keys `dusk_start_h`, `dark_start_h`, `dark_end_h`, `day_start_h`, `dusk_bump_gain` replace the old dawn, dusk and centre keys. Lamps (4.4): 1.0 when `lamp_on`, else `lamp.low` 0.3 + 0.7 x N across 19:00 to 21:30, falling N across 05:30 to 07:00, 0 by day and inside; `lamp.visual_night_min` removed, `lamp.low` added. T-L1 and T-LAMP rewritten (18.99, 19.0, 20.25, 21.5, 2.0, 5.5, 6.25, 7.0, inside), shot S-11 added. Shot section reconciled with the existing harness (`--seed --steps --hour --zoom --center --out --size --setup`, no `--hours`): `shots.list` entries now use setup, steps, hour and numeric centres, `shots.max_run_hours` became `shots.max_steps`, 29 shots renumbered s01 to s29, four harness extensions and the named setups listed for the godot-engineer.
