@@ -92,3 +92,8 @@ Not done until: workshop, green room, the three suits and both interiors are imp
 3. Art stretched to sim rect sizes (A4) accepted, or lock sim size aspect (touches the sim, so not in this task).
 4. Screenshots are verified to work here; Herby should still look at the first sprite build on a real display (the llvmpipe render may differ slightly from a GPU).
 5. One shared face and hair for all jumpsuit colonists stays until new sheets exist.
+
+## Owner decisions (Herby, 2026-10-03)
+- **Missing art:** generate it now with Higgsfield Nano Banana 2, using the two style references, on a magenta background, batched. The art-director writes the prompts. The main session generates the images and saves them to assets/raw/, and they go through the same pipeline. Placeholders remain only as the fallback if an image fails.
+- **Fitting art:** each sprite is scaled to fit inside the building's footprint with its proportions kept, anchored at the door. Sprites are never stretched.
+- **Debug dot map:** kept, toggled by a key. The sprite view is the default.
