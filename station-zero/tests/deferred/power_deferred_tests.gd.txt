@@ -2,23 +2,8 @@
 ## Each needs behavior that lands in a later step. When that step is implemented, paste the function
 ## (and its helper) back into tests/test_power.gd, which provides _mk, _steps, _offline_ids and _stat.
 ##
-## - test_tired_being_with_no_online_habitat_sleeps_on_the_floor: needs sleep (go_sleep, state machine).
-##   MOVE INTO tests/test_power.gd IN STEP 6 (beings and energy).
 ## - test_offline_habitat_gives_no_births (with helper _birth_world and its online control): needs births
 ##   (spec section 10, world phase 7). MOVE INTO tests/test_power.gd IN STEP 9 (births and founders).
-
-func test_tired_being_with_no_online_habitat_sleeps_on_the_floor(t) -> void:
-	var w := _mk(1, ["workshop", "green_room", "comms"])  # draw 11: the habitat below never returns
-	var hab: int = w.add_building("habitat", 500, 0)
-	w.set_offline(hab, true)
-	var b := w.add_being(1, "social")
-	b.energy = 10.0
-	b.wait_h = 0.0
-	w.step()
-	t.eq(b.state, "sleep", "no online habitat: sleeps at once, on the floor")
-	t.eq(b.sleep_intent, false, "sleep_intent cleared on entering sleep")
-	t.check(w.buildings.get_building(hab).offline, "the habitat is still dark")
-
 
 ## Habitats with two beings each and every birth gate open (ice 60, food 110, oxygen 140, nets positive).
 func _birth_world(seed_in: int, habitat_online: bool) -> SimWorld:

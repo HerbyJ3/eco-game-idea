@@ -28,8 +28,8 @@ extends RefCounted
 ##    max_shorts_per_sol, max_offline_h, demand_over_steps, step_count.  Phase 11 samples them after phase 3, and
 ##    the sol counter resets on the first step with t - start_hour >= n x sol_hours - STEP_EPS (step 494 for sol 1).
 ##  - Helper-guarded: a missing method or key fails the check with a clear message instead of aborting the test.
-##  - The sleeper test places beings with direct writes (b.state = "sleep"); the floor-sleep and birth tests are parked in
-##    tests/deferred/power_deferred_tests.gd.txt until steps 6 and 9.
+##  - The sleeper test places beings with direct writes (b.state = "sleep"). The floor-sleep test moved here from the
+##    deferred file in step 6; the birth test is still parked in tests/deferred/power_deferred_tests.gd.txt until step 9.
 ##
 ## Placement: reactor is id 1, other buildings follow in the order given (ids 2, 3, ...), all far apart.
 
@@ -589,6 +589,19 @@ func test_sleepers_in_a_habitat_that_shorts_keep_sleeping(t) -> void:
 		for b in sleepers:
 			t.eq(b.state, "sleep", "seed %d: being %d still asleep" % [seed_in, b.id])
 			t.eq(b.building_id, homes[sleepers.find(b)], "seed %d: being %d stays in its habitat" % [seed_in, b.id])
+
+
+func test_tired_being_with_no_online_habitat_sleeps_on_the_floor(t) -> void:
+	var w := _mk(1, ["workshop", "green_room", "comms"])  # draw 11: the habitat below never returns
+	var hab: int = w.add_building("habitat", 500, 0)
+	w.set_offline(hab, true)
+	var b := w.add_being(1, "social")
+	b.energy = 10.0
+	b.wait_h = 0.0
+	w.step()
+	t.eq(b.state, "sleep", "no online habitat: sleeps at once, on the floor")
+	t.eq(b.sleep_intent, false, "sleep_intent cleared on entering sleep")
+	t.check(w.buildings.get_building(hab).offline, "the habitat is still dark")
 
 
 # ---------------------------------------------------------------- Good fortune (power multiplier)

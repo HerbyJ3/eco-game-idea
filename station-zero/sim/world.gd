@@ -76,6 +76,7 @@ func _init_stats() -> void:
 		"shorts_this_sol": 0, "max_shorts_per_sol": 0, "max_offline_h": 0.0,
 		"demand_over_steps": 0, "step_count": 0,
 		"sol_samples": 0, "reachable_ok_samples": 0,
+		"being_steps": 0, "asleep_being_steps": 0, "energy_sum": 0.0, "max_sleep_h": 0.0,
 	}
 
 
@@ -129,10 +130,39 @@ func _kill(b: Being, cause: String) -> void:
 
 func _create_founders() -> void:
 	var cfg: Dictionary = SimData.persona().founders
+	var bc: Dictionary = SimData.beings()
+	var layout: Array = bc.founders.layout
+	var homes := {}
+	for b in buildings.list:
+		if not homes.has(b.kind):
+			homes[b.kind] = b.id
 	for i in int(cfg.count):
-		var birth := sky.founder_birth(rng, cfg)
-		birth["persona"] = persona.persona_from(birth.chart)
+		# Redraw the whole founder birth until the persona's role matches the layout slot (A1).
+		var birth := {}
+		var matched := false
+		for k in int(bc.founders.role_retry_tries):
+			birth = sky.founder_birth(rng, cfg)
+			birth["persona"] = persona.persona_from(birth.chart)
+			if birth.persona.role == layout[i].role:
+				matched = true
+				break
+		if not matched:
+			stats.founder_role_miss += 1
 		founders.append(birth)
+		var b := Being.new()
+		b.id = _next_being_id
+		_next_being_id += 1
+		b.persona = birth.persona
+		b.role = birth.persona.role
+		b.earth_born = true
+		b.name = Being.make_name(rng)
+		b.born_t = birth.born
+		var es: Array = bc.energy.start
+		b.energy = rng.randf_range(float(es[0]), float(es[1]))
+		var iw: Array = bc.initial_wait_h
+		b.wait_h = rng.randf_range(float(iw[0]), float(iw[1]))
+		b.building_id = homes[layout[i].home]
+		beings.append(b)
 
 
 ## Advance by `hours` of sim time using whole fixed steps. Returns steps taken.
@@ -165,6 +195,7 @@ func step() -> void:
 	if scouting_enabled and resources.scout(fixed_step) != null:
 		stats.scouts_found += 1
 		_log("scouts_found", "Scouts found a new ice field.")
+	_update_beings()
 	var death := colony.shortage_check(fixed_step)
 	if not death.is_empty():
 		_kill(death.victim, death.cause)
@@ -173,6 +204,7 @@ func step() -> void:
 		_log("colony_silent", "The colony has fallen silent.")
 	colony.extinct = silent
 	_sample_power_stats()
+	_sample_being_stats()
 	if _sol_started:
 		stats.sol_samples += 1
 		if resources.reachable_ice_count() >= int(SimData.resources().scout.min_reachable):
@@ -233,3 +265,20 @@ func _sample_power_stats() -> void:
 	for b in buildings.list:
 		if b.offline and b.offline_since != null:
 			stats.max_offline_h = maxf(float(stats.max_offline_h), t - float(b.offline_since))
+
+
+## Phase 6: every being alive at the start of the phase, ascending id.
+func _update_beings() -> void:
+	for b in beings.duplicate():
+		if beings.has(b):
+			b.update(self, fixed_step)
+
+
+## Phase 11 (being part).
+func _sample_being_stats() -> void:
+	for b in beings:
+		stats.being_steps += 1
+		stats.energy_sum += b.energy
+		if b.state == "sleep":
+			stats.asleep_being_steps += 1
+			stats.max_sleep_h = maxf(float(stats.max_sleep_h), t - float(b.sleep_started_t))
