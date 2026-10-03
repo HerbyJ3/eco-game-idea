@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://view/main.gd" id="1"]
+[ext_resource type="Script" path="res://view/debug_map.gd" id="2"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -22,13 +23,43 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
 
-[node name="VBox" type="VBoxContainer" parent="Margin"]
+[node name="HBox" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="VBox" type="VBoxContainer" parent="Margin/HBox"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Clock" type="Label" parent="Margin/HBox/VBox"]
 layout_mode = 2
 
-[node name="Clock" type="Label" parent="Margin/VBox"]
+[node name="Colony" type="Label" parent="Margin/HBox/VBox"]
 layout_mode = 2
 
-[node name="Founders" type="Label" parent="Margin/VBox"]
+[node name="Power" type="Label" parent="Margin/HBox/VBox"]
 layout_mode = 2
+
+[node name="Site" type="Label" parent="Margin/HBox/VBox"]
+layout_mode = 2
+
+[node name="Beings" type="Label" parent="Margin/HBox/VBox"]
+layout_mode = 2
+
+[node name="Log" type="Label" parent="Margin/HBox/VBox"]
+layout_mode = 2
+
+[node name="Controls" type="Label" parent="Margin/HBox/VBox"]
+layout_mode = 2
+
+[node name="Map" type="Control" parent="Margin/HBox"]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("2")
