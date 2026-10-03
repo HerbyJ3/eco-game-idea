@@ -2,7 +2,7 @@ class_name Colony
 extends RefCounted
 ## Colony stocks, caps, targets, warnings and the shortage death timer.
 ## Spec: life-support-power.md sections 4, 5 and 9. Every number comes from data/colony.json.
-## Births (section 10) arrive in a later step; the birth fields are declared here already.
+## Birth rules (section 10.1) live here; the world draws the rng and creates the newborn.
 
 var oxygen: float
 var food: float
@@ -112,6 +112,55 @@ func drain_ice(t: float, dt: float) -> Array:
 		thirst_warn_t = t
 		out.append({"kind": "water_dry", "text": "The water has run dry."})
 	return out
+
+
+## Phase 7 timer: true (and the accumulator restarts) when a birth check is due.
+func birth_check_due(dt: float) -> bool:
+	birth_timer_h += dt
+	if birth_timer_h < float(cfg.birth.check_interval_h) - SimWorld.STEP_EPS:
+		return false
+	birth_timer_h = 0.0
+	return true
+
+
+func birth_capacity() -> int:
+	return int(cfg.birth.habitat_capacity) * _buildings.count_online("habitat") + int(cfg.birth.capacity_bonus)
+
+
+## Every birth gate except the chance, for a habitat whose `here` beings (inside, sleepers included)
+## are given. Uses the live population.
+func birth_gates_ok(habitat_id: int, here: Array, t: float) -> bool:
+	var bc: Dictionary = cfg.birth
+	var need := int(bc.min_beings_small_colony) if pop() < int(bc.small_colony_below) else int(bc.min_beings)
+	if here.size() < need:
+		return false
+	if not (ice > float(bc.gate_ice_above) and food > float(bc.gate_food_above) \
+			and oxygen > float(bc.gate_oxygen_above) and o2_net() > float(bc.gate_o2_net_above) \
+			and food_net() > float(bc.gate_food_net_above)):
+		return false
+	if pop() >= birth_capacity():
+		return false
+	return birth_cooldown_over(habitat_id, t)
+
+
+## A habitat that never had a birth is free (elapsed-since comparator, section 3).
+func birth_cooldown_over(habitat_id: int, t: float) -> bool:
+	return not last_birth_t.has(habitat_id) or t - float(last_birth_t[habitat_id]) > birth_cooldown_h() + SimWorld.STEP_EPS
+
+
+func birth_cooldown_h() -> float:
+	return float(cfg.birth.cooldown_sols) * sol_h
+
+
+## Chance of a birth per check: base + coef x mean (sociability + care) of `here` (1 if empty).
+func birth_chance(here: Array) -> float:
+	var warmth := 1.0
+	if not here.is_empty():
+		warmth = 0.0
+		for b: Being in here:
+			warmth += float(b.persona.traits.sociability) + float(b.persona.traits.care)
+		warmth /= here.size()
+	return float(cfg.birth.base_chance) + float(cfg.birth.warmth_coef) * warmth
 
 
 ## Phase 10. Returns {} or {victim: Being, cause: String}; the world removes and logs the victim.

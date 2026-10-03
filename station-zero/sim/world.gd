@@ -79,7 +79,7 @@ func _init_stats() -> void:
 		"demand_over_steps": 0, "step_count": 0,
 		"sol_samples": 0, "reachable_ok_samples": 0,
 		"hours_waiting_regolith": 0.0, "hours_site_no_crew": 0.0, "site_busy_h": 0.0,
-		"first_new_reactor_sol": null,
+		"first_new_reactor_sol": null, "first_birth_sol": null,
 		"being_steps": 0, "asleep_being_steps": 0, "energy_sum": 0.0, "max_sleep_h": 0.0,
 	}
 
@@ -200,6 +200,7 @@ func step() -> void:
 		stats.scouts_found += 1
 		_log("scouts_found", "Scouts found a new ice field.")
 	_update_beings()
+	_birth_phase()
 	_build_decision()
 	_construction_progress()
 	var death := colony.shortage_check(fixed_step)
@@ -407,6 +408,56 @@ func _construction_progress() -> void:
 	buildings.site = null
 	for b in crew:
 		b.enter(self, sb.id)
+
+
+# ---------------------------------------------------------------- births (spec 10.1)
+
+## Phase 7: every birth.check_interval_h, finished habitats in ascending id, each judged with the
+## live population. Draw order: chance, pick(here), name, energy, wait_h.
+func _birth_phase() -> void:
+	if not colony.birth_check_due(fixed_step):
+		return
+	for hb in buildings.list.duplicate():
+		if hb.kind != "habitat" or not hb.finished() or not hb.online():
+			continue
+		var here: Array = []
+		for b in beings:
+			if b.building_id == hb.id and b.is_inside():
+				here.append(b)
+		if not colony.birth_gates_ok(hb.id, here, t):
+			continue
+		if not rng.chance(colony.birth_chance(here)):
+			continue
+		rng.pick(here)  # the parent; no lineage is kept in this slice
+		_create_newborn(hb)
+
+
+func _create_newborn(hb: Buildings.Building) -> void:
+	var bc: Dictionary = SimData.beings()
+	var nb := Being.new()
+	nb.id = _next_being_id
+	_next_being_id += 1
+	nb.persona = persona.persona_from(sky.mars_chart(t, clock.lon_of_tile(hb.tx + hb.tw / 2.0)))
+	nb.role = nb.persona.role
+	nb.earth_born = false
+	nb.born_t = t
+	nb.name = Being.make_name(rng)
+	var es: Array = bc.energy.start
+	nb.energy = rng.randf_range(float(es[0]), float(es[1]))
+	var iw: Array = bc.initial_wait_h
+	nb.wait_h = rng.randf_range(float(iw[0]), float(iw[1]))
+	nb.building_id = hb.id
+	# Invariant counters (must stay 0): the gates make both unreachable.
+	if colony.pop() >= colony.birth_capacity():
+		stats.births_at_capacity += 1
+	if not colony.birth_cooldown_over(hb.id, t) and colony.last_birth_t.has(hb.id):
+		stats.cooldown_violations += 1
+	beings.append(nb)
+	colony.last_birth_t[hb.id] = t
+	stats.births += 1
+	if stats.first_birth_sol == null:
+		stats.first_birth_sol = sol()
+	_log("born", "%s was born." % nb.name, {"being_id": nb.id, "building_id": hb.id})
 
 
 # ---------------------------------------------------------------- mining (spec 8.2)

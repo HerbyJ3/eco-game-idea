@@ -29,7 +29,7 @@ extends RefCounted
 ##    the sol counter resets on the first step with t - start_hour >= n x sol_hours - STEP_EPS (step 494 for sol 1).
 ##  - Helper-guarded: a missing method or key fails the check with a clear message instead of aborting the test.
 ##  - The sleeper test places beings with direct writes (b.state = "sleep"). The floor-sleep test moved here from the
-##    deferred file in step 6; the birth test is still parked in tests/deferred/power_deferred_tests.gd.txt until step 9.
+##    deferred file in step 6; the birth test moved here from the deferred file in step 9 (it fails until births are wired).
 ##
 ## Placement: reactor is id 1, other buildings follow in the order given (ids 2, 3, ...), all far apart.
 
@@ -759,3 +759,33 @@ func test_seeded_determinism(t) -> void:
 	for s in [1, 2, 3, 4, 5]:
 		sigs[_power_run(t, s)] = true
 	t.check(sigs.size() > 1, "different seeds choose different victims")
+
+
+# ---------------------------------------------------------------- births (moved from the deferred file in step 9)
+
+## Habitats with two beings each and every birth gate open (ice 60, food 110, oxygen 140, nets positive).
+func _birth_world(seed_in: int, habitat_online: bool) -> SimWorld:
+	var w := _mk(seed_in, ["workshop", "green_room", "comms"])  # draw 11
+	var hab: int = w.add_building("habitat", 500, 0)            # 11 + 3 = 14: online fits, offline cannot return (14 > 13.3)
+	if not habitat_online:
+		w.set_offline(hab, true)
+	w.add_being(hab, "social")
+	w.add_being(hab, "social")
+	return w
+
+
+func test_offline_habitat_gives_no_births(t) -> void:
+	var control_births := 0
+	for seed_in in range(1, 21):
+		var w := _birth_world(seed_in, true)
+		_steps(w, 1600)  # 20 birth checks
+		t.eq(_offline_ids(w).size(), 0, "seed %d control: nothing shorted (draw 14 = supply)" % seed_in)
+		if int(_stat(w, "births")) > 0:
+			control_births += 1
+	t.check(control_births >= 10, "control: an online habitat births in most seeds (%d of 20)" % control_births)
+	for seed_in in range(1, 21):
+		var w := _birth_world(seed_in, false)
+		_steps(w, 1600)
+		t.eq(_stat(w, "births"), 0, "seed %d: offline habitat, no births" % seed_in)
+		t.eq(w.colony.pop(), 2, "seed %d: population unchanged" % seed_in)
+		t.check(w.buildings.get_building(5).offline, "seed %d: habitat stayed dark" % seed_in)
