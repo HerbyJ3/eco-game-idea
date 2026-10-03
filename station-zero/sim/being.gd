@@ -37,6 +37,21 @@ var corridor_id: Variant = null
 var transit_t := 0.0
 var from_a := false
 var sleep_started_t: Variant = null
+## Where a working or mining being is heading inside its area (spec 7.5).
+var wander_target := Vector2.ZERO
+## True from a builder's suit-up until it enters a building: the suit is kept for the walk home
+## after the shift, even though `job` is already null (step 7 notes).
+var construction_suit := false
+
+
+## What the view draws (spec section 4): none inside; construction for a builder's suit, from
+## suit-up until entering; eva for any other outside state. A job alone also marks a builder
+## outside.
+func suit_kind() -> String:
+	match state:
+		"eva", "work", "mining":
+			return "construction" if construction_suit or job != null else "eva"
+	return "none"
 
 
 ## True while the being is in a building (sleepers count). Used by shortage victims and births.
@@ -102,7 +117,8 @@ static func is_night(w: SimWorld) -> bool:
 
 ## ---------------------------------------------------------------- phase 6 (spec 6.3)
 
-## One being's update for one step. States EVA, mining and work (steps 7 to 9) add arms to the match.
+## One being's update for one step. Mining (step 8) adds an arm to the match; step 8 also adds the
+## air tick and the turn-backs between the drain and the match (spec 6.3 items 3 and 4).
 func update(w: SimWorld, dt: float) -> void:
 	var e: Dictionary = _cfg().energy
 	if state == "sleep":
@@ -112,6 +128,10 @@ func update(w: SimWorld, dt: float) -> void:
 	match state:
 		"transit":
 			_transit_step(w, dt)
+		"eva":
+			_eva_step(w, dt)
+		"work":
+			_work_step(w, dt)
 		"idle":
 			wait_h -= dt
 			if wait_h <= SimWorld.STEP_EPS:
@@ -139,18 +159,31 @@ func _transit_step(w: SimWorld, dt: float) -> void:
 	transit_t += dt * float(_cfg().tunnel_speed_px_h) / maxf(1.0, float(c.corridor.len))
 	if transit_t >= 1.0:
 		# The "a" end is p1, the parent side: from_a walks parent to child.
-		_enter(w, c.id if from_a else int(c.corridor.parent_id))
+		enter(w, c.id if from_a else int(c.corridor.parent_id))
 
 
-## Arrival inside a building (spec 6.5b enter, as far as it applies to a tunnel walk).
-func _enter(w: SimWorld, to_building: int) -> void:
+## Arrival inside a building (spec 6.5b `enter`): the suit is off and everything outside resets.
+## Also the end of a tunnel walk, where those fields are already clear.
+func enter(w: SimWorld, to_building: int) -> void:
+	returning = false
+	air_h = null
+	job = null
+	path = null
+	x = null
+	y = null
+	heading = null
+	construction_suit = false
 	building_id = to_building
 	state = "idle"
 	wait_h = w.fixed_step if sleep_intent else idle_wait(w.rng)
 
 
-## When to_door elapses (spec 6.2 order). Suit-up doors (a) and (b) arrive with EVA in steps 7 and 8.
+## When to_door elapses (spec 6.2 order): (a) miner suit-up (step 8), (b) builder suit-up at the
+## corridor end p1, (c) enter the tunnel.
 func _door_action(w: SimWorld) -> void:
+	if suit_up and job != null:
+		_suit_up_builder(w)
+		return
 	var c: Buildings.Building = w.buildings.get_building(int(corridor_id))
 	state = "transit"
 	transit_t = 0.0
@@ -179,7 +212,7 @@ func go_sleep(w: SimWorld) -> void:
 	wait_h = door_time(w.rng)
 
 
-## Spec 6.4. Branches 2 to 4 (construction, mining) arrive in steps 7 and 8, between sleep and travel.
+## Spec 6.4. Branches 3 and 4 (mining) arrive in step 8, between joining and travel.
 func decide(w: SimWorld) -> void:
 	var e: Dictionary = _cfg().energy
 	var go := sleep_intent or energy < float(e.sleep_below)
@@ -187,6 +220,8 @@ func decide(w: SimWorld) -> void:
 		go = w.rng.chance(float(e.night_sleep_chance))
 	if go:
 		go_sleep(w)
+		return
+	if _try_join_construction(w):
 		return
 	if _restless_travel(w):
 		return
@@ -248,3 +283,136 @@ static func flat_persona(role_in: String, value: float = 0.5) -> Dictionary:
 	for d in SimData.persona().dims:
 		traits[d] = value
 	return {"traits": traits, "role": role_in, "description": ""}
+
+
+# ---------------------------------------------------------------- construction (spec 6.4, 6.5, 6.5b, 7.5)
+
+## Spec 6.4 branch 2. Builderish: role builder, or drive above builderish_drive, or (the site has
+## had no crew for more than a sol and drive above builderish_drive_idle). The chance is drawn only
+## for a builderish being. In the parent: suit up at its door; elsewhere: hop toward the parent.
+func _try_join_construction(w: SimWorld) -> bool:
+	var site := w.buildings.site
+	if site == null:
+		return false
+	var bc: Dictionary = w.buildings.cfg.construction
+	var drive := _trait("drive")
+	var idle_h := float(w.buildings.cfg.build.waiting_site_idle_sols) * w.clock.sol_h
+	var site_idle := w.t - site.last_work_t > idle_h + SimWorld.STEP_EPS
+	var builderish := role == "builder" or drive > float(bc.builderish_drive) \
+			or (site_idle and drive > float(bc.builderish_drive_idle))
+	if not builderish or not w.rng.chance(float(bc.join_chance)):
+		return false
+	if building_id == site.parent_id:
+		suit_up = true
+		job = site
+	else:
+		var hop := w.buildings.next_hop(building_id, site.parent_id)
+		if hop == 0:
+			return false
+		corridor_id = hop
+	state = "to_door"
+	wait_h = door_time(w.rng)
+	return true
+
+
+## Spec 6.5 for builders, at the corridor end p1 of the site. The suit is paid for even if the site
+## has meanwhile gone, in which case the builder cancels.
+func _suit_up_builder(w: SimWorld) -> void:
+	var su: Dictionary = SimData.suits()
+	w.colony.oxygen = maxf(0.0, w.colony.oxygen - float(su.fill_colony_o2))
+	suit_up = false
+	var site := w.buildings.site
+	if site == null or job != site:
+		job = null
+		state = "idle"
+		wait_h = idle_wait(w.rng)
+		return
+	var sb := w.buildings.get_building(site.building_id)
+	var p1: Vector2 = sb.corridor.p1
+	var p2: Vector2 = sb.corridor.p2
+	air_h = float(su.tank_h)
+	construction_suit = true
+	x = p1.x
+	y = p1.y
+	heading = (p2 - p1).angle()
+	state = "eva"
+	after = "work"
+	path = [p1, p2, w.buildings.work_point(sb, w.rng)]
+
+
+## Walk along `path` at EVA speed (spec 6.3 item 5, `eva`). Step 8 hangs the air tick, footprints
+## and turn-backs on this same walk.
+func _eva_step(w: SimWorld, dt: float) -> void:
+	if path == null or path.is_empty():
+		_finish_eva(w)
+		return
+	var su: Dictionary = SimData.suits()
+	var target: Vector2 = path[0]
+	var pos := Vector2(x, y)
+	var d := pos.distance_to(target)
+	if d < float(su.waypoint_reach_px):
+		path.pop_front()
+		if path.is_empty():
+			_finish_eva(w)
+		return
+	_step_toward(pos, target, minf(float(su.eva_speed_px_h) * dt, d))
+
+
+func _step_toward(pos: Vector2, target: Vector2, dist: float) -> void:
+	heading = (target - pos).angle()
+	var np := pos + (target - pos).normalized() * dist
+	x = np.x
+	y = np.y
+
+
+## Spec 6.5b. Only the `work`, `enter` and null rows exist so far; `mine` and `haul` are step 8.
+func _finish_eva(w: SimWorld) -> void:
+	if after == "work":
+		var site := w.buildings.site
+		if site != null and job == site:
+			var sh: Array = w.buildings.cfg.construction.shift_h
+			state = "work"
+			work_left_h = w.rng.randf_range(float(sh[0]), float(sh[1]))
+			wait_h = 0.0
+			wander_target = Vector2(x, y)
+			return
+		_leave_gone_site(w)
+		return
+	enter(w, building_id)
+
+
+## The site is gone or is not this being's job: enter its building if finished, else the parent.
+func _leave_gone_site(w: SimWorld) -> void:
+	var dest := building_id
+	if job != null:
+		var jb := w.buildings.get_building(int(job.building_id))
+		dest = jb.id if jb != null and jb.finished() else int(job.parent_id)
+	enter(w, dest)
+
+
+## Spec 7.5 work state: wander inside the site, pausing; at the end of the shift walk home.
+func _work_step(w: SimWorld, dt: float) -> void:
+	var site := w.buildings.site
+	if site == null or job != site:
+		_leave_gone_site(w)
+		return
+	var sb := w.buildings.get_building(site.building_id)
+	work_left_h -= dt
+	if work_left_h <= 0.0:
+		state = "eva"
+		after = "enter"
+		path = [sb.corridor.p2, sb.corridor.p1]
+		job = null
+		return
+	if wait_h > 0.0:
+		wait_h -= dt
+		return
+	var su: Dictionary = SimData.suits()
+	var pos := Vector2(x, y)
+	var d := pos.distance_to(wander_target)
+	if d < float(su.waypoint_reach_px):
+		var ww: Array = w.buildings.cfg.construction.wander_wait_h
+		wait_h = w.rng.randf_range(float(ww[0]), float(ww[1]))
+		wander_target = w.buildings.work_point(sb, w.rng)
+		return
+	_step_toward(pos, wander_target, minf(float(su.work_speed_construction_px_h) * dt, d))

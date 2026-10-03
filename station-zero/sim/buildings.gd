@@ -32,6 +32,14 @@ class Building extends RefCounted:
 	func door(tile_px: float) -> Vector2:
 		return Vector2((tx + tw / 2.0) * tile_px, (ty + th) * tile_px)
 
+## The one construction site (spec section 4). A being's `job` is this very record. The crew is
+## derived each step (beings in state work with this job), never stored.
+class Site extends RefCounted:
+	var building_id: int
+	var parent_id: int
+	## t of the last step with crew; starts at the creation time.
+	var last_work_t: float
+
 ## Never-shorted sentinel (spec section 4).
 const NEVER := -1e9
 ## The four layout directions, in draw order (a hard rule of find_spot, spec 7.3).
@@ -39,6 +47,8 @@ const DIRS: Array[String] = ["r", "l", "u", "d"]
 
 var list: Array[Building] = []
 var last_short_t: float = NEVER
+## Null, or the site being built (at most one).
+var site: Site = null
 ## Set by SimWorld: the god-power hooks (supply multiplier) and the world clock.
 var powers: Powers
 ## World clock, pushed in by SimWorld whenever t changes (a Callable here would form a reference cycle).
@@ -339,3 +349,39 @@ func manage_power(t: float, rng: SimRng) -> Dictionary:
 			b.offline_since = null
 			return {"kind": "back_online", "building": b, "offline_h": t - since}
 	return {}
+
+
+# ---------------------------------------------------------------- construction (spec 7.4, 7.5)
+
+## Regolith cost of a new building of `kind`: a base by kind plus a step per existing building
+## (every building in the list, a site included).
+func build_cost(kind: String) -> float:
+	var b: Dictionary = cfg.build
+	var base := float(b.cost_other)
+	if kind == "reactor":
+		base = float(b.cost_reactor)
+	elif kind == "green_room":
+		base = float(b.cost_green_room)
+	return base + float(b.cost_per_building) * count()
+
+
+## Creates the site building (built 0, with its corridor) from a spot as find_spot returns it
+## ({parent_id, dir, tw, th, gap}) and registers the site record. Charges nothing.
+func create_site(kind: String, spot: Dictionary, t: float) -> Site:
+	var b := add_attached(kind, int(spot.parent_id), String(spot.dir), int(spot.tw), int(spot.th),
+			int(spot.gap), 0.0)
+	var s := Site.new()
+	s.building_id = b.id
+	s.parent_id = int(spot.parent_id)
+	s.last_work_t = t
+	site = s
+	return s
+
+
+## A uniform random point inside the building rectangle inset on every side (x drawn, then y).
+func work_point(b: Building, rng: SimRng) -> Vector2:
+	var tp := float(cfg.tile_px)
+	var inset := float(cfg.construction.work_point_inset_px)
+	return Vector2(
+			rng.randf_range(b.tx * tp + inset, (b.tx + b.tw) * tp - inset),
+			rng.randf_range(b.ty * tp + inset, (b.ty + b.th) * tp - inset))

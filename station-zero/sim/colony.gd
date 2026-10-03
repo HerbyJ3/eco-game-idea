@@ -133,6 +133,22 @@ func shortage_check(dt: float) -> Dictionary:
 	return {"victim": _rng.pick(shortage_victim_candidates()), "cause": cause}
 
 
+## Phase 8: true (and the clock restarts) when the need_regolith line is due again.
+func need_regolith_due(t: float) -> bool:
+	if not _due(t, regolith_warn_t, float(cfg.warnings.regolith_repeat_sols) * sol_h):
+		return false
+	regolith_warn_t = t
+	return true
+
+
+## Phase 9: true (and the clock restarts) when the waiting_for_builders line is due again.
+func waiting_due(t: float) -> bool:
+	if not _due(t, waiting_warn_t, float(cfg.warnings.waiting_repeat_sols) * sol_h):
+		return false
+	waiting_warn_t = t
+	return true
+
+
 ## Elapsed-since comparator (spec section 3).
 func _due(t: float, last_t: float, repeat_h: float) -> bool:
 	return t - last_t > repeat_h + SimWorld.STEP_EPS

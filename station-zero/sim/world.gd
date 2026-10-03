@@ -28,6 +28,8 @@ var founders: Array = []
 var fixed_step: float
 var max_steps_per_advance: int
 var _accum := 0.0
+## Phase 8 interval accumulator (spec section 3).
+var _build_acc := 0.0
 ## Next elapsed-sol boundary (n) whose first step resets shorts_this_sol.
 var _next_sol_boundary := 1
 ## True on the step that starts a new sol (feeds the sol-boundary samples in phase 11).
@@ -76,6 +78,8 @@ func _init_stats() -> void:
 		"shorts_this_sol": 0, "max_shorts_per_sol": 0, "max_offline_h": 0.0,
 		"demand_over_steps": 0, "step_count": 0,
 		"sol_samples": 0, "reachable_ok_samples": 0,
+		"hours_waiting_regolith": 0.0, "hours_site_no_crew": 0.0, "site_busy_h": 0.0,
+		"first_new_reactor_sol": null,
 		"being_steps": 0, "asleep_being_steps": 0, "energy_sum": 0.0, "max_sleep_h": 0.0,
 	}
 
@@ -196,6 +200,8 @@ func step() -> void:
 		stats.scouts_found += 1
 		_log("scouts_found", "Scouts found a new ice field.")
 	_update_beings()
+	_build_decision()
+	_construction_progress()
 	var death := colony.shortage_check(fixed_step)
 	if not death.is_empty():
 		_kill(death.victim, death.cause)
@@ -282,3 +288,121 @@ func _sample_being_stats() -> void:
 		if b.state == "sleep":
 			stats.asleep_being_steps += 1
 			stats.max_sleep_h = maxf(float(stats.max_sleep_h), t - float(b.sleep_started_t))
+
+
+# ---------------------------------------------------------------- construction (spec 7.4, 7.5)
+
+## Spec 7.4. What to build next, first match wins. Only the last rule draws from the rng.
+func choose_kind() -> String:
+	var bc: Dictionary = buildings.cfg.choose
+	var cc: Dictionary = SimData.colony()
+	if buildings.margin() < float(bc.reactor_margin):
+		return "reactor"
+	var pop := colony.pop()
+	# Three sols of use at the current population (A5 floor).
+	var floor_h := float(cc.stock_days_floor_sols) * clock.sol_h * pop
+	if colony.o2_net() < float(bc.o2_net_floor) or colony.food_net() < float(bc.food_net_floor) \
+			or colony.oxygen < floor_h * float(cc.consumption.o2_per_being) \
+			or colony.food < floor_h * float(cc.consumption.food_per_being):
+		return "green_room"
+	var habitats := 0
+	var workshops := 0
+	for b in buildings.list:
+		if b.finished() and b.kind == "habitat":
+			habitats += 1
+		elif b.finished() and b.kind == "workshop":
+			workshops += 1
+	if pop + int(bc.crowd_margin) > int(cc.birth.habitat_capacity) * habitats:
+		return "habitat"
+	var pool: Array = bc.pool.duplicate()
+	if workshops < int(bc.workshop_cap):
+		pool.append("workshop")
+	return rng.pick(pool)
+
+
+## Breaks ground: false and nothing changed if a site exists, the regolith is short, or no spot is
+## found. `spot` ({parent_id, dir, tw, th, gap}) is the test seam; empty means find_spot (spec 7.3).
+func start_site(kind: String, spot: Dictionary = {}) -> bool:
+	if buildings.site != null:
+		return false
+	var cost := buildings.build_cost(kind)
+	if colony.regolith < cost:
+		return false
+	var where := spot if not spot.is_empty() else buildings.find_spot(rng)
+	if where.is_empty():
+		return false
+	var s := buildings.create_site(kind, where, t)
+	colony.regolith -= cost
+	stats.builds_started += 1
+	_log("ground_broken", "Ground broken for a new %s." % buildings.cfg.kinds[kind].label.to_lower(),
+			{"building_id": s.building_id})
+	return true
+
+
+## A builder is ready when one is inside (a sleeper counts) an online workshop.
+func _builder_ready() -> bool:
+	for b in beings:
+		if b.role != "builder" or not b.is_inside():
+			continue
+		var home := buildings.get_building(b.building_id)
+		if home != null and home.kind == "workshop" and home.online():
+			return true
+	return false
+
+
+## Phase 8: every build.check_interval_h.
+func _build_decision() -> void:
+	var bd: Dictionary = buildings.cfg.build
+	_build_acc += fixed_step
+	if _build_acc < float(bd.check_interval_h) - STEP_EPS:
+		return
+	_build_acc = 0.0
+	if buildings.site != null or not _builder_ready():
+		return
+	var kind := choose_kind()
+	if colony.regolith < buildings.build_cost(kind):
+		stats.hours_waiting_regolith += float(bd.check_interval_h)
+		if colony.need_regolith_due(t):
+			stats.need_regolith += 1
+			_log("need_regolith", "More regolith is needed to build.")
+		return
+	start_site(kind)
+
+
+## Phase 9: progress from the crew, completion, and the waiting warning.
+func _construction_progress() -> void:
+	var site := buildings.site
+	if site == null:
+		return
+	var sb := buildings.get_building(site.building_id)
+	var crew: Array[Being] = []
+	for b in beings:
+		if b.state == "work" and b.job == site:
+			crew.append(b)
+	stats.site_busy_h += fixed_step
+	if crew.is_empty():
+		stats.hours_site_no_crew += fixed_step
+		var idle_h := float(buildings.cfg.build.waiting_site_idle_sols) * clock.sol_h
+		if t - site.last_work_t > idle_h + STEP_EPS and colony.waiting_due(t):
+			stats.waiting_for_builders += 1
+			_log("waiting_for_builders", "The building site is waiting for builders.",
+					{"building_id": sb.id})
+		return
+	site.last_work_t = t
+	var bc: Dictionary = buildings.cfg.construction
+	var ef: Dictionary = SimData.beings().effort
+	var rate := 0.0
+	for b in crew:
+		rate += (float(bc.drive_base) + float(b.persona.traits.drive)) \
+				* (float(ef.energy_base) + b.energy / float(ef.energy_divisor))
+	sb.built = minf(1.0, sb.built + rate * fixed_step / float(bc.denominator_h))
+	if sb.built < 1.0:
+		return
+	stats.builds_finished += 1
+	_log("building_done", "A new %s is finished." % buildings.cfg.kinds[sb.kind].label.to_lower(),
+			{"building_id": sb.id})
+	if sb.kind == "reactor" and stats.first_new_reactor_sol == null:
+		stats.first_new_reactor_sol = sol()
+	buildings.site = null
+	for b in crew:
+		b.enter(self, sb.id)
