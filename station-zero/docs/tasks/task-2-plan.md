@@ -97,3 +97,10 @@ Not done until: workshop, green room, the three suits and both interiors are imp
 - **Missing art:** generate it now with Higgsfield Nano Banana 2, using the two style references, on a magenta background, batched. The art-director writes the prompts. The main session generates the images and saves them to assets/raw/, and they go through the same pipeline. Placeholders remain only as the fallback if an image fails.
 - **Fitting art:** each sprite is scaled to fit inside the building's footprint with its proportions kept, anchored at the door. Sprites are never stretched.
 - **Debug dot map:** kept, toggled by a key. The sprite view is the default.
+
+## Spec review result (step 2)
+Approved at revision 3. Harness nits to fix when the showcase setups are built:
+1. Staged setups must not be undone by stepping. Run `--setup` after the hour stepping, or let a setup set `world.t` directly with `--steps 0`.
+2. Lamp shots at exactly 19:00 are unreliable, because `--hour` lands within ±0.025 h. Use 19.5, or set `t` directly. S-11 needs the same fix.
+3. Texture headroom is about 3.6 MB under 48 MB. Adjust once the real manifest sizes exist.
+4. `--until` runs after `--steps`.
