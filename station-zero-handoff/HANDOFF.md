@@ -276,7 +276,9 @@ Prototype artifact: https://claude.ai/artifact/LEHS7X1zfj4qLXDbTfYyHQ
 
 ### Task queue (do one at a time, check off)
 
-- [ ] **0. Godot project setup.** Folder structure, autoloads, a simulation core that runs headless, a renderer that only displays it. Port the calendar, charts and personas first, with unit tests that match section 3.
+- [x] **0. Godot project setup.** Folder structure, autoloads, a simulation core that runs headless, a renderer that only displays it. Port the calendar, charts and personas first, with unit tests that match section 3.
+  - Done October 2026. Godot 4.5 project in `station-zero/`. Run the tests with `godot --headless --path station-zero --script res://tests/run_tests.gd` (33 tests). Plan: `station-zero/docs/tasks/task-0-plan.md`. Spec and resolved ambiguities: `station-zero/docs/specs/sky-persona.md`.
+  - What we learned: (1) The comment "at dawn rising = sun sign" holds only at lon 0. At Jezero, rise = sign(Ls + lon). (2) Seed 42 gives 15,481 unique charts in 20,000 births. Role shares are builder .315, social .281, tender .204 and curious .200; the in-game longitude range gives the same shares. (3) Mars charts never reach the lower trait clamp. Sociability tops out at .68. (4) `Sky` is a built-in Godot class, so the sky class is `MarsSky`. (5) GDScript can't use float `%`, so use `fposmod`.
 - [ ] **1. Life support and power.** Green room oxygen and food, power budget with shorts, suit tanks, footprints, construction suits, helmet lamps, per-being energy and sleep. **Balance it with headless runs.**
 - [ ] **2. Sprite set.** Slice and import the three character sheets, the workshop, green room and the two interiors. Animate doors and lights.
 - [ ] **3. Age system.** Landing and Settlement ages, announced in the log.
@@ -335,7 +337,7 @@ res://
 
 ## 11. Agent team
 
-Agent prompts live in `.claude/agents/`. Copy that folder into the root of the Godot project. Claude Code delegates to them automatically based on each description, or you can ask for one by name.
+Agent prompts live in `.claude/agents/` at the repository root (recreated in Task 0 from the table below). Claude Code delegates to them automatically based on each description, or you can ask for one by name.
 
 | Agent | Job | Model |
 | --- | --- | --- |

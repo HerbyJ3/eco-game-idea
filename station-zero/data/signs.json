@@ -1,0 +1,14 @@
+[
+  { "name": "The Spark",        "element": "fire",  "modality": "cardinal" },
+  { "name": "The Monolith",     "element": "earth", "modality": "fixed" },
+  { "name": "The Twin Signal",  "element": "air",   "modality": "mutable" },
+  { "name": "The Tide Shell",   "element": "water", "modality": "cardinal" },
+  { "name": "The Crown Star",   "element": "fire",  "modality": "fixed" },
+  { "name": "The Lattice",      "element": "earth", "modality": "mutable" },
+  { "name": "The Balance Arc",  "element": "air",   "modality": "cardinal" },
+  { "name": "The Deep Lantern", "element": "water", "modality": "fixed" },
+  { "name": "The Far Arrow",    "element": "fire",  "modality": "mutable" },
+  { "name": "The Summit",       "element": "earth", "modality": "cardinal" },
+  { "name": "The Relay",        "element": "air",   "modality": "fixed" },
+  { "name": "The Drift",        "element": "water", "modality": "mutable" }
+]

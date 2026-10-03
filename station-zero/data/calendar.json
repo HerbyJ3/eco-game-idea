@@ -1,0 +1,29 @@
+{
+  "sol_hours": 24.6597,
+  "mars_year_days": 686.98,
+  "earth_year_days": 365.256,
+  "earth_day_hours": 24,
+  "phobos_hours": 7.6538,
+  "deimos_hours": 30.312,
+  "luna_days": 27.3217,
+  "eccentricity": 0.0934,
+  "mean_anomaly_epoch_deg": 99,
+  "perihelion_ls_deg": 251,
+  "start_hour_sol_fraction": 0.25,
+  "dawn_hour": 6,
+  "hours_per_sol_clock": 24,
+  "sign_width_deg": 30,
+  "season_width_deg": 90,
+  "seasons": ["northern spring", "northern summer", "northern autumn", "northern winter"],
+  "site": { "name": "Jezero Crater", "lon": 77.5, "lon_per_tile": 0.25 },
+  "sky": {
+    "deimos_offset_deg": 211,
+    "phobos_offset_deg": 53,
+    "earth_orbit_au": 1.0,
+    "mars_orbit_au": 1.524,
+    "earth_epoch_angle_deg": 40,
+    "mars_angle_from_ls_deg": -180,
+    "earth_sun_offset_deg": 15,
+    "luna_offset_deg": 137
+  }
+}
