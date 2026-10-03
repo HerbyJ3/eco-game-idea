@@ -145,31 +145,30 @@ static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int) -> Array[D
 			st.births, str(st.first_birth_sol), st.births_at_capacity, st.cooldown_violations]
 	if st.first_birth_sol != null and int(st.first_birth_sol) < 2:
 		ok3 = false
-	for lim in [[30, 15], [100, 30], [300, 60]]:
-		if sols >= lim[0]:
-			var v := int(p[lim[0]])
-			det3 += ", pop@%d=%d(<=%d)" % [lim[0], v, lim[1]]
-			if v > lim[1]:
-				ok3 = false
+	# Owner decision (2026-10-03): no population caps. Growth is the player's to influence; pop is reported only.
+	for sol_mark in [30, 100, 300]:
+		if sols >= sol_mark:
+			det3 += ", pop@%d=%d" % [sol_mark, int(p[sol_mark])]
 	out.append(_v(3, ok3, det3))
-	# 4 stocks
+	# 4 stocks. Owner decision (2026-10-03): oxygen and food must never run out. Ice running dry is
+	# colony pressure for the player to answer (influence, later a water-saving building or a council rule),
+	# so it is reported, not failed. Thirst deaths still need a logged cause (target 2).
 	var ok4 := true
-	for k in ["min_oxygen", "min_food", "min_ice"]:
+	for k in ["min_oxygen", "min_food"]:
 		if st[k] != null and float(st[k]) <= 0.0:
 			ok4 = false
-	if st.min_ice_after30 != null and float(st.min_ice_after30) <= 20.0:
-		ok4 = false
 	if float(st.max_ice_over_target) >= 3.0 or float(st.max_regolith_over_target) >= 3.0:
 		ok4 = false
-	out.append(_v(4, ok4, "min O2 %s, food %s, ice %s, ice>30 %s; max ice/target %.2f, regolith/target %.2f" % [
-			_fmt_min(st.min_oxygen), _fmt_min(st.min_food), _fmt_min(st.min_ice), _fmt_min(st.min_ice_after30),
-			st.max_ice_over_target, st.max_regolith_over_target]))
+	var ice_note := "ice ran dry (pressure)" if (st.min_ice != null and float(st.min_ice) <= 0.0) else "ice never ran dry"
+	out.append(_v(4, ok4, "min O2 %s, food %s; %s: min ice %s, ice>30 %s, thirst deaths %d; max ice/target %.2f, regolith/target %.2f" % [
+			_fmt_min(st.min_oxygen), _fmt_min(st.min_food), ice_note, _fmt_min(st.min_ice), _fmt_min(st.min_ice_after30),
+			int(st.deaths.thirst), st.max_ice_over_target, st.max_regolith_over_target]))
 	# 5 power
 	var over := _pct(float(st.demand_over_steps), float(st.step_count))
 	var rx = st.first_new_reactor_sol
 	var ok5 := over <= 10.0 and int(st.max_shorts_per_sol) <= 2 and float(st.max_offline_h) <= sol_h \
-			and rx != null and int(rx) <= 10
-	out.append(_v(5, ok5, "demand>supply %.2f%% of steps (<=10), max shorts/sol %d (<=2), max offline %.1f h (<=%.1f), first new reactor sol %s (<=10)" % [
+			and rx != null and int(rx) <= 15
+	out.append(_v(5, ok5, "demand>supply %.2f%% of steps (<=10), max shorts/sol %d (<=2), max offline %.1f h (<=%.1f), first new reactor sol %s (<=15)" % [
 			over, st.max_shorts_per_sol, st.max_offline_h, sol_h, str(rx)]))
 	# 6 growth limited: provisional 2% threshold (spec 13), per seed; the 4-of-5 rule is applied across seeds
 	var total_h := float(sols) * sol_h

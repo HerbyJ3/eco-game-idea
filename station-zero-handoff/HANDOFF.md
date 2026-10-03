@@ -153,7 +153,7 @@ Validated: about 15,700 unique charts in 20,000 random births, and roles stay ro
 | Grace | Tap a habitat; births there become more likely for 1.5 sols | 2 sols |
 | Send a sign | A light crosses the sky; each being reacts by personality (curious go look, steady keep working) | 1 sol |
 
-Future ideas: calm a dust storm, send a dream to one being, let a rumor spread. The owner said **yes**: beings should eventually sense that a god exists and react to it (fits the culture stage).
+Future ideas: calm a dust storm, send a dream to one being, let a rumor spread. From the Task 1 baseline (Herby): growth is left uncapped on purpose. When a big colony runs short of ice, the answer should come from influence. One option is inspiring a building that recycles or preserves water. Another is the beings agreeing on a rule to slow births in the council stage. The owner said **yes**: beings should eventually sense that a god exists and react to it (fits the culture stage).
 
 ---
 

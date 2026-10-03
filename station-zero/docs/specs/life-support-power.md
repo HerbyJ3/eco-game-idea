@@ -669,6 +669,12 @@ Log kinds: `founders_landed`, `ground_broken`, `building_done`, `short`, `back_o
 - **Mining wander:** checks the distance to its target before moving (prototype L646).
 - **choose_site:** lives on SimWorld, because it reads colony stocks and the rng.
 
+## Owner decisions after the baseline (2026-10-03)
+These override the section 13 targets where they differ:
+- **Target 3:** no population caps. It checks births at capacity = 0, cooldown violations = 0 and first birth no earlier than sol 2. Population is reported only.
+- **Target 4:** min oxygen and min food must stay above 0, and ice and regolith must stay below 3 x target. Ice running dry is reported as pressure, not failed.
+- **Target 5:** the first new reactor is due by sol 15.
+
 ## Changelog
 - 2026-10-03: first version (game-designer).
 - 2026-10-03: revision after code-reviewer findings. Added: EVA arrival table and `finish_eva`/`enter` (6.5b), `to_door` corridor choice, "site gone" enters at once; footprint and construction-rate and yield test arithmetic fixed (step sizes, energy read after drain); explicit timer comparators with `STEP_EPS` and declared deviation from strict `>`; measurable balance stats and sol definition (section 16, 13); cooldown arithmetic corrected (about 43 h, 1.76 sols, 2.2x); sol-2 claim softened; target 6 measured in hours; worst-case air margin with the d + 0.8r bound; wording fixes (phase 6, exhausted test, wake chance draw, EVA move order); declared deviations list (go_sleep distance, work points, build timer, mining reach key `resources.mining.reach_px`); `kinds.*.label` row and machine-readable key-path list; single founder count; persona shape `{traits, role, description}`; Task 0 coupling note dropped; `sim/powers.gd` added to the code map; warning cadence (494th step) and waiting warning moved to phase 9. Reviewer sign-off (step 2): pending re-review.

@@ -186,3 +186,9 @@ Reviewer (code-reviewer) checks:
 - View: text HUD. The debug dot map is optional, only after the tests and balance targets pass.
 - Runtime: keep `fixed_step` at 0.05 h for balance runs, even if a 300-sol run takes minutes.
 - Balance targets: the PM's proposals stand until the game-designer confirms or adjusts them in step 1.
+
+## Owner decisions after the baseline (Herby, 2026-10-03)
+- **Growth:** keep the 1-sol birth cooldown. Fast growth is intended: the player is meant to influence it, not the simulation. Target 3 no longer caps population. It checks only that births respect capacity, the cooldown and the earliest first birth.
+- **Ice:** ice running dry in a large colony is pressure for the player to answer. It is reported, not failed. Oxygen and food must still never run out (target 4), and every thirst death must have a logged cause (target 2).
+- **Reactor:** the first new reactor is due by sol 15 instead of sol 10 (target 5). Power never ran short in the baseline.
+- **Future answers to ice pressure:** a building that recycles or preserves water, and the beings agreeing on a rule to slow births in the council stage. Both are recorded in HANDOFF.md section 4.
