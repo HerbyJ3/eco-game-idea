@@ -48,3 +48,11 @@ static func buildings() -> Dictionary:
 
 static func beings() -> Dictionary:
 	return load_json("beings.json")
+
+
+static func resources() -> Dictionary:
+	return load_json("resources.json")
+
+
+static func suits() -> Dictionary:
+	return load_json("suits.json")
