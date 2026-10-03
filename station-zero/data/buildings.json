@@ -1,0 +1,52 @@
+{
+  "tile_px": 8,
+  "kinds": {
+    "reactor":    { "label": "Reactor",    "draw": 0 },
+    "habitat":    { "label": "Habitat",    "draw": 3 },
+    "workshop":   { "label": "Workshop",   "draw": 4 },
+    "green_room": { "label": "Green room", "draw": 4 },
+    "archive":    { "label": "Archive",    "draw": 2 },
+    "comms":      { "label": "Comms",      "draw": 3 }
+  },
+  "reactor_supply": 14,
+  "site_draw": 2,
+  "fortune": { "multiplier": 1.5, "duration_sols": 1 },
+  "short": { "newest_chance": 0.6 },
+  "reonline": { "load_fraction": 0.95, "hold_h": 3 },
+  "build": {
+    "check_interval_h": 5,
+    "cost_reactor": 18,
+    "cost_green_room": 18,
+    "cost_other": 28,
+    "cost_per_building": 4,
+    "waiting_site_idle_sols": 1
+  },
+  "choose": {
+    "reactor_margin": 5,
+    "o2_net_floor": 0.4,
+    "food_net_floor": 0.25,
+    "crowd_margin": 2,
+    "pool": ["archive", "comms", "green_room", "habitat", "habitat"],
+    "workshop_cap": 3
+  },
+  "size": { "tw": [10, 14], "th": [8, 10], "gap": [5, 9] },
+  "find_spot": { "tries": 80, "overlap_margin_tiles": 2, "corridor_margin_tiles": 1, "corridor_width_tiles": 3 },
+  "construction": {
+    "denominator_h": 34,
+    "drive_base": 0.6,
+    "join_chance": 0.55,
+    "builderish_drive": 0.6,
+    "builderish_drive_idle": 0.35,
+    "shift_h": [8, 16],
+    "wander_wait_h": [0.8, 2.4],
+    "work_point_inset_px": 5
+  },
+  "layout": {
+    "core": { "tx": 0, "ty": 0, "tw": 12, "th": 10 },
+    "attached": [
+      { "kind": "habitat",    "dir": "r", "tw": 13, "th": 9, "gap": 7 },
+      { "kind": "workshop",   "dir": "d", "tw": 12, "th": 9, "gap": 6 },
+      { "kind": "green_room", "dir": "l", "tw": 12, "th": 9, "gap": 7 }
+    ]
+  }
+}

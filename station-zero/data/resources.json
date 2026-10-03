@@ -1,0 +1,31 @@
+{
+  "ice_field": { "amount": [260, 420], "radius_px": [16, 24] },
+  "pit": { "radius_px": 9 },
+  "spawn": {
+    "ice_px": [90, 170],
+    "pit_px": [70, 110],
+    "founder_ice_px": [[90, 150], [100, 160]],
+    "founder_pit_px": [70, 110],
+    "tries": 400,
+    "creep_px_per_try": 0.08,
+    "clearance_building_px": 55,
+    "clearance_site_px": 90,
+    "clearance_tunnel_px": 30
+  },
+  "scout": { "chance_per_h": 0.05, "min_reachable": 2 },
+  "mining": {
+    "shift_h": [5, 9],
+    "yield_ice": [6, 10],
+    "yield_regolith": [8, 14],
+    "drive_base": 0.7,
+    "drive_coef": 0.6,
+    "partial_load": [2, 5],
+    "arrive_radius_frac": [0.3, 0.8],
+    "wander_radius_frac": [0.2, 0.8],
+    "wander_y_scale": 0.7,
+    "wander_wait_h": [0.6, 2]
+  },
+  "mine_will": { "steady": 0.45, "drive": 0.35, "restless": 0.2 },
+  "mine_attempt": { "chance": 0.4, "floor": 0.15, "o2_gate": 10 },
+  "want": { "ice_urgent_below": 30, "ice_bias": 0.15, "need_sum_bias": 0.3, "stop_factor": 1.3 }
+}
