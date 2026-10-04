@@ -1772,3 +1772,15 @@ class TestAbsentRawsUsePlaceholderPath(PipelineCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestCommittedManifestIsCurrent(unittest.TestCase):
+    """The committed manifest must match the committed art.json without a rebuild."""
+
+    def test_art_json_hash_matches_before_any_rebuild(self):
+        import hashlib, json
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[2]
+        want = hashlib.sha256((root / "data" / "art.json").read_bytes()).hexdigest()
+        got = json.loads((root / "assets" / "processed" / "manifest.json").read_text())["art_json_sha256"]
+        self.assertEqual(got, want, "run python3 tools/build_all.py and commit the manifest")
