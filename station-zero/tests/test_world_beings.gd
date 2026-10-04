@@ -310,6 +310,15 @@ func test_baked_footprint_has_ellipse_and_heel(t) -> void:
 	t.check(heel.r > body.r, "the heel is lighter than the body")
 
 
+class NoDecalLib extends ArtLibrary:
+	## The real manifest now carries the terrain decals; these tests are about the procedural fallback, so the decals are hidden.
+	func has_art(id: String) -> bool:
+		return false if id.begins_with("terrain.decal.") else super.has_art(id)
+
+	func texture(id: String) -> Texture2D:
+		return null if id.begins_with("terrain.decal.") else super.texture(id)
+
+
 class FakeLib extends ArtLibrary:
 	var tex_obj: ImageTexture
 	func _init() -> void:
@@ -331,6 +340,9 @@ func test_terrain_decals_when_present_else_procedural_without_rocks(t) -> void:
 	var pair := _wv._make(w)
 	var view: Node2D = pair[1]
 	view.set_camera(1.0, Vector2(130, 70))
+	view.lib = NoDecalLib.new()
+	view.lib.load_manifest()
+	view.ctx.lib = view.lib
 	_wv._frames(view, 3)
 	var plain := _layer(view, "terrain")
 	var decals := 0
@@ -518,7 +530,9 @@ func test_roof_returns_at_lower_zoom_and_peek_fades(t) -> void:
 	_wv._free(pair)
 
 
-func test_interior_beings_scale_count_and_poses(t) -> void:
+## A habitat with three awake and three sleeping beings, roof open. hide_sleeping: the manifest the view reads has the
+## 16 sleeping poses hidden (file null, placeholder), which gives the rotated jumpsuit fallback.
+func _sleepers_scene(hide_sleeping: bool) -> Array:
 	var w := _world()
 	for role in ["builder", "curious", "social"]:
 		_inside(w, "habitat", role)
@@ -526,10 +540,28 @@ func test_interior_beings_scale_count_and_poses(t) -> void:
 		_inside(w, "habitat", role, "sleep")
 	var pair := _wv._make(w)
 	var view: Node2D = pair[1]
+	if hide_sleeping:
+		var m: Dictionary = view.vm.man.duplicate(true)
+		for id in m.entries:
+			if String(id).begins_with("character.sleeping."):
+				m.entries[id]["placeholder"] = true
+				m.entries[id]["file"] = null
+		view.vm.man = m
+		view.ctx.man = m
 	view.set_camera(4.0, Vector2(212, 36))
 	var hab := _building(w, "habitat")
 	_open_roof(view, hab)
 	view.settle_view(1.0)
+	return [w, pair, hab]
+
+
+func test_interior_beings_scale_count_and_poses(t) -> void:
+	# Fallback path: sleeping poses hidden, sleepers are the rotated jumpsuit.
+	var sc := _sleepers_scene(true)
+	var w: SimWorld = sc[0]
+	var pair: Array = sc[1]
+	var hab: Buildings.Building = sc[2]
+	var view: Node2D = pair[1]
 	var sp := _sprites(_layer(view, "entities").log)
 	t.eq(sp.size(), 6, "six interior beings drawn")
 	var art: Dictionary = view.art
@@ -544,6 +576,60 @@ func test_interior_beings_scale_count_and_poses(t) -> void:
 		if absf(float(e.rot)) > 0.1:
 			sleepers += 1
 	t.eq(sleepers, 3, "three sleepers lie down (rotated sleeping fallback)")
+	_check_bunks_and_frames(t, view, hab)
+	# At most 25 per building.
+	for i in 30:
+		_inside(w, "habitat", "builder")
+	_wv._frames(view, 5)
+	var many := _sprites(_layer(view, "entities").log)
+	t.eq(many.size(), int(art.interior.being_cap), "no more than %d interior beings per building" % int(art.interior.being_cap))
+	_wv._free(pair)
+
+
+func test_interior_real_sleeping_poses(t) -> void:
+	# Real path: the shipped manifest carries the sleeping poses.
+	var sc := _sleepers_scene(false)
+	var pair: Array = sc[1]
+	var hab: Buildings.Building = sc[2]
+	var view: Node2D = pair[1]
+	var art: Dictionary = view.art
+	var sp := _sprites(_layer(view, "entities").log)
+	t.eq(sp.size(), 6, "six interior beings drawn")
+	var s := float(art.colonist.height_px) * float(art.colonist.interior_scale) / float(art.pipeline.character_height_in_cell_px)
+	var cell := float(view.lib.sheet("jumpsuit").cell_px)
+	var js_scale := float(view.lib.sheet("jumpsuit").scale)
+	var rect: Rect2 = view.vm.interior_rect(hab.id)
+	var model = view.vm.interior(hab.id)
+	var sleepers := 0
+	for e in sp:
+		var id := String(e.id)
+		t.check(rect.grow(1.0).has_point(e.feet), "feet inside the interior rect")
+		if id.begins_with("character.sleeping."):
+			sleepers += 1
+			var parts := id.split(".")
+			t.check(int(parts[3]) >= 0 and int(parts[3]) <= 3, "%s: pose number within 0..3" % id)
+			var ent: Dictionary = view.lib.entry(id)
+			var want := float(ent.w) * s * float(ent.scale) / js_scale
+			t.near((e.rect as Rect2).size.x, want, 1e-3, "%s drawn at the manifest sleeping scale times 1.9" % id)
+			t.check((e.rect as Rect2).size.x < float(ent.w) * s, "a shrunk pose is drawn smaller than at the jumpsuit scale")
+			t.near(absf(float(e.rot)), 0.0, 1e-6, "a real sleeper is not rotated")
+		else:
+			t.near((e.rect as Rect2).size.x, cell * s, 1e-3, "awake interior beings stay at 1.9x of the jumpsuit cell")
+			t.eq(id.begins_with("character.jumpsuit."), true, "awake beings wear the jumpsuit")
+	t.eq(sleepers, 3, "three sleepers use the sleeping sheet")
+	# Each sleeper is drawn on its slot (the centred image is anchored at the slot, no offset, no bob), and the pose is
+	# stable per being id.
+	for id in model.drawn_ids():
+		var rec: Dictionary = view.vm.being(id)
+		if String(rec.pose.sheet).begins_with("character.sleeping."):
+			var p: Dictionary = BeingDraw.sprite_params(view.ctx, id, rec)
+			t.eq(p.feet, rec.pos, "sleeper %d is drawn at its slot" % id)
+			t.check(String(rec.pose.sheet).ends_with(".%d" % (id % 4)), "pose number is the being id mod 4")
+			t.eq(model.slot_of(id).get("type", ""), "bunk", "sleeper %d lies on a bunk" % id)
+	_wv._free(pair)
+
+
+func _check_bunks_and_frames(t, view: Node2D, hab: Buildings.Building) -> void:
 	# Sleepers rest on bunks: the interior model assigns bunk slots in id order.
 	var model = view.vm.interior(hab.id)
 	var bunks := 0
@@ -556,13 +642,6 @@ func test_interior_beings_scale_count_and_poses(t) -> void:
 		var pose: Dictionary = view.vm.being(id).pose
 		t.check(view.lib.frame_rect("jumpsuit", pose.frame).size != Vector2.ZERO or String(pose.sheet).begins_with("character.sleeping"),
 				"pose frame %s exists on the sheet" % pose.frame)
-	# At most 25 per building.
-	for i in 30:
-		_inside(w, "habitat", "builder")
-	_wv._frames(view, 5)
-	var many := _sprites(_layer(view, "entities").log)
-	t.eq(many.size(), int(art.interior.being_cap), "no more than %d interior beings per building" % int(art.interior.being_cap))
-	_wv._free(pair)
 
 
 func test_outside_beings_sorted_with_buildings_by_y(t) -> void:

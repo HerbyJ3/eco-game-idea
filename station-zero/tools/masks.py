@@ -26,7 +26,11 @@ def _accent_test(r, g, b, cls, m):
         return _and(_gt(r, m["r_min"]), _gt(g, m["g_min"]), _lt(g, m["g_max"]), _lt(b, m["b_max"]),
                     _gt(ImageChops.subtract(r, b), m["r_minus_b_min"]))
     if cls == "violet":
-        return _and(_gt(r, m["r_min"] - 1), _lt(r, m["r_max"] + 1), _gt(b, m["b_min"]), _lt(g, m["g_max"]))
+        light = _and(_gt(r, m["r_min"] - 1), _lt(r, m["r_max"] + 1), _gt(b, m["b_min"]), _lt(g, m["g_max"]))
+        d = m["dark"]   # the dark violet trim: low red, blue clearly above green and red
+        dark = _and(_gt(b, d["b_min"] - 1), _lt(r, d["r_max"] + 1), _gt(ImageChops.subtract(b, g), d["b_minus_g_min"] - 1),
+                    _gt(ImageChops.subtract(b, r), d["b_minus_r_min"] - 1))
+        return ImageChops.lighter(light, dark)
     if cls == "pink":
         return _and(_gt(r, m["r_min"]), _lt(g, m["g_max"]), _gt(b, m["b_min"]), _lt(b, m["b_max"]),
                     _gt(ImageChops.subtract(r, g), m["r_minus_g_min"]))

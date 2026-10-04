@@ -421,11 +421,23 @@ func test_welding_sparks_are_drawn_from_the_snapshot(t) -> void:
 
 # ---------------------------------------------------------------- terrain and tunnels
 
+class NoDecalLib extends ArtLibrary:
+	## The real manifest now carries the terrain decals; these tests are about the procedural fallback, so the decals are hidden.
+	func has_art(id: String) -> bool:
+		return false if id.begins_with("terrain.decal.") else super.has_art(id)
+
+	func texture(id: String) -> Texture2D:
+		return null if id.begins_with("terrain.decal.") else super.texture(id)
+
+
 func test_terrain_and_tunnels_from_sim_data(t) -> void:
 	var w := SimWorld.new(42)
 	var pair := _make(w)
 	var view: Node2D = pair[1]
 	view.set_camera(1.0, Vector2(212, 108))
+	view.lib = NoDecalLib.new()
+	view.lib.load_manifest()
+	view.ctx.lib = view.lib
 	_frames(view, 3)
 	var d := _draw_all(view)
 	var terrain: Recorder = d.by_layer.terrain

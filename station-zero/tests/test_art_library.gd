@@ -42,11 +42,39 @@ func test_placeholders_resolve(t) -> void:
 		else:
 			# Optional art (decals, sleeping poses) without a file: no texture, no error, view goes procedural.
 			t.check(lib.texture(id) == null and lib.last_error == "", id + " null file gives null, no error")
-	t.check(subst > 0, "manifest has placeholder entries")
+	# The shipped manifest may have no placeholders once every raw image exists; the synthetic-manifest test below
+	# covers the placeholder path independent of what art is present.
+	t.check(subst >= 0, "placeholder scan ran")
 	# Every kind has an exterior and an interior in the manifest, real or placeholder.
 	for kind in ["reactor", "habitat", "workshop", "green_room", "archive", "comms"]:
 		for part in ["base", "door", "interior", "interior_outline", "mask.accent"]:
 			t.check(lib.has_art("building.%s.%s" % [kind, part]), "%s %s has art" % [kind, part])
+
+
+func test_placeholder_entries_resolve_in_a_synthetic_manifest(t) -> void:
+	var real := ArtLibrary.new()
+	real.load_manifest()
+	var entries: Dictionary = (real._entries as Dictionary).duplicate(true)
+	# One building image served from the placeholder set, one optional image with no file.
+	var ph_id := "building.habitat.base"
+	var ph_entry: Dictionary = entries[ph_id]
+	ph_entry["placeholder"] = true
+	ph_entry["file"] = "placeholder/habitat_base.png"
+	var null_id := "terrain.decal.ice"
+	var null_entry: Dictionary = entries[null_id]
+	null_entry["placeholder"] = true
+	null_entry["file"] = null
+	var path := "user://synthetic_manifest.json"
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(JSON.stringify({"schema": 1, "entries": entries}))
+	f.close()
+	var lib := ArtLibrary.new()
+	t.check(lib.load_manifest(path), "synthetic manifest loads")
+	t.check(lib.is_placeholder(ph_id) and lib.has_art(ph_id), "placeholder entry with a file has art")
+	t.check(lib.texture(ph_id) != null, "placeholder file resolves to a texture")
+	t.check(lib.is_placeholder(null_id) and not lib.has_art(null_id), "null-file placeholder has no art")
+	t.check(lib.texture(null_id) == null and lib.last_error == "", "null file gives null with no error")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func test_missing_id_fails_clearly(t) -> void:

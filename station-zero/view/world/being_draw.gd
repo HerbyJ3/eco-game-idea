@@ -47,6 +47,9 @@ static func sprite_params(x: WorldCtx, id: int, rec: Dictionary) -> Dictionary:
 		var size := Vector2(x.lib.size(tex_id))
 		var pivot := Vector2(float(art.optional.sleeping.pivot_px[0]), float(art.optional.sleeping.pivot_px[1]))
 		src = Rect2(Vector2.ZERO, size)
+		# The pipeline may have shrunk a pose that was wider than its cell: the manifest scale over the jumpsuit scale.
+		var ratio := _sleeping_ratio(x, tex_id)
+		s *= ratio
 		dest = Rect2(-pivot * s, size * s)
 	else:
 		sheet_name = tex_id.split(".")[1]
@@ -58,7 +61,9 @@ static func sprite_params(x: WorldCtx, id: int, rec: Dictionary) -> Dictionary:
 		dest = Rect2(-pivot * s, Vector2(float(sheet.cell_px), float(sheet.cell_px)) * s)
 	var feet: Vector2 = rec.pos
 	var rot := deg_to_rad(float(pose.rotate_deg))
-	if is_zero_approx(rot):
+	if tex_id.begins_with("character.sleeping."):
+		pass   # a real pose is a centred image drawn on the slot: no bob, no nudge
+	elif is_zero_approx(rot):
 		var bob := float(art.walk.bob_walk_px) * absf(cos(float(rec.phase))) if rec.moving \
 				else float(art.walk.bob_idle_px) * sin(x.real_time * float(art.walk.bob_idle_rate_rad_s) + float(id))
 		feet.y -= bob
@@ -69,6 +74,13 @@ static func sprite_params(x: WorldCtx, id: int, rec: Dictionary) -> Dictionary:
 		feet += Vector2(float(art.colonist.sleeper_offset_px[0]) * sc, float(art.colonist.sleeper_offset_px[1]))
 	return {"id": tex_id, "sheet": sheet_name, "src": src, "dest": dest, "feet": feet, "rot": rot,
 			"mirror": bool(pose.mirror), "scale": s, "sc": sc}
+
+
+## Pose scale / jumpsuit sheet scale (1 when either is unknown), so a shrunk pose is drawn at its baked size.
+static func _sleeping_ratio(x: WorldCtx, tex_id: String) -> float:
+	var ps := float(x.lib.entry(tex_id).get("scale", 0.0))
+	var js := float(x.lib.sheet("jumpsuit").get("scale", 0.0))
+	return ps / js if ps > 0.0 and js > 0.0 else 1.0
 
 
 func _shadow(c: Object, x: WorldCtx, rec: Dictionary, sc: float) -> void:

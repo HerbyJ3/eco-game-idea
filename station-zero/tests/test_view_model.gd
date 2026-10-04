@@ -124,6 +124,16 @@ func _manifest_sleeping_real() -> Dictionary:
 	return m
 
 
+## The real manifest with the 16 sleeping poses hidden (file null, placeholder): the rotated jumpsuit fallback.
+func _manifest_sleeping_hidden() -> Dictionary:
+	var m := _manifest().duplicate(true)
+	for id in m.entries:
+		if String(id).begins_with("character.sleeping."):
+			m.entries[id]["placeholder"] = true
+			m.entries[id]["file"] = null
+	return m
+
+
 ## Loads every named view/model script; fails once and returns {} when one is missing or does not parse.
 func _need(t, names: Array) -> Dictionary:
 	var out := {}
@@ -436,10 +446,21 @@ func test_pose_table_p1(t) -> void:
 	var s4 := _pose(M, art, odd, {"state": "sleep", "role": "social", "id": 6})
 	t.eq(s4.sheet, "character.jumpsuit.social", "a placeholder entry is not used even if it names a file")
 	t.eq(float(s4.rotate_deg), float(art.colonist.sleeper_rotation_deg), "and the rotated fallback applies")
-	var s3 := _pose(M, art, man, {"state": "sleep", "role": "builder", "id": 6})
+	var hidden := _manifest_sleeping_hidden()
+	var s3 := _pose(M, art, hidden, {"state": "sleep", "role": "builder", "id": 6})
 	t.eq(s3.sheet, "character.jumpsuit.builder", "placeholder sleeping: the jumpsuit sheet")
 	t.eq(s3.frame, "idle_front", "placeholder sleeping: idle_front")
 	t.eq(float(s3.rotate_deg), float(art.colonist.sleeper_rotation_deg), "placeholder sleeping rotated -90")
+	# The shipped manifest has real poses: sleeping sheet, frame "sleep", unrotated, n stable per id and within 0..3.
+	for role in ["builder", "curious", "social", "tender"]:
+		for id in [0, 1, 5, 6, 7, 12, 1001]:
+			var r1 := _pose(M, art, man, {"state": "sleep", "role": role, "id": id})
+			var r2 := _pose(M, art, man, {"state": "sleep", "role": role, "id": id})
+			t.eq(r1.sheet, "character.sleeping.%s.%d" % [role, id % 4], "real manifest: %s id %d picks pose id mod 4" % [role, id])
+			t.eq(r1.sheet, r2.sheet, "the pose is stable per being id")
+			t.eq(r1.frame, "sleep", "real sleeping frame is 'sleep'")
+			t.eq(float(r1.rotate_deg), 0.0, "real sleeping pose is not rotated")
+			t.check(man.entries.has(r1.sheet) and man.entries[r1.sheet].get("file") != null, "%s exists with a file" % r1.sheet)
 	# Construction welding: weld_1 / weld_2 at 6 Hz, side view.
 	var w0 := _pose(M, art, man, {"state": "work", "suit_kind": "construction", "wait_h": 1.0, "real_time": 0.0})
 	var w1 := _pose(M, art, man, {"state": "work", "suit_kind": "construction", "wait_h": 1.0, "real_time": 0.09})

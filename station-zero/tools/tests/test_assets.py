@@ -278,6 +278,26 @@ def raw_keyed_bbox(path):
     return solid.getbbox()
 
 
+def raw_interior_bbox(path):
+    """Independent, approximate keying of an interior raw (bbox only, no erosion): gray surround flood-filled from the four
+    corners with the pipeline tolerance; a magenta-cornered raw goes through raw_keyed_bbox."""
+    im = Image.open(path).convert("RGB")
+    k = PIPE["key"]
+    w, h = im.size
+    r, g, b = im.getpixel((0, 0))
+    if r > k["r_min"] and b > k["b_min"] and g < k["g_max"]:
+        return raw_keyed_bbox(path)
+    tol = k["gray_bg_tolerance"]
+    marked = im.copy()
+    for c in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        ImageDraw.floodfill(marked, c, (255, 0, 255), thresh=int(tol * 1.5))      # PIL: summed channel difference per corner seed, vs the pipeline's euclidean 24
+    mr, mg, mb = marked.split()
+    bg = ImageChops.multiply(ImageChops.multiply(mr.point(lambda v: 255 if v == 255 else 0),
+                                                 mg.point(lambda v: 255 if v == 0 else 0)),
+                             mb.point(lambda v: 255 if v == 255 else 0))
+    return ImageChops.invert(bg).getbbox()
+
+
 def disc_offsets(radius):
     r = int(math.floor(radius))
     return [(dx, dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1) if dx * dx + dy * dy <= radius * radius + 1e-9]
@@ -291,7 +311,10 @@ def accent_pred(cls):
         return lambda r, g, b: (r >= m["r_min"] and m["g_min"] <= g <= m["g_max"] and b <= m["b_max"]
                                 and r - b >= m["r_minus_b_min"])
     if cls == "violet":
-        return lambda r, g, b: m["r_min"] <= r <= m["r_max"] and b >= m["b_min"] and g <= m["g_max"]
+        d = m["dark"]
+        return lambda r, g, b: ((m["r_min"] <= r <= m["r_max"] and b >= m["b_min"] and g <= m["g_max"])
+                                or (b >= d["b_min"] and r <= d["r_max"] and b - g >= d["b_minus_g_min"]
+                                    and b - r >= d["b_minus_r_min"]))
     if cls == "pink":
         return lambda r, g, b: (r >= m["r_min"] and g <= m["g_max"] and m["b_min"] <= b <= m["b_max"]
                                 and r - g >= m["r_minus_g_min"])
@@ -546,7 +569,10 @@ def build_syn():
 
 def build_flip():
     """P-15: baseline (no optional raws, no green_room exterior), drop them in, remove them again."""
-    p = make_project("flip", drop_from_handoff=("greenroom_exterior.png",))
+    # the optional raws (decals, sleeping sheet) are removed from the copied handoff dir so the baseline is independent of
+    # what the real raw dirs hold; the "real" side of the flip uses the synthetic ones dropped in below
+    p = make_project("flip", drop_from_handoff=("greenroom_exterior.png", ART["optional"]["raw_decals"],
+                                                 ART["optional"]["raw_sleeping"]))
     r1 = run_build(p.root)
     if not r1.ok:
         return Scenario(False, r1.message, proj=p)
@@ -892,9 +918,12 @@ class TestP4Sizes(PipelineCase):
                 continue
             with self.subTest(kind=k):
                 e = self.entry("building.%s.interior" % k)
-                rw, rh = Image.open(raw).size
-                # the cropped interior has a bbox inside the raw; its aspect cannot exceed the raw's by much
-                self.assertLessEqual(e["h"], round(PIPE["interior_width_px"] * rh / rw) + 2)
+                x0, y0, x1, y1 = raw_interior_bbox(raw)
+                # the pipeline crops to the keyed bbox, so height = round(width x cropped aspect). The raw's own aspect is NOT an
+                # upper bound: a raw with a wide gray surround and a door corridor that runs to the bottom edge (reactor) crops
+                # narrower than it is tall relative to the raw.
+                want = round(PIPE["interior_width_px"] * (y1 - y0) / float(x1 - x0))
+                self.assertLessEqual(abs(e["h"] - want), 2, "%s interior height %d, expected about %d" % (k, e["h"], want))
 
     def test_atlases_512(self):
         cell, (gx, gy) = PIPE["character_cell_px"], PIPE["atlas_grid"]
@@ -1165,6 +1194,8 @@ class TestP7Masks(PipelineCase):
                     self.assertEqual(n, 0)
                 else:
                     self.assertGreater(n, 0)
+                    if spec["accent"] == "violet":
+                        self.assertGreaterEqual(n, 300, "the dark violet trim must reach the archive accent mask")
                 seen.append(k)
         self.assertGreater(len(seen), 0)
 
@@ -1520,6 +1551,27 @@ class TestP13Decals(PipelineCase):
                 else:
                     self.assertFalse(e["placeholder"])
                     check_decal(self, self.processed, e, d)
+
+
+class TestP13RealDecals(PipelineCase):
+    """Real-path test for the generated terrain_decals.png (skipped while the raw is absent)."""
+
+    def test_real_decals_are_four_clean_cutouts(self):
+        raw = resolve_raw(ROOT, ART["optional"]["raw_decals"])
+        if raw is None:
+            self.skipTest("terrain_decals.png is not in raw_dirs")
+        seen = set()
+        for d in DECALS:
+            with self.subTest(decal=d):
+                e = self.entry("terrain.decal.%s" % d)
+                self.assertFalse(e["placeholder"])
+                im = check_decal(self, self.processed, e, d)
+                self.assertEqual(im.size[0], 256)
+                pink = sum(1 for q in im.getdata() if q[3] > 0 and min(q[0], q[2]) - q[1] >= 30 and q[0] >= q[2])
+                self.assertEqual(pink, 0, "%s keeps a pink/magenta cast (generated glow inside the outline)" % d)
+                self.assertGreater(im.size[1], 0)
+                seen.add(Path(e["file"]).name)
+        self.assertEqual(seen, {"decal_%s.png" % d for d in DECALS})
 
 
 def check_decal(tc, processed, e, name):

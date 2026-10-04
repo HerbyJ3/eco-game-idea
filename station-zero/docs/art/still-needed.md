@@ -40,3 +40,6 @@ These will be fixed by real art:
 - **Interior furnishings:** procedural panel floors now. Real art adds shelving, hydroponic beds, workbenches, reactor core.
 - **Terrain decals:** placeholder blobs. Real art adds detail to ice patches, pit excavation, rock outcrops, crater features.
 - **All colonists:** one face/hair shared. Real sheets add visual variety.
+
+## Update 2026-10-04: generated art imported
+All 8 generated images are now in the pipeline: comms and archive exteriors, the four interiors, the terrain decals and the sleeping poses (86 of 86 manifest entries are real, none are placeholders). The first sleeping sheet copied the jumpsuit sheet's 4x4 layout and was rejected (docs/art/rejected/); the poses were regenerated as four single-figure images (docs/art/generated/sleeping/) and assembled into a 2x2 sheet. Two of the four poses are near-duplicates (curled left). Texture memory is 47.1 MB of 48 MB: the next batch of art needs either the fallback outline PNGs excluded from the budget count or a higher limit.
