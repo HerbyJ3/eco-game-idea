@@ -4,6 +4,7 @@ extends RefCounted
 ## the fit rect, door openness, light alphas, the construction draw list. Nothing is animated here.
 
 const WorldCtx = preload("res://view/world/world_ctx.gd")
+const BeingDraw = preload("res://view/world/being_draw.gd")
 
 const Construction = preload("res://view/model/construction.gd")
 const Doors = preload("res://view/model/doors.gd")
@@ -15,9 +16,12 @@ var _pad_key := ""
 
 # ------------------------------------------------------------------ geometry
 
-## The roof cut of a building. The roof and interiors arrive with step 16, until then the exterior is always whole.
-func roof_cut(_x: WorldCtx, _b: Buildings.Building) -> float:
-	return 0.0
+## The roof cut of a finished building (spec 9.2): the zoom cut or the peek cut, but only while its interior is loaded,
+## so a building with nothing to show under the roof keeps its roof.
+static func roof_cut(x: WorldCtx, b: Buildings.Building) -> float:
+	if not b.finished() or x.vm.interior(b.id) == null:
+		return 0.0
+	return x.vm.selection.cut(b.id, x.vm.camera.zoom)
 
 
 func _visible(x: WorldCtx, b: Buildings.Building) -> bool:
@@ -65,21 +69,31 @@ func draw_shadows(c: Object, x: WorldCtx) -> void:
 
 # ------------------------------------------------------------------ L6 entities
 
-func draw_entities(c: Object, x: WorldCtx) -> void:
-	for e in ZSort.sorted(entities(x)):
+func draw_entities(c: Object, x: WorldCtx, beings: BeingDraw = null) -> void:
+	var list := entities(x)
+	if beings != null:
+		list.append_array(BeingDraw.entities(x))
+	for e in ZSort.sorted(list):
+		if e.type == "being":
+			beings.draw_outside(c, x, e.g)
+			continue
 		var b := x.world.buildings.get_building(int(e.id))
 		if b != null and _visible(x, b):
-			_draw_building(c, x, b)
+			_draw_building(c, x, b, beings)
 
 
-func _draw_building(c: Object, x: WorldCtx, b: Buildings.Building) -> void:
+func _draw_building(c: Object, x: WorldCtx, b: Buildings.Building, beings: BeingDraw) -> void:
 	var ext: Rect2 = x.vm.sprite_rect(b)
 	var foot: Rect2 = x.vm.footprint_rect(b)
 	if b.finished():
 		_draw_pad(c, x, foot)
 		var cut := roof_cut(x, b)
 		x.blit(c, "building.%s.base" % b.kind, ext, 1.0 - cut)
-		_draw_door(c, x, b, ext)
+		if cut > 0.0:
+			x.blit(c, "building.%s.interior" % b.kind, x.vm.interior_rect(b.id), cut)
+			if beings != null:
+				beings.draw_interior(c, x, b.id, cut)
+		_draw_door(c, x, b, ext, 1.0 - cut)
 		var lights: Dictionary = x.vm.building(b.id).lights(x.hour, x.real_time, cut)
 		if lights.dim > 0.0:
 			x.blit(c, "building.%s.mask.shadow" % b.kind, ext, lights.dim)
@@ -98,7 +112,7 @@ func _draw_pad(c: Object, x: WorldCtx, foot: Rect2) -> void:
 	c.draw_style_box(_pad_style, foot)
 
 
-func _draw_door(c: Object, x: WorldCtx, b: Buildings.Building, ext: Rect2) -> void:
+func _draw_door(c: Object, x: WorldCtx, b: Buildings.Building, ext: Rect2, alpha: float) -> void:
 	var door := door_world(x, b.kind, ext)
 	var open: float = x.vm.building(b.id).door_open
 	var mode: String = x.lib.door_mode(b.kind)
@@ -106,7 +120,7 @@ func _draw_door(c: Object, x: WorldCtx, b: Buildings.Building, ext: Rect2) -> vo
 	var offs: Dictionary = Doors.leaf_offsets(open, mode, door.size, x.art)
 	var clip := Rect2(door.position + (offs.clip as Rect2).position, (offs.clip as Rect2).size)
 	if mode == "rollup":
-		x.blit_clip(c, id, Rect2(door.position + (offs.panel as Vector2), door.size), clip)
+		x.blit_clip(c, id, Rect2(door.position + (offs.panel as Vector2), door.size), clip, alpha)
 		return
 	var half := Vector2(door.size.x * 0.5, door.size.y)
 	var tex := x.tex(id)
@@ -115,22 +129,24 @@ func _draw_door(c: Object, x: WorldCtx, b: Buildings.Building, ext: Rect2) -> vo
 	var tex_size := tex.get_size()
 	var left := Rect2(door.position + (offs.left as Vector2), half)
 	var right := Rect2(door.position + Vector2(half.x, 0.0) + (offs.right as Vector2), half)
-	_leaf_half(c, x, tex, tex_size, id, left, clip, false)
-	_leaf_half(c, x, tex, tex_size, id, right, clip, true)
+	_leaf_half(c, x, tex, tex_size, id, left, clip, false, alpha)
+	_leaf_half(c, x, tex, tex_size, id, right, clip, true, alpha)
 
 
 ## One half of a split door leaf: the left or right half of the leaf image, drawn into dest and clipped to the door rect.
 func _leaf_half(c: Object, x: WorldCtx, tex: Texture2D, tex_size: Vector2, id: String, dest: Rect2, clip: Rect2,
-		right_half: bool) -> void:
+		right_half: bool, alpha: float) -> void:
 	var inter := dest.intersection(clip)
 	if inter.size.x <= 0.0 or inter.size.y <= 0.0:
 		return
 	var k := Vector2(tex_size.x * 0.5 / dest.size.x, tex_size.y / dest.size.y)
 	var origin := Vector2(tex_size.x * 0.5 if right_half else 0.0, 0.0)
 	var src := Rect2(origin + (inter.position - dest.position) * k, inter.size * k)
-	c.draw_texture_rect_region(tex, inter, src)
+	if alpha <= 0.0:
+		return
+	c.draw_texture_rect_region(tex, inter, src, Color(1, 1, 1, alpha))
 	if x.record:
-		x.log.append({"id": id, "rect": inter, "tex_size": tex_size, "src": src, "alpha": 1.0})
+		x.log.append({"id": id, "rect": inter, "tex_size": tex_size, "src": src, "alpha": alpha})
 
 
 # ------------------------------------------------------------------ construction

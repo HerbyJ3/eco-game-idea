@@ -34,6 +34,10 @@ class Recorder extends RefCounted:
 	func draw_colored_polygon(points: PackedVector2Array, color: Color) -> void:
 		cmds.append({"cmd": "poly", "points": points, "color": color})
 
+	func draw_primitive(points: PackedVector2Array, colors: PackedColorArray, uvs: PackedVector2Array,
+			tex: Texture2D = null) -> void:
+		cmds.append({"cmd": "prim", "points": points, "colors": colors, "uvs": uvs, "tex": tex})
+
 	func draw_style_box(_box: StyleBox, rect: Rect2) -> void:
 		cmds.append({"cmd": "box", "rect": rect})
 
@@ -146,7 +150,7 @@ func test_every_layer_draws_something_or_is_reserved(t) -> void:
 	for id in ["terrain", "corridors", "shadows", "entities", "tint", "lights"]:
 		t.check(d.by_layer[id].cmds.size() > 0, "layer %s drew %d commands" % [id, d.by_layer[id].cmds.size()])
 	for id in ["footprints", "transit", "selection"]:
-		t.eq(d.by_layer[id].cmds.size(), 0, "layer %s is reserved for a later step" % id)
+		t.eq(d.by_layer[id].cmds.size(), 0, "layer %s is empty with no prints, no tunnel beings and no selection" % id)
 	_free(pair)
 
 

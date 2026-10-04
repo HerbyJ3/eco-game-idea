@@ -12,16 +12,25 @@ import pathlib
 HERE = pathlib.Path(__file__).resolve().parent
 ART = json.loads((HERE.parent / "data" / "art.json").read_text())
 
-READY_SETUPS = {"founders", "showcase", "showcase_offline", "showcase_door_habitat", "showcase_door_workshop"}
-READY_VIEW_KEYS = {"debug_map"}
-# Shots that need beings, footprints or roofs (steps 14 to 16): written as comments until those steps land.
-PENDING_IDS = {"s20_mining_trip", "s21_footprints_sol3", "s26_roof_zoom_cut"}
+READY_SETUPS = {"founders", "showcase", "showcase_offline", "showcase_door_habitat", "showcase_door_workshop",
+                "showcase_suits", "showcase_born_pair", "showcase_lamp_dusk", "showcase_interior_habitat",
+                "showcase_interior_comms", "showcase_interior_workshop"}
+READY_VIEW_KEYS = {"debug_map", "select", "peek", "art_set"}
+# Shots whose step has not landed: written as comments until it does.
+PENDING_IDS = set()
+# Review nit 2: a lamp shot at exactly 19:00 is unreliable (--hour lands within 0.025 h), so the dusk shot uses 19.5.
+HOUR_OVERRIDES = {"s17_suits_dusk_lamps": 19.5}
+# The footprint count is reached at night, where the dark prints cannot be seen: step on to noon (prints last 2.5 sols).
+HOUR_ADDED = {"s21_footprints_sol3": 12}
 HUD_OFF_SETUPS = READY_SETUPS - {"founders"}
 
 EXTRA = [
     ("landing_dawn", "--seed 42 --steps 0 --hour 6 --zoom 2"),
     ("landing_night", "--seed 42 --steps 0 --hour 23 --zoom 2"),
     ("sol20_seed42", "--seed 42 --steps 9864 --hour 12 --zoom 2"),
+    ("lamp_dusk_1930", "--seed 42 --hour 19.5 --setup showcase_lamp_dusk --zoom 6.0 --center showcase_beings --view hud=false"),
+    ("lamp_night_2300", "--seed 42 --hour 23 --setup showcase_lamp_dusk --zoom 6.0 --center showcase_beings --view hud=false"),
+    ("footprints_close", "--seed 42 --steps 1480 --until footprints_ge=20 --hour 12 --setup founders --zoom 6.0 --center footprints --view hud=false"),
     ("sol100_zoom_out", "--seed 42 --steps 49320 --hour 12 --zoom 0.6 --center colony --view hud=false"),
 ]
 
@@ -33,7 +42,9 @@ def args_for(s):
     if "until" in s:
         parts.append("--until " + ",".join(f"{k}={v}" for k, v in s["until"].items()))
     if "hour" in s:
-        parts.append(f"--hour {s['hour']}")
+        parts.append(f"--hour {HOUR_OVERRIDES.get(s['id'], s['hour'])}")
+    elif s["id"] in HOUR_ADDED:
+        parts.append(f"--hour {HOUR_ADDED[s['id']]}")
     parts.append(f"--setup {s['setup']}")
     parts.append(f"--zoom {s['zoom']}")
     parts.append(f"--center {s['center']}")

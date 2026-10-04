@@ -40,6 +40,35 @@ func load_manifest(path: String = MANIFEST) -> bool:
 	return true
 
 
+## Switches every building image to its placeholder version (placeholder/<same file name>) where one exists, with the
+## placeholder's own size, so the placeholder set can be looked at beside the real one (screenshot s27). Characters and
+## decals are unchanged. Call after load_manifest; `entries_view()` then carries the new sizes.
+func use_placeholder_set() -> void:
+	_ensure()
+	_textures = {}
+	for id in _entries.keys():
+		var e: Dictionary = _entries[id]
+		if not String(id).begins_with("building.") or e.get("file") == null or String(e.file).begins_with("placeholder/"):
+			continue
+		var alt := "placeholder/" + String(e.file).get_file()
+		var img := Image.new()
+		var bytes := FileAccess.get_file_as_bytes(ROOT + alt)
+		if bytes.is_empty() or img.load_png_from_buffer(bytes) != OK:
+			continue
+		var swapped: Dictionary = e.duplicate()
+		swapped["file"] = alt
+		swapped["w"] = img.get_width()
+		swapped["h"] = img.get_height()
+		swapped["placeholder"] = true
+		_entries[id] = swapped
+
+
+## The manifest entries as the library serves them (after use_placeholder_set, the substituted ones).
+func entries_view() -> Dictionary:
+	_ensure()
+	return _entries
+
+
 func _ensure() -> void:
 	if not _loaded:
 		load_manifest()

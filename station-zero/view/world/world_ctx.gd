@@ -111,6 +111,35 @@ func blit_clip(c: Object, id: String, rect: Rect2, clip: Rect2, alpha: float = 1
 		log.append({"id": id, "rect": inter, "tex_size": t.get_size(), "src": src, "alpha": alpha})
 
 
+## One atlas frame drawn at `feet` (the sprite's pivot) with the given rotation (rad) and horizontal mirror. `dest` is the
+## cell rect relative to the pivot, `src` the frame in the atlas. The log gets the transform too.
+func sprite(c: Object, id: String, dest: Rect2, src: Rect2, feet: Vector2, rot: float, mirror: bool,
+		alpha: float = 1.0) -> void:
+	var t := lib.texture(id)
+	if t == null or alpha <= 0.0:
+		return
+	c.draw_set_transform(feet, rot, Vector2(-1.0 if mirror else 1.0, 1.0))
+	c.draw_texture_rect_region(t, dest, src, Color(1, 1, 1, alpha))
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if record:
+		log.append({"id": id, "rect": dest, "tex_size": t.get_size(), "src": src, "alpha": alpha, "feet": feet,
+				"rot": rot, "mirror": mirror})
+
+
+## Draws a texture that is not a manifest entry (a runtime-built one, like the selection outline); logged under `id`.
+func blit_texture(c: Object, id: String, t: Texture2D, rect: Rect2, alpha: float) -> void:
+	if t == null or alpha <= 0.0:
+		return
+	c.draw_texture_rect(t, rect, false, Color(1, 1, 1, alpha))
+	if record:
+		log.append({"id": id, "rect": rect, "tex_size": t.get_size(), "src": Rect2(Vector2.ZERO, t.get_size()), "alpha": alpha})
+
+
+## A soft additive ellipse: the glow gradient squashed to radii (rx, ry) around p.
+func glow_ellipse(c: Object, p: Vector2, rx: float, ry: float, color: Color) -> void:
+	c.draw_texture_rect(glow, Rect2(p - Vector2(rx, ry), Vector2(rx, ry) * 2.0), false, color)
+
+
 ## A soft additive disc: the glow gradient scaled to radius r around p.
 func glow_disc(c: Object, p: Vector2, r: float, color: Color) -> void:
 	c.draw_texture_rect(glow, Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0), false, color)

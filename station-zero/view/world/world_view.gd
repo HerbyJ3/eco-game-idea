@@ -14,6 +14,9 @@ const TerrainDraw = preload("res://view/world/terrain_draw.gd")
 const CorridorDraw = preload("res://view/world/corridor_draw.gd")
 const BuildingDraw = preload("res://view/world/building_draw.gd")
 const ParticleDraw = preload("res://view/world/particle_draw.gd")
+const BeingDraw = preload("res://view/world/being_draw.gd")
+const FootprintDraw = preload("res://view/world/footprint_draw.gd")
+const SelectionDraw = preload("res://view/world/selection_draw.gd")
 const WorldLayer = preload("res://view/world/world_layer.gd")
 
 ## Layer ids back to front (spec 6): L0/L1 terrain, L2 footprints, L3 tunnels, L4 transit beings, L5 shadows,
@@ -27,6 +30,9 @@ signal debug_map_changed(on: bool)
 var vm: ViewModel
 var art: Dictionary
 var lib := ArtLibrary.new()
+## "placeholder" shows the placeholder building images (screenshots only); "" is the real art with placeholders only
+## where the manifest says so.
+var art_set := ""
 var ctx: WorldCtx
 ## When true the model is not refreshed from real time (screenshots settle it by hand and then freeze it).
 var freeze_model := false
@@ -37,6 +43,9 @@ var _terrain := TerrainDraw.new()
 var _corridors := CorridorDraw.new()
 var _buildings := BuildingDraw.new()
 var _particles := ParticleDraw.new()
+var _beings := BeingDraw.new()
+var _footprints := FootprintDraw.new()
+var _selection := SelectionDraw.new()
 var _press := Vector2.ZERO
 var _pressed := false
 var _dragging := false
@@ -66,6 +75,9 @@ func _bind(world: SimWorld) -> void:
 		push_error("sprite view: art manifest missing or unreadable, run tools/build_all.py")
 		return
 	var man: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ArtLibrary.MANIFEST))
+	if art_set == "placeholder":
+		lib.use_placeholder_set()
+		man["entries"] = lib.entries_view()
 	vm = ViewModel.new(world, art, man)
 	ctx = WorldCtx.new(vm, lib)
 	_resolve_keys()
@@ -166,8 +178,11 @@ func set_camera(zoom_in: float, center_in: Vector2) -> void:
 	_update_frame(0.0)
 
 
-## View-side state for screenshots: debug_map, select (a building kind or id), peek, hud is handled by the HUD scene.
+## View-side state for screenshots: debug_map, art_set (placeholder), select (a building kind or id), peek, hud is handled by the HUD scene.
 func apply_shot_view(opts: Dictionary) -> void:
+	if opts.has("art_set") and String(opts.art_set) != art_set:
+		art_set = String(opts.art_set)
+		_bind(vm.world)
 	if opts.has("debug_map"):
 		vm.debug_map = bool(opts.debug_map)
 	if opts.has("select"):
@@ -241,19 +256,23 @@ func _mouse_button(m: InputEventMouseButton) -> void:
 
 # ---------------------------------------------------------------- drawing
 
-## Called by a layer's _draw. Layers whose content arrives in later steps stay empty.
+## Called by a layer's _draw.
 func draw_layer(c: Object, id: String) -> void:
 	if vm == null or ctx == null:
 		return
 	match id:
 		"terrain":
 			_terrain.draw(c, ctx)
+		"footprints":
+			_footprints.draw(c, ctx)
 		"corridors":
 			_corridors.draw(c, ctx)
+		"transit":
+			_beings.draw_transit(c, ctx)
 		"shadows":
 			_buildings.draw_shadows(c, ctx)
 		"entities":
-			_buildings.draw_entities(c, ctx)
+			_buildings.draw_entities(c, ctx, _beings)
 		"dust":
 			_particles.draw_dust(c, ctx)
 		"tint":
@@ -261,7 +280,10 @@ func draw_layer(c: Object, id: String) -> void:
 		"lights":
 			_buildings.draw_lights(c, ctx)
 			_corridors.draw_lamps(c, ctx)
+			_beings.draw_lamps(c, ctx)
 			_particles.draw_sparks(c, ctx)
+		"selection":
+			_selection.draw(c, ctx)
 
 
 ## The day, dusk and night multiply layers (spec 5.1) as one multiply rect: each layer lerps white toward its colour by

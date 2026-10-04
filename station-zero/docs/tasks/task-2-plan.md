@@ -109,3 +109,9 @@ Approved at revision 3. Harness nits to fix when the showcase setups are built:
 - Selection outline: the PNG outline mask is clipped by the tight crop. The view draws the selection outline from the sprite's alpha at runtime (a dilation or offset pass in a shader), so outlines are never boxes. The outline PNGs remain only as a fallback.
 - The comms and archive placeholder windows are not detected, because the tint fails the blue test, so they don't glow at night. This is acceptable for placeholders. The real art fixes it.
 - The reactor accent mask includes the yellow hazard stripes, as the prototype rule does.
+
+## View notes (steps 14-16)
+- Footprint heel alternation: the sim bakes `foot_side` into each print's position and stores no side, so the heel mark cannot alternate per print without a sim change. Deferred.
+- The selection outline radius reuses `pipeline.masks.outline.radius_px`; a separate selection key can be added in a later data pass.
+- The placeholder reactor interior shows a green kind bar; the real reactor interior (generated, pending download) replaces it.
+- sol100_zoom_out draws 137 calls against the 150 budget. Watch this in Task 3 when more decoration lands.
