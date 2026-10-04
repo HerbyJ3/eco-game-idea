@@ -70,6 +70,22 @@ func pan(screen_dir: Vector2, dt: float) -> void:
 	_clamp_center()
 
 
+## Pans by a mouse drag of rel screen px: the world follows the cursor.
+func drag(rel_screen: Vector2) -> void:
+	follow = false
+	center -= rel_screen / zoom
+	_clamp_center()
+
+
+## Sets zoom and centre directly (screenshot harness, tests), both clamped to the camera limits.
+func set_view(zoom_in: float, center_in: Vector2) -> void:
+	follow = false
+	zoom = zoom_in
+	_clamp_zoom()
+	center = center_in
+	_clamp_center()
+
+
 func reset(centroid: Vector2) -> void:
 	zoom = float(art.camera.zoom_default)
 	center = centroid

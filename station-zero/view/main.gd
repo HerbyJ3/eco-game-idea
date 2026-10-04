@@ -16,6 +16,11 @@ var _beings: Label
 var _log: Label
 var _controls: Label
 var _map: Control
+## The sprite world view (default). M swaps it for the debug dot map.
+var _world: Node
+var _background: Control
+var _shade: Control
+var _hud_visible := true
 
 ## The Sim autoload, looked up by path so the scene also loads where autoloads are not registered.
 var _sim: Node
@@ -43,7 +48,39 @@ func setup(sim: Node) -> void:
 	_controls = get_node("Margin/HBox/VBox/Controls")
 	_map = get_node("Margin/HBox/Map")
 	_map.setup(sim)
+	_world = get_node("WorldLayer/WorldView")
+	_background = get_node("Background")
+	_shade = get_node("HudShade")
+	_world.setup(sim)
+	if not _world.debug_map_changed.is_connected(_show_debug_map):
+		_world.debug_map_changed.connect(_show_debug_map)
+	_show_debug_map(_world.vm != null and _world.vm.debug_map)
 	refresh()
+
+
+## Debug dot map on: the dark background and the map; off: the sprite view behind a shaded HUD.
+func _show_debug_map(on: bool) -> void:
+	_background.visible = on
+	_map.visible = on
+	_shade.visible = not on and _hud_visible
+
+
+## Screenshot and test seams: the camera and view-side state go straight to the world view.
+func set_camera(zoom_in: float, center_in: Vector2) -> void:
+	_world.set_camera(zoom_in, center_in)
+
+
+func settle_view(seconds: float) -> void:
+	_world.settle_view(seconds)
+	_world.freeze_model = true
+
+
+func apply_shot_view(opts: Dictionary) -> void:
+	if opts.has("hud"):
+		_hud_visible = bool(opts.hud)
+		get_node("Margin").visible = _hud_visible
+	_world.apply_shot_view(opts)
+	_show_debug_map(_world.vm.debug_map)
 
 
 func _process(delta: float) -> void:

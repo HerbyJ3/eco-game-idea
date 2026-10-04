@@ -17,3 +17,5 @@ godot --headless --path station-zero --quit-after 30                            
 After adding or renaming a `class_name`, run `godot --headless --path station-zero --import` once so the class cache updates.
 
 Art: `view/art_library.gd` (`ArtLibrary`) reads `assets/processed/manifest.json` and builds textures from the PNG bytes with mipmaps, so it does not depend on the import cache. Draw nodes must set `texture_filter = TEXTURE_FILTER_LINEAR_WITH_MIPMAPS`. An exported build must include `assets/processed/*` (non-resource files filter `*.json, *.png`).
+
+Sprite world view (default scene): `view/world/` draws terrain, tunnels, buildings (doors, lights, offline dimming, construction) and the day/night tint from the view model (`view/model/`). Keys: WASD or arrows pan, wheel or +/- zoom, Home reset, F follow the selection, Esc deselect, M toggles the debug dot map. Screenshots: `tools/shots.sh [name ...]` (list from `data/art.json` via `python3 tools/shots_from_art.py`), output in `docs/shots/task-2/`.
