@@ -513,6 +513,16 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 - **Q7** Interior slots by eye for habitat and comms, plus the `art.interiors.<kind>` override path (7.2).
 - **Q8** Owner decision (Herby), final schedule: screen ramps to dark 19:00 to 21:30, lamps low at 19:00 and full at 21:30 (section 2, 4.4, 5.1, T-L1, T-LAMP). **Still to confirm with the owner: the mirrored dawn** (full dark to 05:30, ramp to full day by 07:00, lamps falling from 05:30 to off at 07:00), which is the coordinator's assumption.
 
+## Implementation notes (step 10, view model)
+- T-A1: the night accent maximum from the 5.3 formula is 1.05 (not 0.83); the tests assert 1.05.
+- T-C2: `dt` is clamped to 0.1 s per update, so a 10 s burst needs frames of at most 0.1 s; one 5 s frame emits the 0.1 s worth (3 hand sparks).
+- 7.3: no two beings share a slot while slots remain; beyond the slot count (15 habitat, 6 default) beings share the floor, up to the 25 cap.
+- 5.5 draw-list `clip_top` values are unpadded; the 2 px pad is applied at draw time.
+- T-DATA literal scan covers `view/model/**`. Allowed literals: 0, 1, 2, array indices, 0.5 and 60.0. Noon is `calendar.hours_per_sol_clock x 0.5`; the face-sign epsilon is 1e-6.
+- 4.3 interpolation: render lags one sample. `alpha = clamp((rt - t_newest) / clamp(t_newest - t_prev, 0.016, 0.5), 0, 1)` between the previous and newest samples.
+- Particles emitted in an update are not aged in that update; `emitted` counts accepted plus dropped.
+- Tolerances: float32 Rect2/Vector2, so 1e-5 on scale, `fit.epsilon_px` on positions, 1e-4 on leaf offsets, 1e-3 on interior walk speed.
+
 ## Changelog
 - 2026-10-03 draft by game-designer. Pending: code-reviewer sign-off against HANDOFF sections 2 and 6 and the cited prototype lines.
 - 2026-10-03 revision 2 (code-reviewer findings B1-B7 and 10 non-blocking, owner decisions Q1-Q8). B1 `pipeline.raw_dirs` and `raw_ignore`; B2 `art.optional` (decals, sleeping poses), presence rule, `raw_sha256`, P-13, P-14, P-15; B3 violet class and real/placeholder accent per kind, P-7 for every kind with an accent; B4 shadow dx at h=4 is -12.0, clamp case at h=3 is -12.6; B5 walk phase clamp without pose jump (deviation from proto L1446 noted); B6 `interior_width_px` 512, budget 48 MB with a 44.2 MB hand estimate; B7 keying rule 1 plus 1b (near-pure magenta everywhere, P-3). Non-blocking: field names (`door(tile_px)`, `w.clock.mars_hour(w.t)`, owning building's `built`), door rule on `suit_kind()` and `building_id` not `mine`, A-label sources, prototype citation fixes (door fill, sleeper offset, lamp threshold, dropped glints, sparkle squash and hash constants into art.json), fit side effects, deterministic accumulator emission and T-C2, interior outline radius scaling, unbuilt dash colour, `art.schema`, interiors override path, magenta-corner fallback, `pillow_version` in the manifest. (The interim lamp rule of this revision, on from 19:00 to 05:00, is superseded by revision 3.)
