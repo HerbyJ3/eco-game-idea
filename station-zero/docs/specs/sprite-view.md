@@ -478,6 +478,7 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 | camera.pan_speed_screen_px_s / drag_threshold_px / pan_margin_px | px/s / px / world px | 520 / 6 / 240 |
 | camera.focus_ease_per_60hz_frame / focus_done_zoom_eps / focus_done_pos_px | frac / zoom / px | 0.08 / 0.002 / 0.5 |
 | camera.keys.* | key names | section 8 |
+| lod.detail_min_zoom | zoom | 1.0 |
 | perf.model_update_ms_max / node_count_max / draw_calls_max | ms / count / count | 2.0 / 300 / 150 |
 | perf.outside_sprite_pool_max / texture_memory_mb_max / texture_memory_mb_expected / mipmap_overhead | count / MB / MB / x | 120 / 48 / 44.2 / 1.34 |
 | perf.frame_ms_info / population_test / model_frames_test | ms / beings / frames | 8.0 / 160 / 10000 |

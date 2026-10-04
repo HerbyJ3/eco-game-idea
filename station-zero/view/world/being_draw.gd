@@ -100,7 +100,8 @@ func draw_outside(c: Object, x: WorldCtx, g: Being) -> void:
 	var p := sprite_params(x, g.id, rec)
 	if p.is_empty():
 		return
-	_shadow(c, x, rec, p.sc)
+	if x.detail:
+		_shadow(c, x, rec, p.sc)
 	_draw_params(c, x, p, 1.0)
 
 
@@ -161,6 +162,8 @@ static func lamp_params(x: WorldCtx, id: int, rec: Dictionary) -> Dictionary:
 
 
 func draw_lamps(c: Object, x: WorldCtx) -> void:
+	if not x.detail:
+		return
 	var lamp: Dictionary = x.art.lamp
 	for g in x.world.beings:
 		var rec: Variant = x.vm.being(g.id)

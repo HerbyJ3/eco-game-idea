@@ -60,11 +60,22 @@ func draw_shadows(c: Object, x: WorldCtx) -> void:
 	if alpha <= 0.0:
 		return
 	var off := Vector2(x.shadow.x, x.shadow.y * float(sh.building_dy_scale))
-	for b in x.world.buildings.list:
-		if not b.finished() or not _visible(x, b):
-			continue
+	for b in _by_kind(x, x.detail):
 		var ext: Rect2 = x.vm.sprite_rect(b)
 		x.blit(c, "building.%s.mask.shadow" % b.kind, Rect2(ext.position + off, ext.size), alpha)
+
+
+## The finished, visible buildings. Far zoom (sorted true) groups them by kind so same-texture draws are consecutive and
+## the canvas batches them; near zoom keeps the list order.
+func _by_kind(x: WorldCtx, keep_order: bool) -> Array:
+	var out: Array = []
+	for b in x.world.buildings.list:
+		if b.finished() and _visible(x, b):
+			out.append(b)
+	if not keep_order:
+		out.sort_custom(func(a: Buildings.Building, b: Buildings.Building) -> bool:
+			return a.kind < b.kind or (a.kind == b.kind and a.id < b.id))
+	return out
 
 
 # ------------------------------------------------------------------ L6 entities
@@ -86,14 +97,16 @@ func _draw_building(c: Object, x: WorldCtx, b: Buildings.Building, beings: Being
 	var ext: Rect2 = x.vm.sprite_rect(b)
 	var foot: Rect2 = x.vm.footprint_rect(b)
 	if b.finished():
-		_draw_pad(c, x, foot)
+		if x.detail:
+			_draw_pad(c, x, foot)
 		var cut := roof_cut(x, b)
 		x.blit(c, "building.%s.base" % b.kind, ext, 1.0 - cut)
 		if cut > 0.0:
 			x.blit(c, "building.%s.interior" % b.kind, x.vm.interior_rect(b.id), cut)
 			if beings != null:
 				beings.draw_interior(c, x, b.id, cut)
-		_draw_door(c, x, b, ext, 1.0 - cut)
+		if x.detail:
+			_draw_door(c, x, b, ext, 1.0 - cut)
 		var lights: Dictionary = x.vm.building(b.id).lights(x.hour, x.real_time, cut)
 		if lights.dim > 0.0:
 			x.blit(c, "building.%s.mask.shadow" % b.kind, ext, lights.dim)
@@ -229,6 +242,9 @@ func _draw_scaffold(c: Object, x: WorldCtx, ext: Rect2, sa: float, cfg: Dictiona
 # ------------------------------------------------------------------ L9 lights
 
 func draw_lights(c: Object, x: WorldCtx) -> void:
+	if not x.detail:
+		_draw_lights_far(c, x)
+		return
 	var l: Dictionary = x.art.light
 	for b in x.world.buildings.list:
 		if not b.finished() or not _visible(x, b):
@@ -262,6 +278,26 @@ func draw_lights(c: Object, x: WorldCtx) -> void:
 					x.col(d.glow_color, lights.door_glow))
 		if b.kind == "comms" and x.lib.is_placeholder("building.comms.base"):
 			_draw_beacon(c, x, ext)
+
+
+## Far zoom (spec 13 lod.detail_min_zoom): one light pass per mask texture, no halo copies, ground strips or door glow.
+## The layer is additive, so order does not matter and the masks are drawn grouped by kind to batch.
+func _draw_lights_far(c: Object, x: WorldCtx) -> void:
+	var list: Array = []
+	for b in _by_kind(x, false):
+		var anim = x.vm.building(b.id)
+		if anim != null:
+			list.append([b, anim.lights(x.hour, x.real_time, roof_cut(x, b))])
+	for mask in ["accent", "windows"]:
+		for e in list:
+			var b: Buildings.Building = e[0]
+			var a: float = e[1][mask]
+			if a > 0.0:
+				x.blit(c, "building.%s.mask.%s" % [b.kind, mask], x.vm.sprite_rect(b), a)
+	for e in list:
+		var b: Buildings.Building = e[0]
+		if b.kind == "comms" and x.lib.is_placeholder("building.comms.base"):
+			_draw_beacon(c, x, x.vm.sprite_rect(b))
 
 
 ## The comms placeholder's blinking red beacon (proto L1591).

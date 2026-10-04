@@ -27,6 +27,8 @@ var dt := 0.0
 ## The world rect the camera sees.
 var view_rect := Rect2()
 var tile_px := 1.0
+## False below `art.lod.detail_min_zoom`: far zoom skips door leaves, halos, ground strips, pads, being shadows and lamp glows.
+var detail := true
 ## Soft round gradient (white in the middle, clear at the edge), for glows.
 var glow: Texture2D
 ## True when textured draws are appended to `log` as {id, rect, tex_size, src, alpha}.
@@ -55,6 +57,7 @@ func begin_frame(view_rect_in: Rect2, dt_real: float) -> void:
 	real_time = vm.real_time
 	dt = minf(dt_real, float(art.door.max_dt_s))
 	view_rect = view_rect_in
+	detail = vm.camera.zoom >= float(art.lod.detail_min_zoom)
 	log.clear()
 
 

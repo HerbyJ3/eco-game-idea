@@ -627,3 +627,69 @@ func test_view_cost_and_draw_counts_are_printed(t) -> void:
 	t.check(cmds > 0, "frame draws commands")
 	t.check(cmds < 4000, "draw commands stay small (%d)" % cmds)
 	_free(pair)
+
+
+## A blank world of 30 finished, online buildings (the six showcase kinds in a 6 x 5 grid).
+func _grid30() -> SimWorld:
+	var w := SimWorld.new(42, {"blank": true})
+	var kinds: Array = SimData.load_json("art.json").showcase.buildings
+	for i in 30:
+		var s: Dictionary = kinds[i % kinds.size()]
+		w.buildings.add(String(s.kind), (i % 6) * 20, (i / 6) * 18, 1.0, int(s.tw), int(s.th))
+	return w
+
+
+## Draw records of the entities layer that belong to buildings (base, door leaves, offline dim, interior), plus the
+## pad style boxes and the visible finished count.
+func _entity_building_draws(view: Node2D) -> Dictionary:
+	view.ctx.record = true
+	view.ctx.log.clear()
+	var rec := Recorder.new()
+	view.draw_layer(rec, "entities")
+	var n := 0
+	for e in view.ctx.log:
+		if String(e.id).begins_with("building."):
+			n += 1
+	var seen := 0
+	for b in view.vm.world.buildings.list:
+		if b.finished() and view._buildings._visible(view.ctx, b):
+			seen += 1
+	return {"textured": n, "boxes": rec.count("box"), "visible": seen, "cmds": rec.cmds.size()}
+
+
+func test_far_zoom_lod_draws_base_only(t) -> void:
+	var w := _grid30()
+	var pair := _make(w)
+	var view: Node2D = pair[1]
+	var art: Dictionary = SimData.load_json("art.json")
+	var thr := float(art.lod.detail_min_zoom)
+	var centre := Vector2(60.0, 40.0) * float(SimData.buildings().tile_px) * 3.0
+	# Far: 0.5 clamps to the camera minimum, which is still below the threshold.
+	view.set_camera(0.5, centre)
+	_frames(view, 3)
+	t.check(view.vm.camera.zoom < thr, "far zoom is below the detail threshold (%.2f < %.2f)" % [view.vm.camera.zoom, thr])
+	t.check(not view.ctx.detail, "the context is in far mode")
+	var far := _entity_building_draws(view)
+	t.check(int(far.visible) >= 10, "far view sees many buildings (%d)" % int(far.visible))
+	t.check(int(far.textured) <= 2 * int(far.visible), "far: at most 2 building draws per finished building (%d for %d)" % [
+			int(far.textured), int(far.visible)])
+	t.eq(int(far.boxes), 0, "far: no foundation pads")
+	var l := _draw_all(view)
+	var door_far := 0
+	for e in l.log:
+		if String(e.id).ends_with(".door"):
+			door_far += 1
+	t.eq(door_far, 0, "far: no door leaves")
+	# Near: unchanged, base + door leaves (2 halves, 1 for the rollup) + pad per building.
+	view.set_camera(2.0, Vector2(42.0, 40.0))
+	_frames(view, 3)
+	t.check(view.ctx.detail, "the context is in detail mode at zoom 2")
+	var near := _entity_building_draws(view)
+	t.check(int(near.visible) >= 1, "near view sees a building (%d)" % int(near.visible))
+	t.eq(int(near.boxes), int(near.visible), "near: one pad per finished building")
+	t.check(int(near.textured) >= 3 * int(near.visible) - int(near.visible) and int(near.textured) <= 3 * int(near.visible),
+			"near: base plus door leaves per building (%d for %d)" % [int(near.textured), int(near.visible)])
+	# Pinned from the pre-LOD code (6 visible buildings: 6 pads, 6 bases, 10 door leaf halves).
+	t.eq(int(near.textured), 16, "near: building draw count unchanged from before the LOD")
+	t.eq(int(near.cmds), 22, "near: entities layer command count unchanged from before the LOD")
+	_free(pair)

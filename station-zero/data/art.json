@@ -417,6 +417,7 @@
       "deselect": ["Escape"]
     }
   },
+  "lod": { "detail_min_zoom": 1.0 },
   "perf": {
     "model_update_ms_max": 2.0,
     "node_count_max": 300,

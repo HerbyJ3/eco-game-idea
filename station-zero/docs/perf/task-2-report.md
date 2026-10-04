@@ -1,6 +1,6 @@
 # Task 2 performance report (plan step 17)
 
-Everything below was measured by `tools/perf_run.gd` (rerun with the command at the end). No code in sim/, view/ or data/ was changed.
+Everything below was measured by `tools/perf_run.gd` (rerun with the command at the end). No code in sim/, view/ or data/ was changed for the measurements. The "After LOD" section at the end records the follow-up fix.
 
 ## Setup
 
@@ -105,6 +105,30 @@ Caveats on what the view-model PASS means: the spec's test case has about 20 bei
 3. Fill and full-screen layers under llvmpipe (frame wall 23 to 38 ms against 8 ms informational). Hiding the multiply tint quad saves about 4 to 6 ms per frame, the terrain about 5 to 6 ms, lights about 8 ms at zoom 0.6, the entities layer about 11 ms at zoom 0.6 (probe noise about 3 ms). Fix: skip the tint quad when the combined colour is near white by day, draw the tint and lights layers at half resolution or in a SubViewport, and bake terrain into one large pre-scaled texture. A GPU will do far better than llvmpipe, so confirm on real hardware before spending effort.
 
 Not in the top 3 but worth watching: the model update median is 0.85 to 1.4 ms and its p95 is 1.5 to 2.4 ms, with spikes to 5.7 ms; it loops every being and builds pose dictionaries per visible being each refresh. Fix if it grows: refresh by sim step delta, skip pose work for beings that did not change state.
+
+## After LOD (far-zoom level of detail)
+
+Change: below `art.lod.detail_min_zoom` (1.0) the world view skips the foundation pad, door leaves, accent and window halo copies, ground strip, door glow, being shadows and helmet lamp glows. A finished building draws its base (plus the offline dim when offline); the light layer draws one accent mask and one window mask per building, grouped by kind so same-texture draws are consecutive and batch. Building shadows are grouped by kind too at far zoom. Construction phases, offline dimming, comms beacon and sprites stay at every zoom. At zoom 1.0 and above nothing changed. Same world, seed, cameras and command as above (one full run, 600 frames per scenario).
+
+| scenario | draw calls before | draw calls after (min-max) | budget 150 | model median ms before / after | frame wall ms before / after (llvmpipe, noisy) |
+|---|---|---|---|---|---|
+| day zoom 0.6 | 292 | 99 (97-99) | PASS | 0.849 / 0.979 | 32.9 / 27.5 |
+| night zoom 0.6 | 370 | 101 (100-103) | PASS | 1.244 / 1.036 | 37.6 / 28.5 |
+| day zoom 2 | 87 | 87 (87-88) | PASS, unchanged | 0.986 / 1.068 | 27.3 / 28.0 |
+| night zoom 2 | 114 | 113 (113-114) | PASS, unchanged | 1.253 / 1.288 | 29.5 / 30.4 |
+| day zoom 6 | 34 | 34 (34-35) | PASS, unchanged | 1.088 / 1.116 | 22.9 / 23.7 |
+| night zoom 6 | 36 | 37 (36-37) | PASS, unchanged | 1.201 / 1.312 | 23.3 / 23.0 |
+
+Layer probe at zoom 0.6, night (draw calls with that layer hidden; none hidden: 102, before 371):
+
+| layer hidden | before | after |
+|---|---|---|
+| entities | 204 (-167) | 60 (-42) |
+| lights | 215 (-156) | 90 (-12) |
+| terrain | 344 (-27) | 73 (-29) |
+| transit | 359 (-12) | 90 (-12) |
+
+Both zoom 0.6 scenarios are now under the 150 budget (about 100 calls). Zoom 2 and 6 draw calls are the same within 1 call (the day-to-day variation of beings). Remaining far-zoom cost is terrain (29), the y-sorted building bases and beings (42) and transit (12). Shots: s02 to s27 and the other 32 shots at zoom 2 and above are byte-identical to the pre-change renders; only the two zoom 0.6 shots (s28_zoom_min, sol100_zoom_out) differ, by design (no pads under buildings, no door leaves, so the dark door opening of the base art shows).
 
 ## Rerun
 
