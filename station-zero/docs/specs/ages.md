@@ -1,190 +1,208 @@
-# Spec: ages (Task 3): Landing and Settlement, announced in the log
+# Spec: ages (Task 3): Landing and Settlement, announced in the log (revision 2)
 
-Source of truth: HANDOFF.md sections 1, 2, 7, 9, 10. Plan and final owner decisions (Herby, 2026-10-05): `docs/tasks/task-3-plan.md`. Sim facts read: `docs/specs/life-support-power.md` (sections 3, 4, 5, 9, 16); balance facts: `docs/balance/task-1-log.md`.
-Locked decisions respected: influence-only god (the age is not a lever and no god power reads or writes it), ages not meters (no progress value exists anywhere; the sample window is private), per-being energy (not read), power as a budget (a short is read as a fact about the past sol, never as a death).
-Tunables live in `data/ages.json` (new) and `data/sim.json` (one new key). No tunable number appears in `sim/ages.gd`. This spec describes behaviour and numbers only, no code.
-Plan numbers that changed: regression is allowed (owner), so the latch is replaced by hysteresis (section 6); the sample hook moves from inside `_sol_boundary` to the end of the step (section 4).
+Source of truth: HANDOFF.md sections 1, 2, 7, 9, 10. Plan and final owner decisions (Herby, 2026-10-05): `docs/tasks/task-3-plan.md`. Sim facts read: `docs/specs/life-support-power.md` (sections 3, 4, 5, 9, 16); balance facts: `docs/balance/task-1-log.md`. Design reviews: `docs/design/reviews/ages-emergence.md`, `ages-feel.md`, `ages-clarity.md` (record in section 17).
+Locked decisions respected: influence-only god (no god power reads or writes the age), ages not meters (no progress value anywhere; the window is private), per-being energy (read per being, as shares), power as a budget (a short is a past-sol fact, never a death).
+Tunables live in `data/ages.json` (new) and `data/sim.json` (new keys). No tunable in `sim/ages.gd`. This spec describes behaviour and numbers only, no code.
+
+## For the owner (changes to WHAT the sample measures; decided by the lead, 2026-10-05)
+Your rule stands untouched: at least 36 of the last 40 samples ok, the last 3 ok, at least 5 Mars-born alive, samples from sol 5, window private, regression allowed with hysteresis, announce only. Two refinements change what "ok" and "Mars-born" mean:
+1. **Two colonist clauses join the sample.** A sol is ok only if (a) no more than 10% of the living beings are in distress (energy below the exhausted line of 12, or turned back outside) and (b) at least 70% of the living beings are rested (energy at or above the sleep line of 28). Both are shares of the living population, so a 160-being colony reads like a 12-being one. Why: without them the sample is, in practice, only "ice is at least 2 sols of use", because oxygen, food and power pass on every Task 1 sample (spec 4.2). The age would be an ice gauge in disguise. In practice, on the five Task 1 seeds I expect these two clauses to pass nearly always (energy averages 54 to 60 and the boundary falls at dawn, 06:00, after the night), so the entry sols should barely move; the probe measures this. Their value is that the age now reads people, and later systems (emotions, trust, Task 4) can make them matter. Both thresholds are estimates for the probe.
+2. **"5 Mars-born" now means five who belong to a family.** The count is of living Mars-born beings whose recorded parent is also alive, and those beings must come from at least 2 different birth habitats. The number 5 is yours and unchanged. Why: five orphans in one habitat is a headcount, not a family; HANDOFF 7 says Settlement is "families". Needs one cheap sim change (record the parent and birth habitat on each newborn, no RNG draw, no behaviour change; section 3). The 2-habitat number is an estimate for the probe.
+Not adopted for you to decide: see "Open decisions for the owner" at the end (pop 0, auto-slow, three smaller choices).
 
 ## 1. Purpose
-Name what the people already did. Each sol the colony is looked at once and the result is `ok` or `not ok`. A long stretch of mostly `ok` sols, ending in `ok` sols, with the first Mars-born generation alive, is called Settlement. A long stretch of mostly `not ok` sols sends the colony back to Landing. Both changes are announced in the log in words. Nothing counts toward the next age on screen, and nothing about the colony changes because of the age (announce only; owner).
+Name what the people already did. Each sol the colony is looked at once and the result is `ok` or `not ok`. A long stretch of mostly ok sols, ending in ok sols, with a first generation of families alive, is called Settlement. A long stretch of mostly not-ok sols sends the colony back, and the line says what pressed on it. Both are announced in the log in the colony's voice. Nothing counts toward the next age on screen, and nothing about the colony changes because of the age.
 
 ## 2. Ages for Task 3
 | id | Display name | Life is about (HANDOFF 7) | Entered by |
 | --- | --- | --- | --- |
-| `landing` | Landing | survival: air, food, water, power | world creation; or falling back from Settlement (section 6) |
+| `landing` | Landing | survival: air, food, water, power | world creation, or falling back from Settlement |
 | `settlement` | Settlement | families, routines | the entry rule (section 5) |
-
-Council, Dome and City do not exist in Task 3: no data entry, no stub, no placeholder condition. Settlement's HANDOFF exit ("relationships and trust form") is not built (Task 4); the only exit is the fall-back rule. The first age at creation is Landing. Settlement entry can recur any number of times (section 6).
+Council, Dome and City do not exist in Task 3: no data entry, no stub, no condition. Settlement's HANDOFF exit ("relationships and trust form") is Task 4; the only exit now is the fall-back rule. The first age is Landing, announced at world creation (elapsed sol 0 = Mars sol 1). Settlement entry can recur. Task 5 (Council) must not gate on "first Settlement entry"; it should read `stats.age_history` (complete, section 8.2) and choose its own rule.
 
 ## 3. State
-All of it is held by `Ages` (sim/ages.gd), owned by `SimWorld` as `world.ages`. It is private history: nothing below except the stats of section 8 is copied into `stats`, the balance table or the HUD.
+Held by `Ages` (sim/ages.gd), owned by `SimWorld` as `world.ages`. Private history: nothing here except section 8.2 is copied into `stats`, the balance table or the HUD.
 | Field | Meaning |
 | --- | --- |
-| `age` | current age id, `landing` at creation |
-| `window` | list of the last `sample.window_sols` booleans (`ok`), newest last; oldest dropped when longer |
-| `last_change_sol` | elapsed sol of the latest age change; 0 at creation |
-| `snap_shorts`, `snap_deaths` | the values of `stats.shorts` and `len(stats.deaths_list)` at the previous sol boundary (feed the "past sol" clauses) |
-| `last_sample` | the most recent sample as a dictionary of clause booleans plus the raw values (section 4.2). Read by tests and `tools/age_probe.gd` only; never copied to stats, never read by the view |
-Elapsed sol = `SimWorld.sol()` (sol 0 is the first sol; Mars sol number = elapsed + 1, spec life-support section 3). Windows and dwell count elapsed sols, not hours, so no float time enters a decision.
+| `age` | current age id; `landing` at creation |
+| `window` | the last `sample.window_sols` samples, newest last; each is `{ok, failed}` where `failed` is the set of failing cause groups (4.3) |
+| `last_change_sol` | elapsed sol of the latest change; 0 at creation |
+| `snap_shorts`, `snap_deaths` | `stats.shorts` and `len(stats.deaths_list)` at the previous sol boundary |
+| `last_sample` | most recent sample: clause booleans plus raw values. For tests and `tools/age_probe.gd` only; never in stats, never read by the view |
+**Two fields recorded on each Being at birth** (the only change outside `ages.gd` and the hook; state, no behaviour): `parent_id` (the id of the being `rng.pick(here)` already returns in `_create_newborn`; today the result is discarded; founders and test-seam beings: 0) and `birth_building_id` (the habitat id). The birth age is already `born_t`. No new RNG draw, no change to draw order; proof in section 10 (test 17) and the five table hashes.
+Elapsed sol = `SimWorld.sol()` (Mars sol number = elapsed + 1). All windows and dwell count elapsed sols; no float time enters a decision.
 
 ## 4. The per-sol sample
 ### 4.1 Where it runs
-Once per sol boundary, in step phase 11 (after the stats sampling), inside the existing `if _sol_started:` block of `SimWorld.step()`, after the `pop_by_sol` line. `_sol_boundary()` itself is unchanged. The hook is one call, `ages.on_sol(world)`. Reason for phase 11 rather than the plan's "inside `_sol_boundary`": at the end of the step phases 3 (power) and 10 (shortage deaths) have run, so the sample reads settled state; `stats.shorts_this_sol` has already been reset at the boundary, so the "past sol" clauses use the private snapshots instead of it. Cost is O(window) = 40 booleans plus a scan of at most the deaths added in one sol, once per sol (about 148,000 steps per 300 sols are untouched).
-`on_sol(world)` does, in this order, at boundary n = `sol()` (n >= 1):
-1. Credit the sol that just ended to the age in force during it: `stats.sols_in_age[age] += 1`.
-2. Build the sample (4.2) when n >= `sample.from_sol` and pop > 0; append to `window`, drop the oldest past `sample.window_sols`. Always refresh `snap_shorts` and `snap_deaths`, including before `from_sol` and when pop is 0 (so the first sample at sol 5 covers exactly one sol).
-3. Evaluate the change (sections 5 to 7) with `decide`; if the age changes, update `age`, `last_change_sol = n`, stats, and log (section 8).
-Nothing in `on_sol` draws from `SimRng`, reads the wall clock, writes colony, building, being or resource state, or reads the log.
-Test seams: `Ages.sample(world)` (pure read, returns the dictionary of 4.2); `Ages.decide(window, age, sols_since_change, mars_born)` (pure function, returns the age id that should be in force, so synthetic histories can run thousands of sols in milliseconds); `Ages.on_sol(world)` callable directly after a test sets `world.t` to a boundary (`start_hour + n x sol_hours`); `SimWorld.ages_enabled` (default true; false skips the hook entirely, used to prove no side effects). Blank test worlds have `world.ages` with age `landing` and log nothing at creation.
+Once per sol boundary, in step phase 11 after the stats sampling, inside the existing `if _sol_started:` block of `SimWorld.step()`, after the `pop_by_sol` line: one call `ages.on_sol(world)`. `_sol_boundary()` is unchanged. At the end of the step phases 3 (power) and 10 (shortage deaths) have run, so the sample reads settled state; `shorts_this_sol` is already reset at the boundary, so "past sol" clauses use private snapshots. The boundary falls at Mars clock 06:00 (start hour is dawn, a quarter sol in), the same phase of every day, which is why instantaneous colonist reads are comparable sol to sol.
+`on_sol(world)`, at boundary n = `sol()` (n >= 1), in this order:
+1. Credit the sol that just ended to the age in force: `stats.sols_in_age[age] += 1`.
+2. If n >= `sample.from_sol` and pop > 0: build the sample (4.2), append to `window`, drop the oldest past `sample.window_sols`. Always refresh the two snapshots, also before `from_sol` and at pop 0.
+3. Call `decide`; on a change update `age`, `last_change_sol = n`, stats, and log (section 8).
+No RNG draw, no wall clock, no write to colony, building, being or resource state, no read of the log.
+Test seams: `Ages.sample(world)` (pure read); `Ages.decide(window, age, sols_since_change, family_mars_born, homes)` (pure, returns the age id that should be in force); `Ages.dominant_cause(window)` (pure); `Ages.on_sol(world)` after a test sets `world.t` to a boundary (`start_hour + n x sol_hours`); `SimWorld.ages_enabled` (default true; false skips the hook). Blank worlds have `world.ages` in `landing` and log nothing at creation.
 
-### 4.2 The sample: every clause, thresholds from `data/ages.json`
-A sample is `ok` when ALL of the following hold. Each clause is stored by name in `last_sample` so a test or the probe can see which one failed. Reads are of the state at the end of the boundary step.
-| # | Clause name | Reads | Passes when | Threshold key |
+### 4.2 The sample: every clause, thresholds from data
+A sample is `ok` when ALL hold. Each clause is stored by name in `last_sample`. All reads are of the state at the end of the boundary step.
+| # | Clause | Reads | Passes when | Key |
 | --- | --- | --- | --- | --- |
-| 1a | `oxygen` | `colony.oxygen`, `colony.o2_cap()` | `oxygen >= o2_min_fraction x o2_cap` | `sample.o2_min_fraction` 0.5 |
-| 1b | `food` | `colony.food`, `colony.food_cap()` | `food >= food_min_fraction x food_cap` | `sample.food_min_fraction` 0.5 |
-| 2a | `o2_net` | `colony.o2_net()` (per h) | `o2_net > net_above` (strict) | `sample.net_above` 0.0 |
-| 2b | `food_net` | `colony.food_net()` (per h) | `food_net > net_above` (strict) | `sample.net_above` 0.0 |
-| 3a | `power_budget` | `buildings.demand()`, `buildings.supply()` | `demand <= supply` | none (the budget itself) |
-| 3b | `none_offline` | `buildings.list[*].offline` | no building has `offline` true | none |
-| 3c | `no_short` | `stats.shorts`, `snap_shorts` | `stats.shorts == snap_shorts` (no short since the previous boundary) | none |
-| 4 | `no_shortage_death` | `stats.deaths_list[snap_deaths:]` | no entry added since the previous boundary has a cause in `shortage_causes` (`air`, `thirst`, `hunger`). A `suffocated outside` death is an accident, not a shortage, and does not fail the clause | `sample.shortage_causes` |
-| 5 | `ice` | `colony.ice`, `colony.pop()`, `consumption.ice_per_being` (colony.json), `sol_hours` | `ice / (pop x ice_per_being x sol_hours) >= ice_min_sols` | `sample.ice_min_sols` 2.0 |
+| 1a | `oxygen` | `colony.oxygen`, `o2_cap()` | `oxygen >= o2_min_fraction x o2_cap` | `sample.o2_min_fraction` 0.5 |
+| 1b | `food` | `colony.food`, `food_cap()` | `food >= food_min_fraction x food_cap` | `sample.food_min_fraction` 0.5 |
+| 2a | `o2_net` | `colony.o2_net()` | `> net_above` (strict) | `sample.net_above` 0.0 |
+| 2b | `food_net` | `colony.food_net()` | `> net_above` (strict) | `sample.net_above` 0.0 |
+| 3a | `power_budget` | `demand()`, `supply()` | `demand <= supply` | none |
+| 3b | `none_offline` | `buildings.list[*].offline` | no building offline | none |
+| 3c | `no_short` | `stats.shorts`, `snap_shorts` | equal (no short since the previous boundary) | none |
+| 4 | `no_shortage_death` | `stats.deaths_list[snap_deaths:]` | no new entry with a cause in `shortage_causes`; `suffocated outside` is an accident and does not count | `sample.shortage_causes` |
+| 5 | `ice` | `colony.ice`, `pop()`, `consumption.ice_per_being`, `sol_hours` | `ice / (pop x ice_per_being x sol_hours) >= ice_min_sols` | `sample.ice_min_sols` 2.0 |
+| 6 | `calm` | each living being's `energy`, `returning`, `x` | share of living beings in distress is `<= distress_share_max`. Distress = `energy < beings.energy.exhausted_turn_back` (12) OR (outside, `x` not null, and `returning` true) | `sample.distress_share_max` 0.10 |
+| 7 | `rested` | each living being's `energy` | share of living beings with `energy >= beings.energy.sleep_below` (28) is `>= rested_share_min` | `sample.rested_share_min` 0.70 |
 Notes:
-- `ice_min_sols` 2 is the existing 3-sol floor idea (`stock_days_floor_sols`) slightly looser. Ice is judged against current use, never against `ice_target`, because ice stays under 0.6 of target on the dry seeds while still being plentiful on others (plan section 4). Example at pop 12: 2 sols of use is 12 x 0.01 x 24.6597 x 2 = 5.92; at pop 100: 49.3.
-- The instant value is read, not a minimum over the sol, so a dip between two boundaries can be missed. Accepted: it is stateless, and a real shortage persists over many boundaries.
-- Oxygen, food and power are expected to pass on every sample of every Task 1 seed (stocks at caps by about sol 6, no shorts); ice is the clause that varies (Task 1: ice dry on seeds 42, 99, 2026 after sol 120).
-- Early sols: oxygen starts at 140 of cap 550 (0.25) and food at 110 of 420, and they reach 0.5 of cap at about sol 5.2 and 5.4. The samples at sols 5 and 6 may therefore fail; the tolerance forgives them (4 of 40).
-- Pop 0 (extinct): the sample is skipped (nothing appended, window unchanged), so the ice division never runs. The age is frozen while pop is 0 and a colony that has died out never "falls back"; `sols_in_age` keeps counting, because those sols did pass in that age. If pop returns above 0 (cannot happen in Task 3) sampling resumes.
+- Clauses 6 and 7 use numbers already in `beings.json` (12 and 28), so no duplicate tunable; the two shares are new. Both are shares of the living population, so scale does not matter.
+- What the sim already exposes for colonists, and what it does not: energy, state, `returning`, position (outside or inside), `born_t`, `earth_born` and now `parent_id` and `birth_building_id` are readable at the boundary with no new state. Not exposed: conversations (the sim has none; lines are a view-only fixed list), "slept this sol" (would need a per-being per-sol flag), births this sol per habitat (derivable from `stats.births` deltas). I therefore did not add a "shared life" or "slept this sol" clause: it would need new per-step state, and the real signal (conversations, trust) is Task 4. The slot is reserved by name (`unrest` cause group).
+- Ice: judged against current use, never against `ice_target`. Pop 12: 2 sols is 5.92; pop 100: 49.3. The instant value is read; a dip between boundaries can be missed (deferred, section 17).
+- Early sols: oxygen and food reach 0.5 of cap at about sol 5.2 and 5.4, so samples at sols 5 and 6 may fail; tolerated (4 of 40).
+- Pop 0: the sample is skipped (nothing appended), so no division runs and the age is frozen (section 8.3).
+### 4.3 Cause groups (private)
+Each failing clause belongs to one group; a sample stores the set of groups that failed. Groups: `ice` (5); `food` (1b, 2b); `oxygen` (1a, 2a); `power` (3a, 3b, 3c); `death` (4); `unrest` (6, 7). The **dominant cause** of a window is the group that failed in the most samples; ties go in the fixed order ice, food, oxygen, power, death, unrest. It is used only to choose the sentence in the fall-back line (8.1) and is stored in `age_history`; it is never shown as a number.
 
-## 5. Entry to Settlement (owner decision, final)
-`decide` returns `settlement` when the current age is `landing` and ALL of:
-1. the window is full (holds `window_sols` = 40 samples; samples start at sol 5, so the earliest possible entry is at the boundary of elapsed sol 44);
-2. the number of `ok` samples in the window >= `required_ok` = ceil(`entry.ok_share` x `window_sols` - STEP_EPS) = ceil(0.9 x 40) = 36 (at most 4 failing sols in the last 40);
-3. the last `entry.recent_ok_sols` = 3 samples are all `ok`;
-4. at least `entry.mars_born_min` = 5 living beings have `earth_born` false (evaluated at the boundary, not part of the sample, not stored in the window);
+## 5. Entry to Settlement (owner decision, refined as in "For the owner")
+`decide` returns `settlement` when the age is `landing` and ALL of:
+1. the window is full (`window_sols` = 40 samples; the earliest entry is the boundary of elapsed sol 44);
+2. ok samples in the window >= `required_ok` = ceil(`entry.ok_share` x `window_sols` - STEP_EPS) = 36;
+3. the last `entry.recent_ok_sols` = 3 samples are all ok;
+4. **family Mars-born**: at least `entry.mars_born_min` = 5 living beings with `earth_born` false whose `parent_id` is the id of a living being, and among those beings at least `entry.mars_born_homes_min` = 2 distinct `birth_building_id` values. (Beings whose parent has died, or `parent_id` 0, are not counted. This is evaluated at the boundary, is not stored in the window, and is an entry clause only.)
 5. the dwell is over: `n - last_change_sol >= min_dwell_sols` (20).
-The last-3 clause blocks entry during a current failure even when the share is high. Entry at sol n is logged once for that change (section 8). `STEP_EPS` is the existing constant; no new literal.
-The window is a private sliding history. It is never shown, never summarised, and not in stats.
+The last-3 clause blocks entry during a current failure even when the share is high. The window is never shown.
 
 ## 6. Exit (fall back) and hysteresis
 ### 6.1 Rule
-`decide` returns `landing` when the current age is `settlement` and ALL of:
-1. the window is full (always true once in Settlement);
-2. the number of `ok` samples in the window <= `exit_ok_max` = ceil(`exit.ok_share_below` x `window_sols` - STEP_EPS) - 1 = ceil(0.6 x 40) - 1 = 23 (that is, strictly fewer than 24 ok sols; at least 17 sols not ok in the last 40);
-3. NOT all of the last `exit.recent_sols` = 5 samples are `ok` (a colony whose last 5 sols were all fine is recovering and stays);
-4. the dwell is over: `n - last_change_sol >= min_dwell_sols` (20).
-Re-entering Settlement later uses section 5 unchanged (full window, 36 ok, last 3 ok, 5 Mars-born, dwell). The first entry is logged with the entry wording; every later entry with the settle-again wording.
-### 6.2 Why the two thresholds cannot flap
-- The entry share (0.9, 36 of 40) and the exit share (0.6, 24 of 40) leave a dead band of 24..35 ok samples where nothing changes, whichever age is current. The window slides by exactly one sample per sol, so its ok count moves by at most 1 per sol.
-- After an entry the window holds at least 36 ok. To reach 23 or fewer, at least 13 sols must go by (13 consecutive not-ok samples). After an exit it holds at most 23 ok. To reach 36 again, at least 13 sols must go by. So even with no dwell the fastest possible round trip is 26 sols, and a single change is never undone in under 13.
-- The minimum dwell of 20 sols is longer than that 13-sol bound, so it is the operative limit: no two age changes are ever less than 20 sols apart, in either direction. Over the 300-sol balance run that is a hard ceiling of floor((300 - 44) / 20) + 1 = 13 changes, and the real number is set by life support, not by the rule.
-- Oscillation: a history that alternates ok and not ok with any period at which the half-period is under 13 sols (including the 50/50 square waves of period 2 to 24) keeps the share near 0.5 or inside the band: from Landing it never enters, from Settlement it leaves at most once and never returns. A noisy colony hovering at 0.75 ok sits in the dead band and does not change except by the rare tail event (mean about 0.1 changes per 300 sols, section 10 test 14).
-- Why these numbers: 0.9 over 40 sols is the owner's entry rule. 0.6 is a deliberately low exit line: a colony in Settlement may have up to 16 not-ok sols in the last 40 (4 tolerated at entry, 12 more) before it is judged to be back in hard times, so the ice trouble seen on seeds 42, 99, 2026 (many consecutive failing sols, not an isolated dip) crosses it after about 17 consecutive failing sols, while a short crisis does not. 5 recent samples ("not all ok") let a colony that is already recovering stay. 20 sols is about one Mars month: long enough that the log never reads like noise, and shorter than the 40-sol window so it never delays a real collapse by more than the window itself.
-- The first age at creation is Landing, announced at world creation (elapsed sol 0 = Mars sol 1). Landing cannot be left before elapsed sol 44.
+`decide` returns `landing` when the age is `settlement` and ALL of:
+1. the window is full;
+2. ok samples <= `exit_ok_max` = ceil(`exit.ok_share_below` x `window_sols` - STEP_EPS) - 1 = 23 (strictly fewer than 24 ok; at least 17 not-ok sols in the last 40);
+3. NOT all of the last `exit.recent_sols` = 5 samples are ok (a colony whose last 5 sols were all fine is recovering and stays);
+4. the dwell is over (20 sols).
+Re-entry uses section 5 unchanged. The first entry uses the "settled" line; later entries the "settled again" line.
+### 6.2 Why the thresholds cannot flap
+- Entry needs 36 ok, exit needs 23 or fewer: a dead band of 24 to 35 ok where nothing changes in either age. The window slides one sample per sol, so its ok count moves by at most 1 per sol. After an entry it holds at least 36 ok and needs at least 13 sols to reach 23; after an exit it holds at most 23 and needs at least 13 sols to reach 36. So a change is never undone in under 13 sols and a round trip takes at least 26.
+- The dwell of 20 sols (kept because the owner asked for a minimum dwell) exceeds that 13-sol bound, so it is what actually binds: no two changes less than 20 sols apart. It is cheap insurance if the probe moves the two shares closer. The ceiling in 300 sols is floor((300 - 44) / 20) + 1 = 13; the real count is set by life support.
+- Oscillation: a 50/50 square wave with a half-period under 13 sols keeps the share near 0.5: from Landing it never enters; from Settlement it leaves at most once and does not return. A noisy colony at 0.75 ok sits in the dead band.
+- Why these numbers: 0.9 over 40 is the owner's. 0.6 is deliberately low: ice trouble (seeds 42, 99, 2026) is many consecutive failing sols, crossing it after about 17, while an isolated dip never does. "Last 5 not all ok" lets a recovering colony stay. 20 sols is about one Mars month.
 
 ## 7. No effect on the colony
-The age is read by nobody in the sim. Ages never write stocks, beings, buildings, resources, power, births or the RNG. `stats` gains only the keys of section 8; no existing key changes meaning. Proof: section 10 tests 15 to 17 and the five Task 1 table hashes (section 12). Council, trust and later systems may read `stats.age` as context in later tasks.
+Nobody in the sim reads the age. Ages never write stocks, beings, buildings, resources, power, births or the RNG. **The age is never an input to the sample** (so no feedback loop can form when later tasks let the age change behaviour; they must read a lagged copy and keep growth effects out of it). `stats` gains only the keys of 8.2; `Being` gains only the two birth fields. Proof: tests 15 to 17 and the five Task 1 table hashes (section 12).
 
-## 8. Log lines and stats
-### 8.1 Log
-Kind `age_began` for all four lines, with extra fields `age` (the age now in force) and `how` in {`landing`, `settled`, `fell_back`, `settled_again`}, plus the usual `t`, `sol`, `clock_sol`, `kind`, `text`. Text comes from `data/ages.json`; it has no number, no percentage, no count and no "sols until" in any of the four lines (a test asserts no digit and no `%`).
-| Event | `how` | When | Text key | Starting text |
-| --- | --- | --- | --- | --- |
-| Landing at the start | `landing` | at world creation, after `founders_landed` (founder worlds only) | `landing.log_start` | "The founders have landed at Jezero. Air, water, food and power are everything." |
-| First entering Settlement | `settled` | the change of section 5 when `first_settlement_sol` is null | `settlement.log_enter` | "The founders are no longer only surviving. The colony has settled." |
-| Falling back | `fell_back` | the change of section 6 | `landing.log_fall_back` | "The easy days are over. The colony is back to simply getting by." |
-| Settling again | `settled_again` | entry when Settlement was entered before | `settlement.log_enter_again` | "The colony has found its footing again. Life has a rhythm once more." |
-Texts are the game-designer's draft; the owner may reword them freely (data only). The log is capped at 500 and may evict old age lines; stats never depend on it (history below).
-### 8.2 Stats (run-wide, never windowed, never reset by `reset_window`)
+## 8. Log lines, stats, pop 0
+### 8.1 Log text (one fixed text per event, no random rotation)
+Kind `age_began` for the four age lines, extra fields `age`, `how` in {`landing`, `settled`, `fell_back`, `settled_again`} and, for `fell_back`, `cause` (the group id). A line is assembled as: base text, then for a fall-back the cause sentence, then (for `settled`, `fell_back`, `settled_again`) the season sentence. Season sentence = `season_phrases[i]` where `i` is the index of the sim's current season in `calendar.json seasons` (northern spring, summer, autumn, winter). No numbers, percentages, counts or names; no blame; no "Landing", "regressed" or "failed"; "founders" appears only in the start line, which cannot recur.
+| Event | `how` | When | Text keys |
+| --- | --- | --- | --- |
+| Landing at the start | `landing` | at creation, after `founders_landed` (founder worlds only) | `landing.log_start` only |
+| First Settlement | `settled` | first entry | `settlement.log_enter` + season |
+| Fall back | `fell_back` | the section 6 change | `landing.log_fall_back` + `cause_lines.<cause>` + season |
+| Settle again | `settled_again` | entry after a fall back | `settlement.log_enter_again` + season |
+Texts (final, lead): start "The founders have landed at Jezero. For now, air and water and warmth are all there is to think about." Settled "Nobody is only surviving now. There are families here, and meals shared, and a place to come home to." Fall back "Hard days have come back to Jezero. The colony pulls close and gets on with it." plus one of: ice "Water is on everyone's mind again." food "Meals are thin, and the larders are watched." oxygen "The air is thin, and every breath is counted." power "The lights flicker, and the reactors are stretched." death "Too many have been lost, and the colony is grieving." unrest "People are worn down and keep close to home." Settled again "The hard stretch has passed. Meals, work and sleep keep their old order." Season: "Spring is rising over the delta." / "High summer lies over the delta." / "Autumn light is lengthening over the delta." / "Winter has settled over the delta." Example full line: "Hard days have come back to Jezero. The colony pulls close and gets on with it. Water is on everyone's mind again. High summer lies over the delta."
+Cause lines name the pressure by kind, so a fall-back never looks like a bug and reads the same at 12 or 160 beings. A positive per-cause settle sentence is not adopted (every clause passes, so there is no distinguishing cause).
+Not adopted: a named colonist on the settled line (the HUD has no way yet to find a being; revisit in Task 4).
+### 8.2 Stats (run-wide, never windowed, never reset)
 | Key | Definition |
 | --- | --- |
-| `stats.age` | current age id string; this is what the HUD reads |
-| `stats.age_changes` | number of changes after the initial Landing (Landing to Settlement is 1) |
-| `stats.sols_in_age` | `{landing: int, settlement: int}`; elapsed sols credited to each age (step 1 of `on_sol`); the sum is the number of completed sols |
-| `stats.first_settlement_sol` | elapsed sol of the first entry, null before; set once, like `first_birth_sol` |
-| `stats.age_history` | list of `{age, how, t, sol, clock_sol}`, one per announcement including the initial Landing (founder worlds only; blank worlds start empty and the list begins with the first change); uncapped (it holds at most a few entries) |
-Not in stats: the window, the last sample, the snapshots. No key is a progress value; `sols_in_age` is a record of the past and is shown to nobody.
-Blank test worlds: `stats.age` is `landing`, `age_history` is empty, `sols_in_age` zeros, nothing logged until a change.
+| `stats.age` | current age id; the HUD reads this |
+| `stats.age_changes` | changes after the initial Landing |
+| `stats.sols_in_age` | `{landing, settlement}` elapsed sols credited to each age |
+| `stats.first_settlement_sol` | elapsed sol of the first entry, null before |
+| `stats.age_history` | uncapped list, one entry per announcement: `{age, how, cause (fall back only, else null), text, pop, family_mars_born, t, sol, clock_sol}`. Complete record (the log may evict); used by the pinned chapters strip, T10, Task 5 and a later long-absence summary |
+Not in stats: window, last sample, snapshots. No progress value exists.
+### 8.3 Pop 0
+Age frozen (no sample, no change, no age log line). The existing death log and the existing `colony_silent` line ("The colony has fallen silent.", spec life-support 5) are the terminal line, so no new kind is needed. The HUD shows no age word while pop is 0, so it never claims an age over an empty crater; `stats.age` keeps the last value. (Owner may choose otherwise, see the last section.) `sols_in_age` keeps counting.
 
-## 9. HUD
-The text HUD shows the current age name only, for example a line `Age: Settlement`, built from `SimData.ages()[stats.age].name`. It never shows a share, count, bar, window, "sols until", `sols_in_age` or `age_changes`. A change shows by the name changing and by the log line if the HUD shows the log. Test: the HUD string for each age contains the name; the age part of the string contains no digit; the HUD source reads no key of `world.ages` and none of `sols_in_age`, `age_changes`, `age_history`.
+## 9. HUD (view only; the sim exposes nothing new for it beyond 8.2)
+No progress value, no share, count, bar, window, "sols until", `sols_in_age` or `age_changes` anywhere. The HUD reads `stats.age`, `age_history` (its `text`, `sol`), `colony` stocks, and `advance` readout fields; it never reads `world.ages` or `last_sample`.
+- **Age placement**: the end of the clock line: "Jezero Crater  |  Year 1, Sol 21  |  06:00  |  northern spring  |  Settlement". Hidden when pop is 0. This puts the age in every screenshot.
+- **Pinned chapters strip**: a block above the 8-line log, showing the last `hud.chapters_shown` = 3 `age_history` entries (`sol N  text`), taken from `age_history`, so routine log lines can never evict them and the first age stays visible. It is not a banner or pop-up. (The log itself keeps all lines, including age lines, unchanged.)
+- **Resource words**: on the Oxygen, Food and Ice lines of the colony block, append `hud.low_word` ("running low") when that stock is under the same threshold as the sample clause (oxygen or food under `o2_min_fraction` or `food_min_fraction` of cap; ice under `ice_min_sols` of current use). Computed in the view from stocks and the same data keys, never from `last_sample`, never a number of failing sols, and shown regardless of age.
+- **Speed readout (honest)**: the speed line reads e.g. "Speed: 1000x max (running about 5x)". Achieved speed = sim hours advanced per real second over `speed_readout_window_s` (1.0), refreshed at most every `speed_readout_refresh_s` (0.5) so it does not flicker. When achieved is below `speed_throttle_below` (0.9) of the requested speed, a second plain line reads "The colony is too large to run this fast." Dropped hours are never shown as lost time; the clock just advances slower.
+- Shots (step 11): HUD at Landing and just after Settlement, plus a three-frame strip (before the fall-back, the log line, after).
+- Deferred: view-only flash of the age line; an off-by-default setting that drops speed on an age change (owner call, never auto-pause); a dev-only window overlay behind the M flag.
 
-## 10. Tests (tests/test_ages.gd; written first, red; no test may have zero checks)
-Staging, "good world" G: blank world, reactor, habitat and green room built (demand 7, supply 14), 12 beings of whom 5 have `earth_born` false, oxygen and food at cap, ice 100, no shorts, no deaths. `sample(G)` is all-true. Sols are advanced by setting `world.t` to boundary n and calling `on_sol`, never by stepping 44 sols.
-Per clause (one test each, break only that clause, assert it names the clause in `last_sample`):
-1. `oxygen`: 275.0 of cap 550 passes; 274.9 fails (the `>=` edge). Same for `food`: 210 passes, 209.9 fails (cap 420).
-2. `o2_net`: 28 beings on 1 green room give exactly 0.0, which fails (strict); 27 passes. `food_net`: shipped data cannot isolate it (oxygen use hits zero first), so the test lowers `colony.production.food_per_green_room` through the data override seam, as the Task 1 tests do.
-3. `power_budget`: demand 14 on supply 14 passes; 15 fails. `none_offline`: one building offline fails (with demand under supply). `no_short`: `stats.shorts` raised by 1 between two boundaries fails that sample and the next boundary passes again.
-4. `no_shortage_death`: a `thirst` entry added between boundaries fails; `air` and `hunger` the same; a `suffocated outside` entry passes; an entry from before the previous boundary does not count.
-5. `ice`: ice = exactly 2 x pop x 0.01 x 24.6597 passes (compute from the formula, tolerance 1e-9); 1e-6 below fails; pop 12 and pop 100 both checked.
-6. Pop 0: `on_sol` appends nothing, does not divide by zero, leaves the age unchanged and still credits `sols_in_age`; pop 12 afterwards samples again.
+## 10. Tests (tests/test_ages.gd; written first, red; no test with zero checks)
+Staging "good world" G: blank world, reactor, habitat and green room built (demand 7, supply 14), 12 beings of whom 6 are Mars-born with a living parent and birth habitats in 2 buildings (add a second habitat), energy 70 for all, oxygen and food at cap, ice 100, no shorts, no deaths. `sample(G)` is all-true. Boundaries are driven by setting `world.t` and calling `on_sol`.
+Per clause, one test each, break only that clause and assert `last_sample` names it:
+1. `oxygen` 275.0 of cap 550 passes, 274.9 fails; `food` 210 passes, 209.9 fails (cap 420).
+2. `o2_net`: 28 beings on 1 green room give exactly 0.0, which fails (strict); 27 passes. `food_net`: isolated by lowering `colony.production.food_per_green_room` via the override seam.
+3. `power_budget` 14 on 14 passes, 15 fails; `none_offline`; `no_short` fails once for the sample after a short, then passes.
+4. `no_shortage_death`: `thirst`, `air`, `hunger` entries fail; `suffocated outside` passes; an entry from before the previous boundary does not count.
+5. `ice`: exactly 2 x pop x 0.01 x 24.6597 passes (tolerance 1e-9), 1e-6 below fails; pop 12 and pop 100.
+6. `calm`: 12 beings, 1 with energy 11.9 (share 0.083) passes; 2 (0.167) fails; energy exactly 12 is not distress; an outside returning being counts. `rested`: 9 of 12 at energy 28.0 (0.75) passes, 8 of 12 (0.667) fails; at 160 beings the same shares give the same verdicts.
+7. Pop 0: `on_sol` appends nothing, does not divide by zero, leaves the age, credits `sols_in_age`; pop returning samples again.
 Window and entry:
-7. Samples start at sol 5: boundaries 1 to 4 append nothing (snapshots refresh); boundary 5 appends one.
-8. Fully ok history: age stays `landing` at boundary 43, becomes `settlement` at boundary 44 (40 samples, sols 5 to 44), exactly one `age_began` with `how` `settled`, `first_settlement_sol` 44, `age_changes` 1.
-9. Tolerance edge: window of 36 ok and 4 not ok (not in the last 3) enters; 35 ok and 5 not ok does not. The 4 failing sols at the very start (sols 5 to 8) still enter at 44.
-10. Last-3: a window of 37 ok then 3 not ok (share passes, last 3 fail) blocks entry; 39 ok then 1 not ok blocks it; 2 ok after that still block when the share is fine but only the last 3 are checked, so entry happens exactly when the third consecutive ok arrives.
-11. Mars-born: a perfect window with 4 Mars-born blocks; the fifth being born lets the next boundary enter; five founders (earth_born) do not count; dead ones do not count.
+8. Samples start at sol 5 (boundaries 1 to 4 append nothing, snapshots refresh).
+9. Full ok history: `landing` at boundary 43, `settlement` at 44; exactly one `age_began` with `how` `settled`; `first_settlement_sol` 44; `age_changes` 1.
+10. Tolerance edge: 36 ok / 4 not ok (not in the last 3) enters; 35 / 5 does not; four failing sols at 5 to 8 still enter at 44.
+11. Last-3: 37 ok then 3 not ok blocks; 39 ok then 1 not ok blocks; entry happens exactly when the third consecutive ok arrives.
+12. Family Mars-born: perfect window with 4 family Mars-born blocks, 5 enters; orphans (parent dead or `parent_id` 0) do not count; 5 in one birth habitat blocks until a second habitat is represented; Earth-born founders do not count; dead do not count.
 Exit and hysteresis:
-12. Dead band: from Settlement with a window of 24 ok stays; 23 ok with one not-ok among the last 5 leaves; 23 ok with the last 5 all ok stays (recovering). Entry and exit are asserted on both sides of 36/35 and 24/23.
-13. Dwell: Settlement entered at sol 100, then all not ok: no exit at sol 113 (the rule is first true) nor at 119; exit at 120 exactly, one `fell_back` line. The same for entering after a fall back with an injected perfect window: blocked at `last_change_sol + 19`, enters at +20. `age_changes` and `age_history` follow each change.
-14. No flapping on synthetic history (via the pure `decide`, no world): (a) 50/50 square waves of period 2, 3, 5, 8, 12, 24 over 3,000 sols from Landing: zero changes; started in Settlement: at most 1 change, to Landing, and never back; (b) a period of 80 sols (40 ok, 40 not ok) changes at most once per half-period and every gap between changes is >= 20; (c) iid ok with probability 0.75 over 300 sols, 200 seeds from a test-local generator (never `SimRng`): the mean number of changes per run is <= 0.25 and every gap >= 20 (the expected mean is about 0.1, the margin is 2.5x; the engineer reports the measured mean); (d) an adversarial history of 13 ok, 13 not ok repeated: the number of changes never exceeds floor(sols / 20); (e) data sanity: `entry` count minus `exit` max count >= 13 (the dead band), `min_dwell_sols >= 13`, `exit.ok_share_below < entry.ok_share`.
-Stats, log and purity:
-15. Landing: a founder world logs `founders_landed` then one `age_began` with `how` `landing` and the data text; blank worlds log nothing; `stats.age` is `landing`.
-16. A full fall-back and re-entry staged with `on_sol` logs `settled`, `fell_back`, `settled_again` in that order with the three data texts; none contains a digit or `%`; `first_settlement_sol` stays at the first value; `sols_in_age` sums to the number of boundaries seen; `age_history` has the four entries.
-17. No RNG, no side effect: a founder world seed 42 for 10 sols with `ages_enabled` true and another with it false have equal `rng` state, equal `stats` on every old key, equal beings (id, building, state, energy) and equal stocks; two same-seed worlds with ages on are identical including `stats.age_history`; seed 43 differs from seed 42 as before. A second test confirms `on_sol` leaves stocks, buildings, beings and `rng` untouched on a staged world.
-18. Key-path parity (section 13), including that `ages.json` has no Council, Dome or City key.
-19. HUD (section 9) and advance budget (section 11 tests).
-Determinism for the long run comes from the balance run (section 12): the same table twice.
+13. Dead band: 24 ok stays; 23 ok with one not-ok in the last 5 leaves; 23 ok with the last 5 all ok stays; edges on both sides of 36/35 and 24/23.
+14. Dwell: entered at sol 100, then all not ok: no exit at 113 nor 119, exit at 120, one `fell_back` line; after a fall-back with an injected perfect window, entry blocked at `last_change_sol + 19`, allowed at +20. Pure `decide` synthetic: 50/50 square waves of period 2, 3, 5, 8, 12, 24 over 3,000 sols, zero changes from Landing, at most one (to Landing, never back) from Settlement; 13 ok / 13 not ok repeated: changes never exceed floor(sols / 20); data sanity: (36 - 23) >= 13, `min_dwell_sols >= 13`, `exit.ok_share_below < entry.ok_share`.
+Cause and text:
+15. Dominant cause: window with 20 ice failures and 5 food failures gives `ice`; equal counts follow the tie order; `unrest` and `death` groups map as in 4.3; the fall-back line contains the matching cause sentence.
+16. Landing: a founder world logs `founders_landed` then one `age_began` `landing` with the data text; blank worlds log nothing. A staged settle, fall back, settle again logs the three texts in order with the right `how`, `cause`, the season sentence for the sim's season, and an `age_history` of four entries each carrying `text`. For every combination of cause (6) and season (4) and each of the three change lines the assembled text has no digit and no `%`, and never contains "Landing", "regress" or "fail" (case-insensitive); "founders" occurs only in the start line. `first_settlement_sol` stays at the first value; `sols_in_age` sums to the boundaries seen.
+Purity:
+17. Seed 42, 10 sols: `ages_enabled` true vs false give equal `rng` state, equal old `stats` keys, equal beings (id, building, state, energy) and stocks; two same-seed ages-on worlds identical including `age_history`; `on_sol` leaves stocks, buildings, beings and the rng untouched on a staged world. A newborn has `parent_id` equal to a living being that was in its habitat, and `birth_building_id` equal to the habitat; a founder has `parent_id` 0; the rng state after 10 sols equals the Task 1 build's (the draw order is unchanged).
+18. Key-path parity (section 13), including no Council, Dome or City key in `ages.json`.
+19. HUD: the age part of the clock line is the name only, with no digit; absent at pop 0; chapters strip shows at most `hud.chapters_shown` entries and keeps the Landing entry after 100 routine lines; resource words appear exactly at the sample thresholds (edge test) and the HUD source reads no `world.ages`, `last_sample`, `sols_in_age`, `age_changes`.
+20. Advance budget and speed readout (section 11).
 
-## 11. `advance()` wall-time budget and step profile
-These are view-path only; a step does exactly what it does today.
-- `data/sim.json` gains `advance_budget_ms` = 8.0 (ms of wall time `advance()` may spend per call). Rationale: a 60 fps frame is 16.7 ms; the view model update is 1.0 to 1.3 ms and drawing the rest (Task 2 report), so the sim gets about half. 0 means "one step per call and no more". `max_steps_per_frame` (2000) stays as a hard cap on top.
-- Rule: `advance(hours)` adds `hours` to the accumulator and takes whole fixed steps while one is due. It reads an injected monotonic millisecond clock (a replaceable function on the world, default the engine tick counter) at entry, and after each step stops if elapsed >= `advance_budget_ms` or the step cap is reached. At least one step is taken whenever a step is due, even with budget 0 or a slow clock. The budget is checked after a step, so a call may overshoot by at most one step.
-- Leftover time is **dropped**, exactly as `max_steps_per_advance` does today: when the loop stops with time still due, the accumulator is set to 0 and the dropped hours are added to a counter on the world (`advance_dropped_h`). Reason: carrying a debt that the budget can never repay would grow without bound, and a capped carry only hides the drop for one frame; dropping makes the sim run slower than requested and nothing else. Neither the counter nor any wall-time figure is placed in `stats`, the log or any hashed state, so determinism is untouched.
-- What the speed labels promise: a maximum, not a promise. The HUD labels read as ceilings (for example "up to 1000x"); the achieved speed (sim hours per real second over the last second, from steps taken) may be shown in the debug line, never promised. With the Task 2 measurement of 4.7 to 6.8 ms per step at 164 beings and an 8 ms budget, a big colony sustains about 1 to 2 steps per frame, roughly 3 to 6 sim hours per real second (3x to 6x), whatever the preset. Small colonies run much faster. This is the honest result of the budget; step profiling (`tools/step_profile.gd`, phase timers kept out of `sim/`) is the way to raise it, and a fix is allowed only if the Task 1 table hashes (old columns) stay byte-identical (section 12).
-- Tests: budget 0 takes exactly one step; a fake clock that advances 3 ms per read with budget 8 stops after 3 steps (reads at entry then after each step); steps taken per call with the real clock never exceed the cap; with a fake clock that never reaches the budget, the steps for a given total of hours equal the unbudgeted run and the world state (stats, rng, beings) after them is identical; dropped hours equal requested minus taken x `fixed_step` after a stopped call; the accumulator is 0 after a stop and keeps its sub-step remainder otherwise.
+## 11. `advance()` wall-time budget and step profile (owner carry-over; last steps of the plan)
+View-path only; a step does exactly what it does today.
+- `data/sim.json` gains `advance_budget_ms` = 8.0 (a 60 fps frame is 16.7 ms; the view model takes about 1.3 ms and drawing the rest; so the sim gets about half). 0 means one step per call. `max_steps_per_frame` (2000) stays as a hard cap.
+- Rule: `advance(hours)` adds to the accumulator and steps while a step is due, reading an injected monotonic millisecond clock (default the engine tick counter) at entry and after each step; it stops when elapsed >= `advance_budget_ms` or the cap is reached. At least one step runs whenever one is due. A call may overshoot by one step.
+- Leftover is **dropped** (accumulator set to 0), as `max_steps_per_advance` does today, and added to `advance_dropped_h` on the world. Carrying would grow an unrepayable debt. Neither the counter nor any wall-time figure goes into `stats`, the log or any hashed state.
+- Speed labels are a maximum, not a promise: "1000x max". The achieved speed readout of section 9 reports the truth. At 164 beings (4.7 to 6.8 ms per step) and 8 ms, expect about 3x to 6x whatever the preset.
+- `data/sim.json` also gains the three speed-readout keys of section 9 (`speed_readout_window_s` 1.0, `speed_readout_refresh_s` 0.5, `speed_throttle_below` 0.9), read by the view only.
+- Step profile: `tools/step_profile.gd` (timers outside `sim/`), report `docs/perf/task-3-step-profile.md` with the top 3 phases; a fix is allowed only if the five old-column table hashes stay byte-identical.
+- Tests: budget 0 takes one step; a fake clock advancing 3 ms per read with budget 8 stops after 3 steps; the cap is never exceeded; a clock that never reaches the budget gives the same steps and the same world state as an unbudgeted run; dropped hours = requested minus taken x `fixed_step` after a stop and the accumulator is 0 after a stop; the readout shows no throttle line when achieved >= 0.9 of requested, shows it below, and the line does not change faster than the refresh interval.
 
 ## 12. Balance integration and proof of no behaviour change
-- The balance table gains one trailing column `age`, header `age`, values `L` (landing) or `S` (settlement), separated from the previous column by one space. Removing the column means deleting the final whitespace-separated field of the header and of every row together with the space before it. All earlier columns keep their widths and values.
-- **Proof**: the five Task 1 table hashes (`String.sha256_text` of the table body, which does not include the `#` header lines) are 02032b23... (seed 42), 830c7d0c... (seed 7), 0e3e83a7... (seed 99), bca6eb2c... (seed 1234), 2645033a... (seed 2026). With the age column removed, the Task 1 baseline command per seed must reproduce them exactly. Note: the header `data_hash` changes by design (the `sim.json` key, and `ages` is added to the hashed file list) and is not part of the table body hash; the engineer records the new `data_hash`. If a hash differs, the cause is a behaviour change and the step is rejected.
-- Target T10 (balance, per seed, 300 sols), taken from `stats` and never from the log:
-  1. `first_settlement_sol` is not null and between `balance.settle_sol_min` 40 and `settle_sol_max` 150 (the lower bound is structural: 44);
-  2. `age_changes <= balance.max_age_changes` (4: enter, fall back, enter again, fall back again; provisional, to be confirmed by the probe);
-  3. every gap between consecutive `age_history` sols is >= `min_dwell_sols` (invariant);
-  4. `len(age_history) == age_changes + 1` and every history entry has its `how`;
-  5. reported, not judged: first Settlement sol per seed and the spread (latest minus earliest), `age_changes`, `sols_in_age`, the age at sol 300, and the sols of each change. Falling back is not a failure; it is the intended drama (owner).
-- Why 4 as the proposed maximum: Task 1 shows one ice crisis per seed in 300 sols (dry from about sol 120 to 180; seed 2026 recovers by about sol 190 to 210 and dries again by 300). One cycle is 2 changes, two cycles are 4. Estimates (replaced by the probe): seeds 7 and 1234: 1 change (no fall back); seeds 42 and 99: 2 (settle about sol 44 to 55, fall back about 155 to 175, no return); seed 2026: 2 or 3 (settle, fall back about sol 160 to 175, possibly settle again about 245 to 255). The dwell ceiling of 13 is the rule's worst case, not the expectation. If the probe shows a seed above 4 with a reason in the sim (not noise), raise the number with the reason in the log; if it shows flapping (changes within 40 sols of each other), tighten the exit share or the dwell, one parameter per run.
-- Old balance targets T1 to T9 are unchanged. `docs/specs/life-support-power.md` section 13 gains a pointer to this section and its section 16 gains the five stats keys and the `age_began` log kind (step 9, test engineer).
+- The balance table gains one trailing column `age` (header `age`, values `L` or `S`) separated by one space. Removing it means deleting the final whitespace-separated field of the header and each row with the space before it. Earlier columns keep widths and values.
+- **Proof**: the Task 1 table body hashes (`String.sha256_text` of the body, which excludes the `#` header lines): 02032b23... (seed 42), 830c7d0c... (seed 7), 0e3e83a7... (seed 99), bca6eb2c... (seed 1234), 2645033a... (seed 2026) must be reproduced exactly with the column removed, by the Task 1 command for each seed. The header `data_hash` changes by design (new keys; `ages` added to the hashed list). A differing hash means a behaviour change and the step is rejected. The two new Being fields do not enter the table.
+- **T10** per seed, 300 sols, from `stats`, never the log: (1) `first_settlement_sol` not null and in `balance.settle_sol_min` 40 to `settle_sol_max` 150 (the lower bound is structural: 44); (2) `age_changes <= balance.max_age_changes` (4, provisional); (3) every gap between consecutive `age_history` sols is >= `min_dwell_sols`; (4) `len(age_history) == age_changes + 1` and every entry has `how`, `text`; (5) reported, not judged: first Settlement sol and spread, `age_changes`, `sols_in_age`, age at sol 300, sols and causes of each change. Falling back is not a failure.
+- Estimates to be replaced by the probe: seeds 7 and 1234, 1 change; seeds 42 and 99, 2 (settle about sol 44 to 55, fall back about 155 to 175 with cause `ice`); seed 2026, 2 or 3. If any seed shows changes within 40 sols of each other, tighten the exit share or the dwell, one parameter per run. A seed over 4 changes needs a reason from the sim before the number is raised.
+- T1 to T9 unchanged. `life-support-power.md` section 13 gains a pointer here and section 16 gains the stats keys and the `age_began` kind (test engineer).
 
-## 13. Tunables (JSON key path, unit, starting value, source)
+## 13. Tunables (JSON key path, unit, starting value, source; E = estimate for the probe to calibrate)
 | Key | Unit | Start | Source |
 | --- | --- | --- | --- |
 | ages.landing.name / settlement.name | text | Landing / Settlement | HANDOFF 7 |
-| ages.landing.log_start | text | see 8.1 | game-designer draft |
-| ages.landing.log_fall_back | text | see 8.1 | game-designer draft |
-| ages.settlement.log_enter | text | see 8.1 | plan A9 |
-| ages.settlement.log_enter_again | text | see 8.1 | game-designer draft |
-| ages.sample.from_sol | elapsed sol | 5 | owner (same as `STATS_FROM_SOL`) |
+| ages.landing.log_start, log_fall_back; ages.settlement.log_enter, log_enter_again | text | section 8.1 | lead |
+| ages.cause_lines.ice / food / oxygen / power / death / unrest | text | section 8.1 | lead |
+| ages.season_phrases | list of 4 text, in `calendar.json` season order | section 8.1 | lead |
+| ages.sample.from_sol | elapsed sol | 5 | owner |
 | ages.sample.window_sols | sols | 40 | owner |
-| ages.sample.o2_min_fraction / food_min_fraction | fraction of cap | 0.5 / 0.5 | plan section 4 |
-| ages.sample.net_above | per h | 0.0 | plan section 4 |
-| ages.sample.ice_min_sols | sols of current use | 2.0 | plan section 4 |
-| ages.sample.shortage_causes | list of death causes | air, thirst, hunger | spec life-support 9.3 |
-| ages.entry.ok_share | fraction of window | 0.9 | owner |
+| ages.sample.o2_min_fraction / food_min_fraction | fraction of cap | 0.5 / 0.5 | plan |
+| ages.sample.net_above | per h | 0.0 | plan |
+| ages.sample.ice_min_sols | sols of use | 2.0 | plan, E |
+| ages.sample.shortage_causes | list | air, thirst, hunger | life-support 9.3 |
+| ages.sample.distress_share_max | share of living | 0.10 | lead, E |
+| ages.sample.rested_share_min | share of living | 0.70 | lead, E |
+| ages.entry.ok_share | share of window | 0.9 | owner |
 | ages.entry.recent_ok_sols | samples | 3 | owner |
-| ages.entry.mars_born_min | beings | 5 | owner |
-| ages.exit.ok_share_below | fraction of window | 0.6 | game-designer (section 6.2) |
-| ages.exit.recent_sols | samples | 5 | game-designer |
-| ages.min_dwell_sols | sols | 20 | game-designer |
-| ages.balance.settle_sol_min / settle_sol_max | elapsed sol | 40 / 150 | owner (T10) |
-| ages.balance.max_age_changes | changes per 300 sols | 4 | game-designer, provisional |
-| sim.advance_budget_ms | ms of wall time per `advance()` | 8.0 | game-designer |
-Not data: the age ids `landing` and `settlement`, the clause names, STEP_EPS (existing), and "pop 0 skips the sample".
-Everything above except the `balance.*` block is read by `sim/ages.gd`; the `balance.*` block is read by `tests/balance_lib.gd` only.
+| ages.entry.mars_born_min | beings (with a living parent) | 5 | owner |
+| ages.entry.mars_born_homes_min | distinct birth habitats | 2 | lead, E |
+| ages.exit.ok_share_below | share of window | 0.6 | lead, E |
+| ages.exit.recent_sols | samples | 5 | lead, E |
+| ages.min_dwell_sols | sols | 20 | lead (owner asked for a minimum dwell), E |
+| ages.hud.chapters_shown | entries | 3 | lead |
+| ages.hud.low_word | text | running low | lead |
+| ages.balance.settle_sol_min / settle_sol_max | elapsed sol | 40 / 150 | owner |
+| ages.balance.max_age_changes | changes per 300 sols | 4 | lead, E |
+| sim.advance_budget_ms | ms | 8.0 | lead, E |
+| sim.speed_readout_window_s / speed_readout_refresh_s | s | 1.0 / 0.5 | lead |
+| sim.speed_throttle_below | fraction of requested | 0.9 | lead |
+Reused, not duplicated: `beings.energy.exhausted_turn_back` (12), `beings.energy.sleep_below` (28), `colony.consumption.ice_per_being`. Not data: the ids `landing` and `settlement`, clause and group names and the group tie order, STEP_EPS, "pop 0 skips the sample". The `balance.*` block is read by `tests/balance_lib.gd` only; the `hud.*` and speed keys by the view only; everything else non-balance by `sim/ages.gd`.
 
 ### Key-path list (machine-readable; one leaf per line)
-Same rules as life-support-power.md section 12: a test parses the lines between the `keys:` fence markers and checks both ways (every listed path exists in the loaded file; every leaf of `ages.json` is listed; arrays and strings are leaves). The `sim.` line is checked for existence only (the leaf walk of `sim.json` is not part of this test).
+Same rules as life-support-power.md section 12: parsed between the `keys:` fence markers, checked both ways for `ages.json` (arrays and strings are leaves). The `sim.` lines are existence checks only.
 ```keys:
 ages.landing.name
 ages.landing.log_start
@@ -192,6 +210,13 @@ ages.landing.log_fall_back
 ages.settlement.name
 ages.settlement.log_enter
 ages.settlement.log_enter_again
+ages.cause_lines.ice
+ages.cause_lines.food
+ages.cause_lines.oxygen
+ages.cause_lines.power
+ages.cause_lines.death
+ages.cause_lines.unrest
+ages.season_phrases
 ages.sample.from_sol
 ages.sample.window_sols
 ages.sample.o2_min_fraction
@@ -199,47 +224,110 @@ ages.sample.food_min_fraction
 ages.sample.net_above
 ages.sample.ice_min_sols
 ages.sample.shortage_causes
+ages.sample.distress_share_max
+ages.sample.rested_share_min
 ages.entry.ok_share
 ages.entry.recent_ok_sols
 ages.entry.mars_born_min
+ages.entry.mars_born_homes_min
 ages.exit.ok_share_below
 ages.exit.recent_sols
 ages.min_dwell_sols
+ages.hud.chapters_shown
+ages.hud.low_word
 ages.balance.settle_sol_min
 ages.balance.settle_sol_max
 ages.balance.max_age_changes
 sim.advance_budget_ms
+sim.speed_readout_window_s
+sim.speed_readout_refresh_s
+sim.speed_throttle_below
 ```
-`SimData.ages()` is the accessor (`load_json("ages.json")`), and `data_hash` in `tests/balance_lib.gd` adds `ages` to its file list.
+`SimData.ages()` is the accessor; `data_hash` in `tests/balance_lib.gd` adds `ages`. The test also checks `season_phrases` has exactly as many entries as `calendar.json seasons`.
 
 ## 14. Calibration probe (tools/age_probe.gd, read-only)
-Replays seeds 42, 7, 99, 1234, 2026 to sol 300 with the real hook, and per seed records, once per sol from sol 1, the raw values of every clause (oxygen/cap, food/cap, o2_net, food_net, demand, supply, offline count, shorts since last, shortage deaths since last, ice in sols of use, pop, Mars-born count), so any threshold can be replayed offline without a new run. It must not change data, state or RNG, and it must check its own replay: the age history it computes from the recorded samples with the shipped numbers equals `stats.age_history` of the live run.
-Per seed it prints and writes to `docs/balance/task-3-calibration.md`:
-1. Crossing sols: the first sol with an `ok` sample; the first sol the entry rule fires; the age history with `how` and sol of each change (the shipped numbers).
-2. Sols in each age and the age at sol 300; `age_changes`.
-3. Flap report (owner request): number of changes after the first, the shortest gap between changes, and the number of fall-back-then-re-entry pairs within 40 sols; a flap is any change within `window_sols` of the previous one.
-4. Sample failure statistics: how often the sample fails per 50-sol band (5 to 49, 50 to 99, ..., 250 to 299) and on which clause: the count of failures per clause, and the count where that clause was the only one failing. Expected: only `ice` after sol 120 on seeds 42, 99, 2026.
-5. Candidates replayed from the stored samples: window {30, 40, 50} x entry share {1.0, 0.9, 0.8} x exit share {0.5, 0.6, 0.7} x dwell {10, 20, 30} x `ice_min_sols` {1, 2, 3}: the first Settlement sol, the number of changes and the shortest gap for each. Rule: the table is for choosing; a change to the shipped numbers is made one parameter per run and recorded in the changelog.
-6. The wall cost of `on_sol` (microseconds per call over the run; expected well under 50 us) so the per-sol cost claim is measured.
-The probe's outputs set the final numbers for: `exit.ok_share_below`, `min_dwell_sols`, `balance.max_age_changes`.
+Replays seeds 42, 7, 99, 1234, 2026 to sol 300 with the real hook. Per seed it records, once per sol from sol 1, the raw value of every clause (oxygen/cap, food/cap, o2_net, food_net, demand, supply, offline count, shorts since last, shortage deaths since last, ice in sols of use, distress share, rested share, family Mars-born count, birth habitats among them, pop), and via its own per-step observer the minimum ice in sols of use over each sol (to measure the missed-dip question). It changes no data, state or RNG, and checks itself: the age history recomputed from the stored samples with the shipped numbers equals the live `stats.age_history`.
+Per seed it writes `docs/balance/task-3-calibration.md`:
+1. Crossing sols: first ok sample; first sol the entry rule fires; the age history with `how`, `cause` and sol; and which entry clause was last to pass (family Mars-born, window share, recent).
+2. Sols in each age, age at sol 300, `age_changes`.
+3. Flap report: changes after the first, shortest gap, fall-back-then-reentry pairs within 40 sols (a flap = any change within `window_sols` of the previous).
+4. Failure statistics per 50-sol band and per clause: count, and count where it was the only failing clause. Expected: only `ice` after sol 120 on seeds 42, 99, 2026; `calm` and `rested` expected near zero. If either fails on more than 10% of sols before sol 120, the threshold is wrong, not the colony.
+5. One-at-a-time sweeps replayed from stored samples (no grid): window {30, 40, 50}; exit share {0.5, 0.6, 0.7}; dwell {10, 20, 30}; `ice_min_sols` {1, 2, 3}; `rested_share_min` {0.5, 0.7, 0.9}; each reporting first Settlement sol, change count, shortest gap.
+6. Missed dips: sols where the instant ice read was ok but the per-sol minimum was under `ice_min_sols`.
+7. Microseconds per `on_sol` call (expected well under 50).
+The probe sets the final numbers for the E rows of section 13.
 
 ## 15. Edge cases
-- Pop 0: no sample, age frozen, no log (section 4.2). Pop drops below 5 Mars-born while in Settlement: nothing happens (the Mars-born clause is an entry clause only).
-- Window not yet full: no entry and no exit; a world that starts in Settlement by a test seam but with an incomplete window does not exit until the window is full.
-- A sol with two events (short and death): both just fail the sample; the clauses are independent.
-- Several ages never skip: a change is always Landing to Settlement or back; at most one change per boundary.
-- A boundary step on which a building comes back online: read after phase 3, so it counts as online.
-- `ages_enabled` false: no sample, no log, no stats change; `stats.age` stays `landing`.
-- The log being evicted at 500 entries does not change any age value (nothing reads the log).
-- Slow clock or `advance` dropping hours: age rules count sols from sim time, so a dropped step changes nothing about the rules.
+- Pop 0: no sample, age frozen, no age line (8.3). Mars-born family count falling while in Settlement: nothing happens (entry-only clause).
+- Window not full: no entry and no exit.
+- Several events in one sol (short and death) just fail the sample; clauses are independent.
+- A change is always Landing to Settlement or back, at most one per boundary.
+- A building back online on the boundary step counts as online (read after phase 3).
+- `ages_enabled` false: no sample, no log, no stats change.
+- Log eviction at 500 entries changes no age value and no HUD chapter (strip reads `age_history`).
+- Dropped hours from the budget never change the rules; they count sols from sim time.
+- `parent_id` of a being whose parent died stays set; "alive" is looked up at the boundary.
 
-## 16. Open questions
-1. Owner: the draft log texts (section 8.1), in particular whether a fall back should read grimly or gently.
-2. Owner: is a dead colony (pop 0) correctly frozen in its last age, or should it announce a fall back?
-3. The 20-sol dwell and the 0.6 exit share are reasoned, not measured; the probe may move them.
-4. T10's maximum of 4 changes is an estimate from Task 1 ice behaviour.
-5. The sample reads the instant ice at the boundary, not the minimum over the sol; if the probe shows missed dips (min over sol under 2 sols of use while the sample was ok on many sols), add a per-sol min as a clause source (a read-only stat the engineer would add).
-6. 3x to 6x sustained speed at 164 beings is the Task 3 outcome unless step profiling finds a safe saving.
+## 16. Build order (replaces the plan's step order where it differs)
+Age line first, so nothing else can hold it up: (1) spec and data [this]; (2) review; (3) `tests/test_ages.gd` red; (4) `tools/age_probe.gd` and calibration; (5) `sim/ages.gd`, the two Being fields, hook, `SimData.ages()`; (6) HUD: age in the clock line, chapters strip, resource words; (7) balance column and T10, balance run with the Task 1 hash proof (`docs/balance/task-3-log.md`); (8) shots; (9) final review; (10) step profile; (11) `advance()` budget and speed readout. Steps 10 and 11 are the owner's carry-over and come last so the age work can be reviewed and checked off without them; if time runs out they are the first to move to the next task (feel review cut order, point 1) unless the owner says otherwise.
+
+## 17. Design review record
+Reviewers: emergence (Will Wright lens), feel (Eric Barone lens), clarity (Karoliina Korppoo lens). Decision key: A adopted, AM adopted modified, D deferred, R rejected.
+### Emergence
+| # | Item | Decision |
+| --- | --- | --- |
+| E-M1 | Add colonist-derived clauses as shares of living population: distress, rested, shared life | AM. Adopted `calm` and `rested` (clauses 6, 7), shares, same 36/40 structure. "Shared life" not adopted: the sim has no conversations, and a per-sol gathering counter needs new per-step state; the real signal is Task 4. Flagged "For the owner". |
+| E-M2 | Mars-born as family, record parent_ids | AM. Count of Mars-born with a living parent, from at least 2 birth habitats; records `parent_id` (single parent, as the sim picks one) and `birth_building_id` at birth. `born_t` already is the birth age. |
+| E-M3 | Fall-back must say which pressure | A. Dominant cause group, per-cause sentence (also clarity M1). |
+| E-S4 | Gentle fall-back wording | A (feel M1). |
+| E-S5 | Landing is sticky; Task 5 must not gate on entry count | A as a spec note (section 2): Task 5 reads `age_history`. |
+| E-S6 | God has no lever on the ice clause; give an indirect one | AM. Colonist clauses give an indirect lever only in principle; I do not claim a lever exists in Task 3. The hand-off is left to Task 5 and later god powers; not designed here. |
+| E-S7 | Record min ice over the sol from the start | D. Needs per-step state in `ages`, against the smallest-scope rule. The probe measures missed dips with its own observer (section 14.6); add it to the sim only if the probe shows it matters. |
+| E-S8 | Pop 0 frozen plus a separate terminal line | A. The existing `colony_silent` line is that line; no new kind (section 8.3). |
+| E-I | History carries cause, pop, mars_born, births, deaths by cause, ids | AM. `age_history` carries cause, text, pop, family_mars_born. Births and deaths in the age are derivable from `deaths_list` and `stats.births` by sol; ids of Mars-born not stored. |
+| E-I | Record parent_ids and birth_age | A (above). |
+| E-I | Dwell from the steady-trait mean | D, later task. |
+| E-note | Feedback loops for later; hidden gates named as floors | A. Section 7 forbids the age as a sample input and requires a lagged read. The 5 Mars-born clause and the sol 44 floor are named as floors in "For the owner" and 5. |
+### Feel
+| # | Item | Decision |
+| --- | --- | --- |
+| F-M1 | Fall-back line gentle, never "Landing/regressed/failed" | A, wording chosen by the lead (8.1), candidate (b) with a cause sentence. |
+| F-M2 | Pop 0: freeze, log nothing new | A (8.3). |
+| F-M3 | No "founders" in recurring lines | A. Only the start line says it. |
+| F-S4 | Season phrase; named colonist on the settled line | AM. Season phrase adopted on the three change lines. Named colonist deferred (no way for the HUD to find a being; Task 4). |
+| F-S5 | Pacing about three lines in 300 sols; log panel must hold the line at 100x | A, and answered by the pinned chapters strip (clarity M1B). |
+| F-S6 | Dwell is nearly invisible work | R as to dropping it: the owner asked for a minimum dwell; kept, stated as the binding limit. |
+| F-scope | Cut order: (1) budget and profiling, (2) probe grid, (3) test families, (4) dwell, (5) exit.recent_sols, (6) age_history | (1) AM: kept (owner carry-over) but moved to the last two steps of the plan (section 16). (2) A: one-at-a-time sweeps. (3) A: tests 14 keeps square waves, the adversarial run and data sanity; the statistical iid test and the period-80 family are dropped. (4) R (owner). (5) R: it is the recovery logic and in the owner's own example. (6) R: the chapters strip, T10, cause and Task 5 need it. |
+| F-note | No banner or pop-up | A. The strip is plain text. |
+### Clarity
+| # | Item | Decision |
+| --- | --- | --- |
+| C-M1 | Cause-blind lines get lost; Fix A (dominant clause text) and Fix B (pinned strip) | A and A. Strip size 3 from `age_history`. |
+| C-M2 | HUD speed labels dishonest; show achieved speed and a throttle line | A. Labels read "max"; readout and throttle line with refresh limits (section 9). |
+| C-M3 | Empty colony reading Landing | AM. HUD shows no age word at pop 0; the existing `colony_silent` line is the terminal line (no new `colony_ended` kind). |
+| C-S4 | Chapters strip, flash, auto-slow, long-absence summary | A strip. Flash and auto-slow D (owner call; listed below). Long-absence summary D (later); `age_history` stays complete. |
+| C-S5 | Qualitative resource word on HUD lines | AM. Adopted as "running low" computed in the view from the sample thresholds; never from `last_sample`; no counts. |
+| C-S6 | Settle wording not a reward; fall-back not blaming; avoid "easy days are over" | A. |
+| C-S7 | Landing line scrolls away | A (strip). |
+| C-S8 | Age in the clock line | A. |
+| C-S9 | Scale-neutral cause text | A (shares in clauses 6 and 7; cause lines). |
+| C-I10 | Pair the age with the season word | A (it already follows the season in the clock line). |
+| C-I11 | Dev window overlay behind M | D (optional later). |
+| C-I12 | Three-frame shot strip | A (step 8). |
+| C-M1 detail | Entry names a positive cause | R: all clauses pass at entry, there is no distinguishing cause. |
+### Dissent and tensions resolved
+- Emergence wants more colonist clauses and records; feel wants the smallest scope. Resolved: two clauses and two fields (small, RNG-free, both fixed from reviews' must-fixes) and no conversation clause or per-step state; the budget is last in the order, not removed (owner decision).
+- Clarity wants a pinned strip, cause lines, an honest speed readout; feel wants a quiet log and no banner. Resolved: all of clarity's must-fixes, delivered as plain text (strip and cause sentence, no pop-up); the owner decides about auto-slow.
+- Feel cuts `age_history`; emergence, clarity and T10 need it. Kept.
+- Emergence offers a stronger Mars-born rule (family or two habitats); I take both (living parent AND two habitats), the stricter, because early births come from one or two habitats.
+
+## 18. Open decisions for the owner
+1. **Pop 0.** (a) Frozen age, HUD shows no age word, existing "fallen silent" line (recommended). (b) Frozen age shown as is (simple, but reads as an age over an empty crater). (c) An age line "The colony has ended" (extra kind and text; adds an ending the game does not otherwise have).
+2. **Speed after an age change.** (a) Never change speed (recommended; the game never auto-pauses). (b) Off-by-default setting to drop to 1x on an age change (helps at 1000x, adds a setting). (c) Pause on a fall-back (clear, but breaks "never auto-pauses").
+3. **The two colonist clauses at the first balance run.** (a) Keep as adopted and let the probe set the shares (recommended). (b) Ship with them logged in the probe only and not in the sample until Task 4, if you want Settlement to stay the pure life-support reading you decided. If the probe shows they never fail, (b) is free.
+4. **Family rule strength.** (a) Living parent and 2 birth habitats (adopted). (b) Living parent only (looser). (c) The plain count of 5 (your original).
+5. **Task 5 gate.** (a) Council reads `age_history` and decides itself (recommended). (b) Council requires the colony to be in Settlement at the time. (c) Council requires that Settlement was ever entered.
 
 ## Changelog
-- 2026-10-05: first version (game-designer). Reviewer sign-off (step 2): pending.
+- 2026-10-05: first version (game-designer). Reviewer sign-off: pending.
+- 2026-10-05: revision 2 (lead designer) after the three assistant reviews: colonist clauses `calm` and `rested`; family Mars-born (parent and birth habitat recorded); cause-aware fall-back line and final log texts with a season sentence; pop 0 resolved; `age_history` enriched; HUD placement, chapters strip, resource words, speed readout; probe reduced to one-at-a-time sweeps; tests reduced and extended; build order puts the budget and profile last; design review record; open decisions.
