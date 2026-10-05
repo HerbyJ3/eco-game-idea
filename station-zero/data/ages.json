@@ -31,7 +31,7 @@
     "net_above": 0.0,
     "ice_min_sols": 2.0,
     "shortage_causes": ["air", "thirst", "hunger"],
-    "distress_share_max": 0.1,
+    "distress_share_max": 0.2,
     "rested_share_min": 0.7
   },
   "entry": {

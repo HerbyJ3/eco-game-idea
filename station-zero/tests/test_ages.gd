@@ -579,25 +579,40 @@ func test_t06_calm_share_and_boundaries(t) -> void:
 	if not _api(t):
 		return
 	var w = _good(12, 6)
-	_set_energy(w, 0, 1, 11.9)
-	_only_fails(t, _sample(w), "", "12 beings, 1 at 11.9 (share 0.083): calm passes")
-	_set_energy(w, 1, 1, 11.9)
-	_only_fails(t, _sample(w), "calm", "12 beings, 2 at 11.9 (0.167): calm fails")
+	# Spec section 10 test 6 at the shipped share: the boundaries below are for 0.2 (spec revision 4, section 19).
+	t.eq(float(_ad().sample.distress_share_max), 0.2, "the shipped distress_share_max is 0.2 (the edge counts below assume it)")
+	_set_energy(w, 0, 2, 11.9)
+	_only_fails(t, _sample(w), "", "12 beings, 2 at 11.9 (share 0.167): calm passes")
+	_set_energy(w, 2, 1, 11.9)
+	_only_fails(t, _sample(w), "calm", "12 beings, 3 at 11.9 (0.25): calm fails")
 	_reset_good(w)
-	_set_energy(w, 0, 2, 12.0)
-	_only_fails(t, _sample(w), "", "energy exactly 12.0 is not distress")
-	_set_energy(w, 0, 2, 11.999)
-	_only_fails(t, _sample(w), "calm", "energy 11.999 is distress")
-	# Exactly 1 of 10 (0.1) passes; 2 of 10 fails.
+	_set_energy(w, 0, 3, 12.0)
+	_only_fails(t, _sample(w), "", "energy exactly 12.0 is not distress (3 of 12 at 12.0 pass)")
+	_set_energy(w, 0, 3, 11.999)
+	_only_fails(t, _sample(w), "calm", "energy 11.999 is distress (3 of 12 fails)")
+	# Exactly 2 of 10 (0.2) passes; 3 of 10 fails.
 	var w10 = _good(10, 4)
-	_set_energy(w10, 0, 1, 5.0)
-	_only_fails(t, _sample(w10), "", "1 of 10 distressed (exactly 0.1) passes")
-	_set_energy(w10, 1, 1, 5.0)
-	_only_fails(t, _sample(w10), "calm", "2 of 10 fails")
-	# Pop 9 with one distressed fails (1/9 > 0.1).
+	_set_energy(w10, 0, 2, 5.0)
+	_only_fails(t, _sample(w10), "", "2 of 10 distressed (exactly 0.2) passes")
+	_set_energy(w10, 2, 1, 5.0)
+	_only_fails(t, _sample(w10), "calm", "3 of 10 fails")
+	# Pop 5 tolerates one distressed (1 <= 1.0); pop 4 does not (1 > 0.8).
+	var w5 = _good(5, 2)
+	_set_energy(w5, 0, 1, 5.0)
+	t.eq(_sample(w5).get("calm"), true, "pop 5, one distressed passes")
+	var w4 = _good(4, 2)
+	_set_energy(w4, 0, 1, 5.0)
+	t.eq(_sample(w4).get("calm"), false, "pop 4, one distressed fails")
+	# Pop 9: one passes (1 <= 1.8), two fail (2 > 1.8).
 	var w9 = _good(9, 4)
 	_set_energy(w9, 0, 1, 5.0)
-	_only_fails(t, _sample(w9), "calm", "pop 9, one distressed fails")
+	t.eq(_sample(w9).get("calm"), true, "pop 9, one distressed passes")
+	_set_energy(w9, 1, 1, 5.0)
+	t.eq(_sample(w9).get("calm"), false, "pop 9, two distressed fail")
+	# Pop 3: any single distressed being fails (1 > 0.6).
+	var w3c = _good(3, 0)
+	_set_energy(w3c, 0, 1, 5.0)
+	t.eq(_sample(w3c).get("calm"), false, "pop 3, one distressed fails")
 	# A being outside and turning back counts, whatever its energy.
 	var wo = _good(12, 6)
 	wo.beings[0].state = "eva"
@@ -605,7 +620,10 @@ func test_t06_calm_share_and_boundaries(t) -> void:
 	_only_fails(t, _sample(wo), "", "one turned-back being outside (energy 70): 1 of 12 passes")
 	wo.beings[1].state = "mining"
 	wo.beings[1].returning = true
-	_only_fails(t, _sample(wo), "calm", "two turned back outside: 2 of 12 fails")
+	_only_fails(t, _sample(wo), "", "two turned back outside: 2 of 12 (0.167) passes")
+	wo.beings[2].state = "eva"
+	wo.beings[2].returning = true
+	_only_fails(t, _sample(wo), "calm", "three turned back outside: 3 of 12 (0.25) fails")
 	# Outside but not returning, and returning but inside, are not distress.
 	var wn = _good(12, 6)
 	for i in 3:
@@ -617,10 +635,11 @@ func test_t06_calm_share_and_boundaries(t) -> void:
 	_only_fails(t, _sample(wn), "", "outside-not-returning and inside-returning are calm")
 	# The share is data.
 	var wd = _good(12, 6)
-	_set_energy(wd, 0, 2, 5.0)
-	_edit(_ad().sample, "distress_share_max", 0.2)
-	_only_fails(t, _sample(wd), "", "distress_share_max 0.2: 2 of 12 passes")
+	_set_energy(wd, 0, 3, 5.0)
+	_edit(_ad().sample, "distress_share_max", 0.25)
+	_only_fails(t, _sample(wd), "", "distress_share_max 0.25: 3 of 12 passes")
 	_restore()
+	_only_fails(t, _sample(wd), "calm", "restored shipped 0.2: the same 3 of 12 fails")
 	# The CMP_EPS slack, where it matters in doubles: 0.7 x 90 is 62.99999999999999, so 63 distressed of 90 would fail
 	# without the slack although it is exactly the share.
 	_edit(_ad().sample, "distress_share_max", 0.7)
@@ -632,10 +651,10 @@ func test_t06_calm_share_and_boundaries(t) -> void:
 	_restore()
 	# Scale does not matter: 160 beings, same shares.
 	var w160 = _good(160, 0)
-	_set_energy(w160, 0, 16, 5.0)
-	t.eq(_sample(w160).get("calm"), true, "160 beings, 16 distressed (exactly 0.1) passes")
-	_set_energy(w160, 16, 1, 5.0)
-	t.eq(_sample(w160).get("calm"), false, "160 beings, 17 distressed fails")
+	_set_energy(w160, 0, 32, 5.0)
+	t.eq(_sample(w160).get("calm"), true, "160 beings, 32 distressed (exactly 0.2) passes")
+	_set_energy(w160, 32, 1, 5.0)
+	t.eq(_sample(w160).get("calm"), false, "160 beings, 33 distressed fails")
 	_end(t)
 
 
@@ -693,7 +712,7 @@ func test_t06_rested_share_and_boundaries(t) -> void:
 	var ws = _good(12, 6)
 	_set_energy(ws, 0, 4, 5.0)
 	var s := _sample(ws)
-	t.eq(s.get("calm"), false, "4 of 12 distressed: calm fails")
+	t.eq(s.get("calm"), false, "4 of 12 distressed (0.33): calm fails")
 	t.eq(s.get("rested"), false, "and those 4 are not rested: 8 of 12 fails")
 	_end(t)
 
@@ -1272,6 +1291,7 @@ func _fixture(w, label: String) -> void:
 		"calm":
 			w.beings[0].energy = 5.0
 			w.beings[1].energy = 5.0
+			w.beings[2].energy = 5.0
 		"rested":
 			_break(w, "unrest")
 

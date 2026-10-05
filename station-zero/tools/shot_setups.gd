@@ -26,7 +26,7 @@ static func is_blank(name: String) -> bool:
 
 
 static func known(name: String) -> bool:
-	return name == "founders" or name in BLANK
+	return name == "founders" or name == "dead_colony" or name in BLANK
 
 
 static func apply(name: String, world: SimWorld) -> bool:
@@ -58,6 +58,10 @@ static func apply(name: String, world: SimWorld) -> bool:
 		"showcase_lamp_dusk":
 			_showcase(world)
 			_lamp_row(world)
+			return true
+		"dead_colony":
+			# Every being gone, stocks as they were: the HUD hides the age at pop 0.
+			world.beings.clear()
 			return true
 		"showcase_interior_habitat", "showcase_interior_comms", "showcase_interior_workshop":
 			_showcase(world)

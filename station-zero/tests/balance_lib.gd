@@ -62,17 +62,28 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 			seed_in, sols, pstr, str(w.fixed_step), data_hash().substr(0, 16)])
 	lines.append("# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window")
 	var body: Array[String] = []
-	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s" % [
+	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s" % [
 			"sol", "pop", "min", "birth", "dead a/t/h/o/x", "oxygen", "food", "ice", "regol",
-			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2"]
+			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2", "age"]
 	body.append(head)
 	var prev := {"shorts": 0, "trips": 0}
 	var rows: Array[Dictionary] = []
 	var sol_h: float = w.clock.sol_h
 	var total_steps := 0
+	# Read-only observer for T10 (report only): not-ok sols per cause group, from the sample the hook just appended.
+	var notok := {"sols": 0}
+	for g in Ages.GROUPS:
+		notok[g] = 0
 	while w.sol() < sols:
 		w.step()
 		total_steps += 1
+		if w._sol_started and w.ages_enabled and w.sol() >= int(SimData.ages().sample.from_sol) \
+				and w.colony.pop() > 0 and not w.ages.window.is_empty():
+			var last: Dictionary = w.ages.window.back()
+			if not last.ok:
+				notok.sols += 1
+				for g in last.failed:
+					notok[g] += 1
 		var s := w.sol()
 		if s % row_every != 0 or s == 0 or not w._sol_started:
 			continue
@@ -87,21 +98,22 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 		var row := {"sol": s, "avg_e": avg_e, "asleep": asleep, "pop": w.colony.pop(),
 				"min_pop": win.min_pop, "min_ice": win.min_ice}
 		rows.append(row)
-		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s" % [
+		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s %s" % [
 				s, w.colony.pop(), _fmt_min(win.min_pop).replace(".0", ""), st.births,
 				"%d/%d/%d/%d/%d" % [d.air, d.thirst, d.hunger, d.suffocated_outside, d.other],
 				w.colony.oxygen, w.colony.food, w.colony.ice, w.colony.regolith,
 				w.buildings.demand(), w.buildings.supply(), int(st.shorts) - int(prev.shorts),
 				"/".join(counts), w.resources.reachable_ice_count(), int(st.mining_trips) - int(prev.trips),
 				avg_e, asleep, float(win.hours_waiting_regolith) + float(win.hours_site_no_crew),
-				_fmt_min(win.min_ice), _fmt_min(win.min_oxygen)])
+				_fmt_min(win.min_ice), _fmt_min(win.min_oxygen),
+				"S" if w.ages.age == Ages.SETTLEMENT else "L"])
 		prev.shorts = st.shorts
 		prev.trips = st.mining_trips
 		w.reset_window()
 	var table_text := "\n".join(body)
 	var thash := table_text.sha256_text()
 	lines.append_array(body)
-	var verdicts := _targets(w, rows, sols)
+	var verdicts := _targets(w, rows, sols, notok)
 	lines.append("")
 	lines.append("targets for seed %d (%d sols):" % [seed_in, sols])
 	for v in verdicts:
@@ -121,7 +133,7 @@ static func _v(n: int, ok: bool, detail: String) -> Dictionary:
 
 
 ## Per-seed verdicts for the nine targets (spec section 13). Target 9 is checked by repeat runs, not here.
-static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int) -> Array[Dictionary]:
+static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int, notok: Dictionary = {}) -> Array[Dictionary]:
 	var st: Dictionary = w.stats
 	var out: Array[Dictionary] = []
 	var sol_h: float = w.clock.sol_h
@@ -195,4 +207,55 @@ static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int) -> Array[D
 	out.append(_v(8, ok8, "row avg energy %.1f..%.1f (40..90), row asleep %.1f..%.1f%% (5..30), max sleep %.1f h (<=18)" % [
 			emin, emax, amin, amax, st.max_sleep_h]))
 	out.append({"n": 9, "verdict": "N/A", "detail": "checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)"})
+	out.append(_t10(w, sols, notok))
 	return out
+
+
+## Target 10, ages (spec ages.md sections 12 and 19.2), from stats only. Judged: (1) first settlement sol in
+## balance.settle_sol_min..settle_sol_max (judged only when the run reaches settle_sol_max sols, else N/A when not
+## yet settled), (2) age_changes <= balance.max_age_changes, (3) every gap between consecutive age_history sols >=
+## min_dwell_sols, (4) len(age_history) == age_changes + 1 and every entry has how and text. Reported: first
+## settlement sol, changes, sols in each age, age at the end, sol and cause of each change, the cause of each fall
+## back and the not-ok sols per cause group (observed by run() at each boundary, read only).
+static func _t10(w: SimWorld, sols: int, notok: Dictionary) -> Dictionary:
+	var st: Dictionary = w.stats
+	var cfg: Dictionary = SimData.ages()
+	var lo := int(cfg.balance.settle_sol_min)
+	var hi := int(cfg.balance.settle_sol_max)
+	var dwell := int(cfg.min_dwell_sols)
+	var hist: Array = st.age_history
+	var first = st.first_settlement_sol
+	var judged1 := first != null or sols >= hi
+	var ok1 := first != null and int(first) >= lo and int(first) <= hi
+	var ok2 := int(st.age_changes) <= int(cfg.balance.max_age_changes)
+	var ok3 := true
+	var min_gap := -1
+	for i in range(1, hist.size()):
+		var gap := int(hist[i].sol) - int(hist[i - 1].sol)
+		min_gap = gap if min_gap < 0 else mini(min_gap, gap)
+		if gap < dwell:
+			ok3 = false
+	var ok4 := hist.size() == int(st.age_changes) + 1
+	for e in hist:
+		if not e.has("how") or str(e.get("text", "")) == "":
+			ok4 = false
+	var changes: Array[String] = []
+	var falls: Array[String] = []
+	for i in range(1, hist.size()):
+		var e: Dictionary = hist[i]
+		changes.append("sol %d %s%s" % [int(e.sol), str(e.how), (" (cause %s)" % str(e.cause)) if e.cause != null else ""])
+		if str(e.how) == "fell_back":
+			falls.append("sol %d %s" % [int(e.sol), str(e.cause)])
+	var groups: Array[String] = []
+	for g in Ages.GROUPS:
+		groups.append("%s %d" % [g, int(notok.get(g, 0))])
+	var detail := "first settlement sol %s (%d..%d), age_changes %d (<=%d), min gap between consecutive history entries %s (>=%d), history %d entries (changes+1 = %d); " % [
+			str(first), lo, hi, int(st.age_changes), int(cfg.balance.max_age_changes),
+			"-" if min_gap < 0 else str(min_gap), dwell, hist.size(), int(st.age_changes) + 1]
+	detail += "report: sols_in_age landing %d settlement %d, age at end %s, changes [%s], fall back causes [%s], not-ok sols %d (by group, a sol can fail several: %s)" % [
+			int(st.sols_in_age.get("landing", 0)), int(st.sols_in_age.get("settlement", 0)), str(w.ages.age),
+			"; ".join(PackedStringArray(changes)), "; ".join(PackedStringArray(falls)) if not falls.is_empty() else "none",
+			int(notok.get("sols", 0)), ", ".join(PackedStringArray(groups))]
+	if not judged1 and ok2 and ok3 and ok4:
+		return {"n": 10, "verdict": "N/A", "detail": "run shorter than %d sols and not settled yet; " % hi + detail}
+	return _v(10, ok1 and ok2 and ok3 and ok4, detail)

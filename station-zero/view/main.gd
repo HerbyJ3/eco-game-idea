@@ -4,6 +4,8 @@ extends Control
 
 const REFRESH_S := 0.1
 const LOG_LINES := 8
+## Slack of the sample's ice comparison (sim/ages.gd CMP_EPS), so the word flips at exactly the same stock.
+const LOW_EPS := 1e-9
 ## Keyboard speed presets (multiples of real time). 0 pauses.
 const SPEEDS := {KEY_1: 1.0, KEY_2: 10.0, KEY_3: 100.0, KEY_4: 1000.0}
 const STATES: Array[String] = ["idle", "sleep", "work", "mining", "eva", "transit"]
@@ -13,6 +15,7 @@ var _colony: Label
 var _power: Label
 var _site: Label
 var _beings: Label
+var _chapters: Label
 var _log: Label
 var _controls: Label
 var _map: Control
@@ -20,6 +23,7 @@ var _map: Control
 var _world: Node
 var _background: Control
 var _shade: Control
+var _vbox: Control
 var _hud_visible := true
 
 ## The Sim autoload, looked up by path so the scene also loads where autoloads are not registered.
@@ -44,6 +48,7 @@ func setup(sim: Node) -> void:
 	_power = get_node("Margin/HBox/VBox/Power")
 	_site = get_node("Margin/HBox/VBox/Site")
 	_beings = get_node("Margin/HBox/VBox/Beings")
+	_chapters = get_node("Margin/HBox/VBox/Chapters")
 	_log = get_node("Margin/HBox/VBox/Log")
 	_controls = get_node("Margin/HBox/VBox/Controls")
 	_map = get_node("Margin/HBox/Map")
@@ -51,6 +56,7 @@ func setup(sim: Node) -> void:
 	_world = get_node("WorldLayer/WorldView")
 	_background = get_node("Background")
 	_shade = get_node("HudShade")
+	_vbox = get_node("Margin/HBox/VBox")
 	_world.setup(sim)
 	if not _world.debug_map_changed.is_connected(_show_debug_map):
 		_world.debug_map_changed.connect(_show_debug_map)
@@ -121,13 +127,15 @@ func refresh() -> void:
 	_power.text = _power_text(w)
 	_site.text = _site_text(w)
 	_beings.text = _beings_text(w)
+	_chapters.text = _chapters_text(w)
 	_log.text = _log_text(w)
 	_controls.text = "Speed: %s   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x" % _speed_name()
 	_map.queue_redraw()
+	_fit_shade.call_deferred()
 	if not _printed:
 		_printed = true
 		print("\n".join([_clock.text, _colony.text, _power.text, _site.text, _beings.text,
-				_log.text, _controls.text]))
+				_chapters.text, _log.text, _controls.text]))
 
 
 func _speed_name() -> String:
@@ -137,9 +145,52 @@ func _speed_name() -> String:
 func _clock_text(w: SimWorld) -> String:
 	var c := w.clock
 	var hour := c.mars_hour(w.t)
-	return "%s  |  Year %d, Sol %d  |  %02d:%02d  |  %s" % [
+	var line := "%s  |  Year %d, Sol %d  |  %02d:%02d  |  %s" % [
 		c.site_name, c.year_index(w.t), c.sol_index(w.t),
 		int(hour), int(fmod(hour, 1.0) * 60.0), c.season(w.t)]
+	# The age word ends the line; hidden when nobody is alive (spec ages.md section 9).
+	if w.colony.pop() > 0:
+		var ad: Dictionary = SimData.ages()
+		var age_id: String = str(w.stats.age)
+		if ad.has(age_id):
+			line += "  |  " + str(ad[age_id].name)
+	return line
+
+
+## The pinned chapters strip: the last hud.chapters_shown age_history entries, oldest first, as `sol N  text`.
+func _chapters_text(w: SimWorld) -> String:
+	var n := int(SimData.ages().hud.chapters_shown)
+	var hist: Array = w.stats.age_history
+	var lines: PackedStringArray = ["Chapters"]
+	for e: Dictionary in hist.slice(maxi(0, hist.size() - n)):
+		lines.append("sol %d  %s" % [int(e.clock_sol), e.text])
+	return "\n".join(lines)
+
+
+## The low-stock word for the Oxygen, Food and Ice lines: the same thresholds as ages.sample (data keys), computed here
+## from the stocks alone.
+func _low_word(w: SimWorld, kind: String) -> String:
+	var cfg: Dictionary = SimData.ages().sample
+	var col := w.colony
+	var low := false
+	match kind:
+		"oxygen":
+			low = col.oxygen < float(cfg.o2_min_fraction) * col.o2_cap()
+		"food":
+			low = col.food < float(cfg.food_min_fraction) * col.food_cap()
+		"ice":
+			var use_per_sol: float = col.pop() * float(SimData.colony().consumption.ice_per_being) * col.sol_h
+			low = col.ice < float(cfg.ice_min_sols) * use_per_sol - LOW_EPS
+	return "   " + str(SimData.ages().hud.low_word) if low else ""
+
+
+## Sizes the shade behind the HUD text to the text block (the block grows with the chapters strip).
+func _fit_shade() -> void:
+	if _shade == null or _vbox == null or not is_instance_valid(_vbox):
+		return
+	var r := _vbox.get_global_rect()
+	_shade.position = Vector2.ZERO
+	_shade.size = Vector2(r.end.x + 24.0, r.end.y + 16.0)
 
 
 func _colony_text(w: SimWorld) -> String:
@@ -159,9 +210,9 @@ func _colony_text(w: SimWorld) -> String:
 		"Population %d   births %d   deaths %d" % [
 			col.pop(), int(w.stats.births), int(w.stats.deaths_list.size())],
 		"  deaths by cause: " + ", ".join(causes),
-		"Oxygen   %7.1f / %.0f   %+.2f /h" % [col.oxygen, col.o2_cap(), col.o2_net()],
-		"Food     %7.1f / %.0f   %+.2f /h" % [col.food, col.food_cap(), col.food_net()],
-		"Ice      %7.1f (target %.0f)   %+.2f /h" % [col.ice, col.ice_target(), ice_rate],
+		"Oxygen   %7.1f / %.0f   %+.2f /h%s" % [col.oxygen, col.o2_cap(), col.o2_net(), _low_word(w, "oxygen")],
+		"Food     %7.1f / %.0f   %+.2f /h%s" % [col.food, col.food_cap(), col.food_net(), _low_word(w, "food")],
+		"Ice      %7.1f (target %.0f)   %+.2f /h%s" % [col.ice, col.ice_target(), ice_rate, _low_word(w, "ice")],
 		"Regolith %7.1f (target %.0f)   %+.2f /h" % [col.regolith, col.regolith_target(), reg_rate],
 	])
 
