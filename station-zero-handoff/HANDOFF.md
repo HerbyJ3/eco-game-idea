@@ -336,7 +336,7 @@ res://
 ## 10. Working rules (to avoid getting stuck)
 
 1. One task at a time from the queue. Finish, test, check it off, then the next.
-2. Design before code: write the spec with numbers, then implement.
+2. Design before code: write the spec with numbers, then implement. Design decisions come only from the design team (lead game-designer, reviewed by the three assistant designers); the project manager never recommends mechanics, thresholds or balance, it routes design questions to the designers and the owner.
 3. Balance by changing **one** parameter per run, with the same seed, and record the result.
 4. Every system gets a headless test before it gets visuals.
 5. Keep commits small; each one should run.
@@ -351,8 +351,11 @@ Agent prompts live in `.claude/agents/` at the repository root (recreated in Tas
 
 | Agent | Job | Model |
 | --- | --- | --- |
-| project-manager | Keeps the task queue, splits work, enforces one task at a time and the definition of done | sonnet |
-| game-designer | Writes specs with numbers for systems (ages, diplomacy, needs) before anyone codes | sonnet |
+| project-manager | Keeps the task queue, splits work, enforces one task at a time and the definition of done. Does not give game-design advice | sonnet |
+| game-designer | Lead designer. Owns every design decision; writes specs with numbers for systems (ages, diplomacy, needs) before anyone codes; synthesizes the assistant designers' reviews | opus |
+| designer-emergence | Assistant designer, systems and emergence lens (Will Wright's published work): agents, needs, possibility space, god as gardener. Read-only reviewer | sonnet |
+| designer-feel | Assistant designer, warmth and rhythm lens (Eric Barone's published work, Stardew Valley): days and seasons, character, small delights, scope discipline. Read-only reviewer | sonnet |
+| designer-clarity | Assistant designer, readable-simulation lens (Karoliina Korppoo's published work, Cities: Skylines): what the player is told, legibility at scale, agency without micromanagement. Read-only reviewer | sonnet |
 | godot-engineer | Implements specs in Godot 4 / GDScript, sim and view kept separate | sonnet |
 | sim-test-engineer | Headless tests and seeded balance runs; reports metrics, never guesses | sonnet |
 | art-director | Writes Higgsfield prompts (Nano Banana 2), keeps the style consistent, plans asset lists | haiku |

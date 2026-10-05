@@ -2,5 +2,6 @@
   "fixed_step_hours": 0.05,
   "real_seconds_per_hour_at_1x": 1.0,
   "max_steps_per_frame": 2000,
+  "advance_budget_ms": 8.0,
   "default_seed": 42
 }

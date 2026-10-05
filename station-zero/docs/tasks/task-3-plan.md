@@ -1,5 +1,8 @@
 # Task 3 Plan: Age system (Landing and Settlement, announced in the log)
 
+> **Note (2026-10-05, owner direction):** the project manager does not give game-design advice. Every design proposal in sections 4 and 5 below (the Settlement definition and its alternatives, the "announce only" recommendation, thresholds, windows, the target numbers) is a *design draft, to be replaced by the design team*. The lead game-designer owns the ages design; the assistant designers (designer-emergence, designer-feel, designer-clarity) review it. The owner's decisions in "Owner decisions" at the end stand.
+
+
 Source of truth: station-zero-handoff/HANDOFF.md (sections 1, 2, 7, 8, 9, 10). Tasks 0, 1, 2 are done; Task 4 is not started.
 Rules in force: design before code, headless tests before visuals, every tunable in data/ (new `data/ages.json`), seeded RNG (the age system never draws from `SimRng`), one balance parameter per run, each step is a commit that runs. Test command: `godot --headless --path station-zero --script res://tests/run_tests.gd`.
 Facts the numbers below rest on (Task 1 log, spec life-support-power.md sections 4, 13, 16): oxygen and food sit at their caps for the whole 300 sols on all five seeds (nets stay positive because a green room is built at a 0.4 net floor); zero power shorts and zero air turn-backs; ice is the only pressure (dry on seeds 42, 99, 2026 from about sol 120 to 180, thirst deaths from sol 180 to 240); ice target scales with pop, but the stock stays under 0.6 of target on those seeds, so "ice above a fraction of target" would never fire. Per-sol crossing figures below are ESTIMATES read from 30-sol rows; step 4 replaces them with measured values before any number is locked.
