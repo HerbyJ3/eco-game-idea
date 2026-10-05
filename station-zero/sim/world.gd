@@ -11,6 +11,9 @@ var buildings: Buildings
 var powers: Powers
 var beings: Array[Being] = []
 var colony: Colony
+## Age system (spec ages.md); announce only. `ages_enabled` false skips the sol hook (test seam).
+var ages: Ages
+var ages_enabled := true
 var resources: Resources
 ## Phase 5 scouting. On for founder worlds; blank test worlds start with it off so that tests that
 ## count rng draws are not disturbed (spec step 5 notes).
@@ -64,6 +67,7 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	buildings.powers = powers
 	colony = Colony.new(beings, buildings, rng, clock.sol_h)
 	resources = Resources.new(buildings, rng)
+	ages = Ages.new()
 	_log_cap = int(SimData.colony().log_cap)
 	_init_stats()
 	if not options.get("blank", false):
@@ -73,6 +77,9 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 		resources.spawn_founder_sites()
 		_log("founders_landed", "%d founders landed." % founders.size())
 		stats.pop_by_sol.append(colony.pop())
+		ages.begin(self, true)
+	else:
+		ages.begin(self, false)
 
 
 func _init_stats() -> void:
@@ -94,6 +101,8 @@ func _init_stats() -> void:
 		"pop_by_sol": [], "min_pop": null,
 		"min_oxygen": null, "min_food": null, "min_ice": null, "min_ice_after30": null,
 		"max_ice_over_target": 0.0, "max_regolith_over_target": 0.0,
+		"age": Ages.LANDING, "age_changes": 0, "sols_in_age": {Ages.LANDING: 0, Ages.SETTLEMENT: 0},
+		"first_settlement_sol": null, "age_history": [],
 	}
 	reset_window()
 
@@ -264,6 +273,9 @@ func step() -> void:
 		_stat_add("sol_samples", 1)
 		if resources.reachable_ice_count() >= int(SimData.resources().scout.min_reachable):
 			_stat_add("reachable_ok_samples", 1)
+		# Phase 11 (age sample): the last thing a sol boundary does (spec ages.md 4.1).
+		if ages_enabled:
+			ages.on_sol(self)
 
 
 ## Removes up to `amount` ice from a field and returns what was taken. A field that runs dry leaves
@@ -485,11 +497,11 @@ func _birth_phase() -> void:
 			continue
 		if not rng.chance(colony.birth_chance(here)):
 			continue
-		rng.pick(here)  # the parent; no lineage is kept in this slice
-		_create_newborn(hb)
+		var parent: Being = rng.pick(here)  # the parent; null (and no draw) if `here` were empty
+		_create_newborn(hb, parent)
 
 
-func _create_newborn(hb: Buildings.Building) -> void:
+func _create_newborn(hb: Buildings.Building, parent: Being = null) -> void:
 	var bc: Dictionary = SimData.beings()
 	var nb := Being.new()
 	nb.id = _next_being_id
@@ -504,6 +516,8 @@ func _create_newborn(hb: Buildings.Building) -> void:
 	var iw: Array = bc.initial_wait_h
 	nb.wait_h = rng.randf_range(float(iw[0]), float(iw[1]))
 	nb.building_id = hb.id
+	nb.parent_id = parent.id if parent != null else 0
+	nb.birth_building_id = hb.id
 	# Invariant counters (must stay 0): the gates make both unreachable.
 	if colony.pop() >= colony.birth_capacity():
 		stats.births_at_capacity += 1

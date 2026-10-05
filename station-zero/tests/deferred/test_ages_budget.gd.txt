@@ -1,0 +1,130 @@
+## DEFERRED (parked verbatim, not run): the advance-budget half of spec docs/specs/ages.md section 10 test 20, moved out of
+## tests/test_ages.gd in Task 3 step 4. MOVE BACK IN STEP 11 (advance() wall-time budget, spec section 11): paste the
+## FakeClock class and the section below back into tests/test_ages.gd unchanged (they use that file's helpers _good,
+## _beings_state, _draws, _begin, _end, _edit, _restore and the _undo array, which stay there).
+## Needs: SimWorld.advance_dropped_h, SimWorld.now_ms (Callable returning int ms), advance() reading
+## SimData.sim().advance_budget_ms (already in data/sim.json).
+
+class FakeClock extends RefCounted:
+	var v := 0
+	var step := 3
+
+	func read() -> int:
+		var r := v
+		v += step
+		return r
+
+
+# ---------------------------------------------------------------- 20. advance budget (sim half)
+
+func _budget_world(budget: float, clock: Callable = Callable()) -> Variant:
+	_edit(SimData.sim(), "advance_budget_ms", budget)
+	var w = _good()
+	if clock.is_valid():
+		w.now_ms = clock
+	return w
+
+
+func test_t20_budget_zero_takes_one_step(t) -> void:
+	var w0 = SimWorld.new(1, {"blank": true})
+	var has := "advance_dropped_h" in w0 and "now_ms" in w0
+	t.check("advance_dropped_h" in w0, "missing API: SimWorld.advance_dropped_h")
+	t.check("now_ms" in w0, "missing API: SimWorld.now_ms (injected millisecond clock, Callable)")
+	if not has:
+		return
+	_begin(t)
+	t.eq(float(SimData.sim().advance_budget_ms), 8.0, "data: advance_budget_ms 8.0")
+	var w = _budget_world(0.0)
+	t.eq(w.advance_dropped_h, 0.0, "advance_dropped_h starts at 0")
+	var steps: int = w.advance(1.0)
+	t.eq(steps, 1, "budget 0: one step per call although 20 are due")
+	t.near(w._accum, 0.0, 1e-12, "accumulator zeroed after the stop")
+	t.near(float(w.advance_dropped_h), 0.95, 1e-9, "the 19 steps left are dropped (0.95 h)")
+	var steps2: int = w.advance(0.03)
+	t.eq(steps2, 0, "less than a step: none runs")
+	t.near(w._accum, 0.03, 1e-12, "and the remainder is kept, not dropped")
+	t.near(float(w.advance_dropped_h), 0.95, 1e-9, "dropped unchanged")
+	var steps3: int = w.advance(0.03)
+	t.eq(steps3, 1, "the remainder 0.03 + 0.03 makes a step due: one step")
+	t.near(float(w.advance_dropped_h), 0.95, 1e-9, "nothing left over, nothing dropped")
+	_restore()
+	_end(t)
+
+
+func test_t20_fake_clock_stops_after_three_steps(t) -> void:
+	var w0 = SimWorld.new(1, {"blank": true})
+	if not ("advance_dropped_h" in w0 and "now_ms" in w0):
+		t.check(false, "missing API: SimWorld.advance_dropped_h / now_ms")
+		return
+	_begin(t)
+	var fc := FakeClock.new()
+	var w = _budget_world(8.0, fc.read)
+	var steps: int = w.advance(10.0)
+	t.eq(steps, 3, "3 ms per read, budget 8: entry read 0, then 3, 6, 9 -> stops after 3 steps (overshoot by one)")
+	t.eq(w.step_index, 3, "three steps ran")
+	t.near(w._accum, 0.0, 1e-12, "accumulator is 0 after the stop")
+	t.near(float(w.advance_dropped_h), 10.0 - 3.0 * 0.05, 1e-9, "dropped = the accumulator when zeroed (9.85)")
+	# A sub-step remainder pre-loaded is part of what is dropped.
+	fc.v = 0
+	w._accum = 0.02
+	var before: float = w.advance_dropped_h
+	var steps2: int = w.advance(1.0)
+	t.eq(steps2, 3, "again 3 steps")
+	t.near(float(w.advance_dropped_h) - before, 1.02 - 3.0 * 0.05, 1e-9, "dropped grew by 0.87 (includes the 0.02 remainder)")
+	t.near(w._accum, 0.0, 1e-12, "accumulator 0")
+	# The stop is at elapsed >= budget, not >: 4 ms per read gives elapsed 4, 8 and the loop stops at 8.
+	fc.v = 0
+	fc.step = 4
+	w._accum = 0.0
+	var steps_eq: int = w.advance(10.0)
+	t.eq(steps_eq, 2, "4 ms per read, budget 8: elapsed 8 >= 8 stops after 2 steps")
+	fc.step = 3
+	# A call that finishes inside the budget drops nothing.
+	fc.v = 0
+	before = w.advance_dropped_h
+	var steps3: int = w.advance(0.1)
+	t.eq(steps3, 2, "two steps due, two run")
+	t.near(float(w.advance_dropped_h), before, 1e-12, "nothing dropped when every due step ran")
+	# The counter is not in stats or the log.
+	for k in w.stats.keys():
+		t.check(not str(k).contains("dropped"), "stats has no dropped-hours key (%s)" % str(k))
+	for e in w.log:
+		t.check(not str(e.text).contains("dropped"), "log has no dropped-hours line")
+	_restore()
+	_end(t)
+
+
+func test_t20_cap_and_unbudgeted_equivalence(t) -> void:
+	var w0 = SimWorld.new(1, {"blank": true})
+	if not ("advance_dropped_h" in w0 and "now_ms" in w0):
+		t.check(false, "missing API: SimWorld.advance_dropped_h / now_ms")
+		return
+	_begin(t)
+	# The hard cap is never exceeded, even when the clock never reaches the budget.
+	var still := FakeClock.new()
+	still.step = 0
+	var w = _budget_world(8.0, still.read)
+	w.max_steps_per_advance = 4
+	var steps: int = w.advance(10.0)
+	t.eq(steps, 4, "cap 4 with a frozen clock: exactly 4 steps")
+	t.near(float(w.advance_dropped_h), 10.0 - 4.0 * 0.05, 1e-9, "the rest is dropped at the cap")
+	# A clock that never reaches the budget: same steps and same state as plain stepping.
+	var a = _budget_world(8.0, still.read)
+	var b = _good()
+	var n: int = a.advance(5.0)
+	for i in n:
+		b.step()
+	t.eq(n, 100, "5 hours = 100 steps")
+	t.eq(a.step_index, b.step_index, "same step count")
+	t.near(a.t, b.t, 1e-9, "same t")
+	t.eq(a.stats, b.stats, "same stats")
+	t.eq(_beings_state(a), _beings_state(b), "same beings")
+	t.eq(_draws(a, 200), _draws(b, 200), "same rng stream")
+	t.near(float(a.advance_dropped_h), 0.0, 1e-9, "nothing dropped")
+	# The default clock (engine ticks) with the default budget still takes steps.
+	_restore()
+	var d = _good()
+	var steps_d: int = d.advance(0.2)
+	t.check(steps_d >= 1 and steps_d <= 4, "default clock: at least one step, at most the four due (%d)" % steps_d)
+	_end(t)
+

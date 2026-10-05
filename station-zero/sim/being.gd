@@ -9,6 +9,10 @@ var name: String
 var persona: Dictionary
 var role: String
 var earth_born := false
+## Birth record (state only, set in SimWorld._create_newborn): the parent picked for the birth, 0 for
+## founders and test-seam beings or when no being was picked; the habitat id of the birth.
+var parent_id := 0
+var birth_building_id := 0
 var born_t: float
 var energy: float
 ## idle, to_door, transit, sleep, eva, work, mining.

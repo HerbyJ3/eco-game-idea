@@ -56,3 +56,7 @@ static func resources() -> Dictionary:
 
 static func suits() -> Dictionary:
 	return load_json("suits.json")
+
+
+static func ages() -> Dictionary:
+	return load_json("ages.json")
