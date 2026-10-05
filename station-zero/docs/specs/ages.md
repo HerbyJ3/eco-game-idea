@@ -328,6 +328,13 @@ Reviewers: emergence (Will Wright lens), feel (Eric Barone lens), clarity (Karol
 4. **Family rule strength.** (a) Living parent and 2 birth habitats (adopted). (b) Living parent only (looser). (c) The plain count of 5 (your original).
 5. **Task 5 gate.** (a) Council reads `age_history` and decides itself (recommended). (b) Council requires the colony to be in Settlement at the time. (c) Council requires that Settlement was ever entered.
 
+## Owner decisions on the open decisions (Herby, 2026-10-05)
+1. **Colonist clauses:** adopted as drafted (`calm` and `rested` join the sample). The probe sets the shares from measurements.
+2. **Family rule:** a living parent and at least 2 distinct birth habitats (the designer's version). The sim records `parent_id` and `birth_building_id` on each newborn, with no RNG draw.
+3. **Pop 0:** the age is frozen, the HUD shows no age word, and the existing "fallen silent" log line is the only message.
+4. **Speed on an age change:** the game never changes speed.
+5. **Task 5 gate:** not decided yet; Task 5 reads `age_history` and decides itself (the designer's recommendation stands as the default until Task 5 is designed).
+
 ## Changelog
 - 2026-10-05: first version (game-designer). Reviewer sign-off: pending.
 - 2026-10-05: revision 2 (lead designer) after the three assistant reviews: colonist clauses `calm` and `rested`; family Mars-born (parent and birth habitat recorded); cause-aware fall-back line and final log texts with a season sentence; pop 0 resolved; `age_history` enriched; HUD placement, chapters strip, resource words, speed readout; probe reduced to one-at-a-time sweeps; tests reduced and extended; build order puts the budget and profile last; design review record; open decisions.
