@@ -1,0 +1,8 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# on_sol timing: seed=7, end of sol 300, pop 72, beings 72, buildings 24, age settlement, 2000 calls, state restored before every call (restore is outside the timed region)
+us per call (first 50 calls discarded as warm-up):
+  Ages.on_sol           n 2000  min 158  median 168  mean 189.9  p95 307  max 646
+  Ages.sample           n 2000  min 98  median 102  mean 116.2  p95 189  max 406
+  Ages.family_mars_born n 2000  min 43  median 45  mean 52.2  p95 86  max 1017
+  Ages.decide           n 2000  min 9  median 10  mean 12.2  p95 20  max 182

@@ -1,0 +1,82 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# age probe: seed=1234 sols=300 data_hash=c76d875caa4d74fe; wall 876.4 s
+self-replay: PASS (history entries 2 live / 2 replayed; live-vs-probe clause diffs 0; recomputed-vs-recorded clause diffs 0; final window identical true; world A vs B pop/ice mismatches 0)
+
+age history (live stats.age_history): changes 1, first_settlement_sol 85, sols_in_age landing 85 settlement 215, age at end settlement
+  sol   0  landing    how=landing       cause=<null>  pop=7 family_mars_born=0
+  sol  85  settlement how=settled       cause=<null>  pop=52 family_mars_born=45
+flaps (a change within 40 sols of the previous change): 0; changes: 1; shortest gap between changes: -
+
+samples: 296 taken (sol >= 5, pop > 0); ok 263 (88.9%); first ok sample sol 9
+
+entry clauses (Landing sols only; full = window full, share = ok share, recent = last 3 ok, fam_count/fam_homes = family Mars-born count / distinct birth habitats, dwell)
+  settlement at sol 85: last clause(s) to pass ["share"] (start sol of each clause's unbroken pass: full=44 share=85 recent=60 fam_count=27 fam_homes=24 dwell=20)
+  sol 100: settlement (not blocked)
+  sol 150: settlement (not blocked)
+  Landing sols from sol 44 (earliest full window) to the end: 42; per entry clause: failing sols / sole-blocker sols / last failing sol:
+    full       fails   0  sole blocker   0  last fail sol -
+    share      fails  41  sole blocker  28  last fail sol 84
+    recent     fails  13  sole blocker   0  last fail sol 59
+    fam_count  fails   0  sole blocker   0  last fail sol -
+    fam_homes  fails   0  sole blocker   0  last fail sol -
+    dwell      fails   0  sole blocker   0  last fail sol -
+
+clause failure shares over sampled sols (sol >= 5, pop > 0): failing sols / 296
+  oxygen             fails   1 (0.3%), only failing clause on 0 sols
+  o2_net             fails   0 (0.0%), only failing clause on 0 sols
+  food               fails   1 (0.3%), only failing clause on 0 sols
+  food_net           fails   0 (0.0%), only failing clause on 0 sols
+  power_budget       fails   0 (0.0%), only failing clause on 0 sols
+  none_offline       fails   0 (0.0%), only failing clause on 0 sols
+  no_short           fails   0 (0.0%), only failing clause on 0 sols
+  no_shortage_death  fails   0 (0.0%), only failing clause on 0 sols
+  ice                fails   0 (0.0%), only failing clause on 0 sols
+  calm               fails  32 (10.8%), only failing clause on 23 sols
+  rested             fails   9 (3.0%), only failing clause on 0 sols
+  fam_count<min      fails  22 (7.4%)   (entry clause, evaluated on every sampled sol, not part of ok)
+  fam_homes<min      fails  19 (6.4%)   (entry clause, evaluated on every sampled sol, not part of ok)
+per 50-sol band (sols 1-50, 51-100, ...): sampled sols, not-ok sols, then per clause failing/only-failing
+  band   1- 50: sampled 46 not-ok 23 | oxygen 1/0 food 1/0 calm 22/13 rested 9/0
+  band  51-100: sampled 50 not-ok  3 | calm 3/3
+  band 101-150: sampled 50 not-ok  2 | calm 2/2
+  band 151-200: sampled 50 not-ok  1 | calm 1/1
+  band 201-250: sampled 50 not-ok  4 | calm 4/4
+  band 251-300: sampled 50 not-ok  0 | 
+
+ice: boundary minimum 4.51 ice-days at sol 142; within-sol minimum 4.24 ice-days at sol 143; min ice 50.41 at sol 13; sols whose within-sol minimum reached 0 ice: 0
+ice dips (spec open question): sols with within-sol min < 2.0 ice-days: 0; of those the boundary read was ok (dip missed by the sample): 0 (first at sol -1)
+calm: distressed share mean 0.049 max 0.429 (limit 0.10); rested: share mean 0.868 min 0.444 (limit 0.70)
+
+every 10th sol (age after that sol's decision; ice-d = ice in sols of use at the boundary; ice-dmin/icemin = minimum inside the sol; ok40 = ok samples in the trailing window; failed = clauses failing at this sample)
+ sol age  pop  fam homes     ice  ice-d ice-dmin  icemin ok40    ok  calm%  rest%  failed
+  10   L    7    0     0    55.0  31.86    31.86    55.0    1     -   14.3   57.1  calm,rested
+  20   L    7    0     0    58.5  33.88    31.20    53.9    4     -   14.3   57.1  calm,rested
+  30   L   12    5     2    72.3  24.43    22.63    67.0   11    ok    0.0  100.0  
+  40   L   17   10     3    82.0  19.56    19.56    82.0   17    ok    0.0   88.2  
+  50   L   22   15     4    97.3  17.94    16.87    91.5   22    ok    4.5   90.9  
+  60   L   27   20     5   109.0  16.37    16.37   109.0   26    ok    7.4   88.9  
+  70   L   42   35     7   158.4  15.29    12.54   126.8   29    ok    9.5   76.2  
+  80   L   52   45     9   206.4  16.09    15.63   200.4   33    ok    1.9   80.8  
+  90   S   57   50    10   195.7  13.93    13.93   195.7   37    ok    1.8   87.7  
+ 100   S   65   58    12   158.2   9.87     9.76   154.1   40    ok    7.7   83.1  
+ 110   S   72   65    13   223.1  12.57    11.81   209.7   39    ok    1.4   84.7  
+ 120   S   82   75    13   174.9   8.65     8.65   174.9   39    ok    2.4   87.8  
+ 130   S   82   75    13   106.8   5.28     5.27   106.6   38    ok    1.2   89.0  
+ 140   S   92   85    14   124.9   5.50     4.63   103.9   38    ok    4.3   89.1  
+ 150   S  102   95    14   167.1   6.64     6.59   165.7   39    ok    0.0   86.3  
+ 160   S  107  100    14   129.0   4.89     4.89   129.0   39    ok    3.7   85.0  
+ 170   S  107  100    14   421.3  15.97    15.97   421.3   40    ok    1.9   91.6  
+ 180   S  107  100    14   716.9  27.17    26.34   695.0   40    ok    2.8   90.7  
+ 190   S  110  103    15   612.4  22.58    22.58   612.4   40    ok    0.9   92.7  
+ 200   S  112  105    15   595.4  21.56    21.22   586.1   39     -   10.7   84.8  calm
+ 210   S  112  105    15   666.6  24.13    24.13   666.6   35    ok    8.9   84.8  
+ 220   S  122  115    18   501.9  16.68    16.44   494.7   35    ok    3.3   86.9  
+ 230   S  132  125    20   453.6  13.93    13.80   448.5   35    ok    5.3   90.9  
+ 240   S  132  125    20   345.6  10.62    10.62   345.6   36    ok    4.5   88.6  
+ 250   S  142  135    23   214.2   6.12     6.00   210.1   40    ok    3.5   87.3  
+ 260   S  142  135    23   506.6  14.47    14.47   506.6   40    ok    0.0   93.0  
+ 270   S  142  135    23   815.2  23.28    23.28   815.2   40    ok    0.0   97.2  
+ 280   S  142  135    23   810.3  23.14    21.71   760.2   40    ok    4.2   89.4  
+ 290   S  142  135    23   885.1  25.28    24.52   858.7   40    ok    0.7   92.3  
+ 300   S  142  135    23  1014.2  28.96    28.96  1014.2   40    ok    0.0   97.9  
