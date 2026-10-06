@@ -32,6 +32,14 @@
     "probe_lonely_pull": 0.15,
     "lonely_share_max": 0.35,
     "friends_mean_min": 1.0,
-    "friends_mean_max": 12.0
+    "friends_mean_max": 15.0,
+    "lonely_window_sols": 50,
+    "first_friend_gap_sols": 30,
+    "selectivity_ratio_min": 2.0,
+    "cold_third_friends_stop": 10.0,
+    "met_friend_share_flag": 0.35,
+    "first_line_min_sol": 25,
+    "first_line_max_sol": 55,
+    "found_friend_tail_ratio_max": 1.0
   }
 }

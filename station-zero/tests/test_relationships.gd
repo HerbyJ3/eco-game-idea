@@ -1586,6 +1586,24 @@ func _broken_rules(d: Dictionary, bkinds: Array, art_interior: Dictionary, fixed
 		f.append("stranger_talk_share")
 	if not float(art_interior.stranger_talk_cycle_s) > 0.0:
 		f.append("stranger_talk_cycle_s")
+	var b: Dictionary = d.balance
+	if not (int(b.lonely_window_sols) >= 1 and float(b.lonely_window_sols) == float(int(b.lonely_window_sols))):
+		f.append("balance.lonely_window_sols")
+	if not float(b.first_friend_gap_sols) > 0.0:
+		f.append("balance.first_friend_gap_sols")
+	if not float(b.friends_mean_min) <= float(b.friends_mean_max):
+		f.append("balance.friends_mean_range")
+	if not float(b.selectivity_ratio_min) >= 1.0:
+		f.append("balance.selectivity_ratio_min")
+	if not float(b.cold_third_friends_stop) > 0.0:
+		f.append("balance.cold_third_friends_stop")
+	if not (0.0 < float(b.met_friend_share_flag) and float(b.met_friend_share_flag) <= 1.0):
+		f.append("balance.met_friend_share_flag")
+	var lo_ok: bool = float(b.first_line_min_sol) == float(int(b.first_line_min_sol)) and float(b.first_line_max_sol) == float(int(b.first_line_max_sol))
+	if not (lo_ok and int(b.first_line_min_sol) >= 0 and int(b.first_line_min_sol) < int(b.first_line_max_sol)):
+		f.append("balance.first_line_window")
+	if not float(b.found_friend_tail_ratio_max) > 0.0:
+		f.append("balance.found_friend_tail_ratio_max")
 	return f
 
 
@@ -1621,6 +1639,18 @@ func test_t15b_data_sanity_rules_hold_and_each_can_fail(t) -> void:
 		["grow", "room_rate", -0.1, "grow.room_rate"],
 		["decay", "per_h", -0.1, "decay.per_h"],
 		["text.place", "workshop", null, "text.place.workshop"],
+		["balance", "lonely_window_sols", 0, "balance.lonely_window_sols"],
+		["balance", "lonely_window_sols", 2.5, "balance.lonely_window_sols"],
+		["balance", "first_friend_gap_sols", 0, "balance.first_friend_gap_sols"],
+		["balance", "friends_mean_max", 0.5, "balance.friends_mean_range"],
+		["balance", "selectivity_ratio_min", 0.9, "balance.selectivity_ratio_min"],
+		["balance", "cold_third_friends_stop", 0.0, "balance.cold_third_friends_stop"],
+		["balance", "met_friend_share_flag", 0.0, "balance.met_friend_share_flag"],
+		["balance", "met_friend_share_flag", 1.5, "balance.met_friend_share_flag"],
+		["balance", "first_line_min_sol", 55, "balance.first_line_window"],
+		["balance", "first_line_min_sol", 25.5, "balance.first_line_window"],
+		["balance", "first_line_max_sol", 55.5, "balance.first_line_window"],
+		["balance", "found_friend_tail_ratio_max", 0.0, "balance.found_friend_tail_ratio_max"],
 		["art", "stranger_talk_share", 0.0, "stranger_talk_share"],
 		["art", "stranger_talk_cycle_s", 0.0, "stranger_talk_cycle_s"],
 	]
