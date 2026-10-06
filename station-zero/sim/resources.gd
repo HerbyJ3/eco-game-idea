@@ -205,6 +205,11 @@ func respawn_if_short() -> Site:
 
 # ---------------------------------------------------------------- footprints (spec 8.5)
 
+## True while every print was added in non-decreasing t (add_footprint is the only writer in the sim), so the prints
+## that have faded are a prefix of the list and expiry can stop at the first one that has not.
+var _fp_sorted := true
+
+
 func add_footprint(x: float, y: float, heading: float, t: float, heavy: bool) -> void:
 	var f := Footprint.new()
 	f.x = x
@@ -212,15 +217,36 @@ func add_footprint(x: float, y: float, heading: float, t: float, heavy: bool) ->
 	f.heading = heading
 	f.t = t
 	f.heavy = heavy
+	if footprints.is_empty():
+		_fp_sorted = true
+	elif t < footprints[footprints.size() - 1].t:
+		_fp_sorted = false
 	footprints.append(f)
 	while footprints.size() > int(suits.footprint.cap):
 		footprints.pop_front()
 
 
-## Phase 11: drops prints older than `fade_h` (elapsed-since comparator, spec section 3).
+## Phase 11: drops prints older than `fade_h` (elapsed-since comparator, spec section 3). Same result as keeping every
+## print for which the test is false, in order. Fast path (prints in t order): only the faded prefix is touched, so the
+## cost is the number of prints that expire, not the number kept. Otherwise the full pass, which also re-checks the order.
 func expire_footprints(t: float, fade_h: float) -> void:
+	var limit := fade_h + SimWorld.STEP_EPS
+	if _fp_sorted:
+		var n := 0
+		var size := footprints.size()
+		while n < size and t - footprints[n].t > limit:
+			n += 1
+		for i in n:
+			footprints.pop_front()
+		return
 	var keep: Array[Footprint] = []
+	var sorted := true
+	var last := -INF
 	for f in footprints:
-		if not (t - f.t > fade_h + SimWorld.STEP_EPS):
+		if not (t - f.t > limit):
 			keep.append(f)
+			if f.t < last:
+				sorted = false
+			last = f.t
 	footprints = keep
+	_fp_sorted = sorted
