@@ -244,8 +244,8 @@ func _growth(world: SimWorld) -> Dictionary:
 			for j in range(i + 1, ids.size()):
 				var a: int = ids[i]
 				var c: int = ids[j]
-				var rf := float(gr.warmth_base) + (_info[a][0] + _info[c][0]) / 2.0
-				var k := float(gr.room_rate) * tick_h * rf * _affinity(a, c, af)
+				var rf: float = float(gr.warmth_base) + (_info[a][0] + _info[c][0]) / 2.0
+				var k: float = float(gr.room_rate) * tick_h * rf * _affinity(a, c, af)
 				_grow(grown, a, c, k, kind, bid)
 	if world.buildings.site != null and work_crew.size() >= 2:
 		_grow_crew(grown, work_crew, "site", gr, af, tick_h)
