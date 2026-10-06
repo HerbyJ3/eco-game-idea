@@ -48,5 +48,7 @@ func test_founders_live_in_sim(t) -> void:
 
 func test_advance_is_capped(t) -> void:
 	var w := SimWorld.new(1)
+	# Frozen clock: the wall-time budget never stops the loop, so the hard cap is what is tested.
+	w.now_ms = func() -> int: return 0
 	t.eq(w.advance(1e6), w.max_steps_per_advance, "hitch is capped")
 	t.eq(w.advance(0.0), 0, "leftover time dropped")

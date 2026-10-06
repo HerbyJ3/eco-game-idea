@@ -31,6 +31,13 @@ var founders: Array = []
 var fixed_step: float
 var max_steps_per_advance: int
 var _accum := 0.0
+## Wall-time budget of one advance() call, ms (data sim.json advance_budget_ms). View path only.
+var advance_budget_ms: float
+## Injected monotonic millisecond clock (Callable returning int); invalid means the engine tick counter. Tests inject a
+## fake; it must not capture this world (no reference cycle).
+var now_ms: Callable = Callable()
+## Sim hours dropped by advance() when the budget or the cap stopped it. Never in stats, the log or hashed state.
+var advance_dropped_h := 0.0
 ## Phase 8 interval accumulator (spec section 3).
 var _build_acc := 0.0
 ## Next elapsed-sol boundary (n) whose first step resets shorts_this_sol.
@@ -56,6 +63,7 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	var cfg := SimData.sim()
 	rng = SimRng.new(int(seed_in) if seed_in != null else int(cfg.default_seed))
 	max_steps_per_advance = int(cfg.max_steps_per_frame)
+	advance_budget_ms = float(cfg.advance_budget_ms)
 	clock = Clock.new()
 	sky = MarsSky.new(clock)
 	persona = Persona.new()
@@ -225,18 +233,35 @@ func _create_founders() -> void:
 
 
 ## Advance by `hours` of sim time using whole fixed steps. Returns steps taken.
-## At most max_steps_per_advance steps per call; leftover time is dropped so a hitch can't stall.
+## Wall-time budget (spec ages.md section 11): reads now_ms at entry and after each step and stops when the elapsed
+## time reaches advance_budget_ms; at least one step runs whenever one is due, so a call may overshoot by one step.
+## max_steps_per_advance is a hard cap. When the loop stops with a step still due, the accumulator is added to
+## advance_dropped_h and zeroed (dropped, never carried). The steps themselves are unchanged.
 func advance(hours: float) -> int:
 	_accum += hours
 	var steps := 0
+	var budget_ms := float(advance_budget_ms)
+	var start_ms := _read_ms()
 	while _accum >= fixed_step - STEP_EPS:
 		if steps >= max_steps_per_advance:
-			_accum = 0.0
+			_drop_accum()
 			break
 		step()
 		_accum -= fixed_step
 		steps += 1
+		if _accum >= fixed_step - STEP_EPS and float(_read_ms() - start_ms) >= budget_ms:
+			_drop_accum()
+			break
 	return steps
+
+
+func _drop_accum() -> void:
+	advance_dropped_h += _accum
+	_accum = 0.0
+
+
+func _read_ms() -> int:
+	return now_ms.call() if now_ms.is_valid() else Time.get_ticks_msec()
 
 
 ## One fixed step. Phase order: spec section 5 (phases not yet built are absent).
