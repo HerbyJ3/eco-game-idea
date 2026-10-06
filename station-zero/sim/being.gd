@@ -282,9 +282,24 @@ func _restless_travel(w: SimWorld) -> bool:
 	var rp: Dictionary = _cfg().room_pull
 	var weights: Array[float] = []
 	var total := 0.0
+	# Relationship pull (spec relationships.md section 8): skipped entirely at the shipped 0.0 values, so the weights
+	# and the draws are those of Task 3.
+	var rel: Relationships = null
+	var pull_f := 0.0
+	var pull_l := 0.0
+	var pull_cap := 0
+	if w.relationships != null and w.relationships_enabled:
+		var ef: Dictionary = SimData.relationships().effects
+		pull_f = float(ef.friend_pull)
+		pull_l = float(ef.lonely_pull)
+		if pull_f > 0.0 or pull_l > 0.0:
+			rel = w.relationships
+			pull_cap = int(ef.friend_pull_cap)
 	for n in nb:
 		var wt: Dictionary = rp.weights[n.to.kind]
 		var v := float(rp.floor) + pow(_trait(wt.trait) * float(wt.mult), float(rp.exponent))
+		if rel != null:
+			v += rel.pull(id, n.to.id, pull_f, pull_l, pull_cap)
 		weights.append(v)
 		total += v
 	var x := w.rng.randf() * total

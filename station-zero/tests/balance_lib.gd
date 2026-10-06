@@ -36,7 +36,7 @@ static func parse_value(text: String) -> Variant:
 
 static func data_hash() -> String:
 	var parts: Array[String] = []
-	for f in ["calendar", "signs", "persona", "sim", "colony", "buildings", "beings", "resources", "suits", "ages"]:
+	for f in ["calendar", "signs", "persona", "sim", "colony", "buildings", "beings", "resources", "suits", "ages", "relationships"]:
 		parts.append(JSON.stringify(SimData.load_json(f + ".json"), "", true))
 	return "\n".join(parts).sha256_text()
 

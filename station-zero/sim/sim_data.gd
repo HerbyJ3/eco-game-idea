@@ -60,3 +60,7 @@ static func suits() -> Dictionary:
 
 static func ages() -> Dictionary:
 	return load_json("ages.json")
+
+
+static func relationships() -> Dictionary:
+	return load_json("relationships.json")

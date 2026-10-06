@@ -277,6 +277,8 @@
     "pause_s": [1.5, 5.0],
     "talk_radius_px": 10,
     "talk_phase_s": 0.45,
+    "stranger_talk_share": 0.2,
+    "stranger_talk_cycle_s": 5.0,
     "being_cap": 25,
     "slot_reach_px": 0.8
   },

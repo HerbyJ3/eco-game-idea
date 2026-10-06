@@ -1,0 +1,37 @@
+{
+  "tick_h": 1.0,
+  "grow": { "room_rate": 0.008, "warmth_base": 0.2, "work_rate": 0.03 },
+  "affinity": { "tempo_gap_coef": 0.6, "curiosity_soften": 0.5, "floor": 0.3 },
+  "decay": { "per_h": 0.0005, "restless_base": 0.5, "close_hold": 0.25 },
+  "lines": { "friend": 0.30, "friend_drop": 0.15, "close": 0.60, "close_drop": 0.40, "forget_below": 0.01 },
+  "seed": { "crew": 0.35, "kin_base": 0.30, "kin_warmth": 0.25 },
+  "log": { "max_lines_per_sol": 3, "pop_per_line": 40, "queue_max": 3, "grief_max": 2 },
+  "text": {
+    "friends": "{a} and {b} have become friends.",
+    "found_friend": "{a} has found a friend in {b}.",
+    "close": "{a} and {b} have grown close.",
+    "close_crew": "{a} and {b} have grown close. They came a long way together.",
+    "drifted": "{a} and {b} don't see much of each other now.",
+    "grief": "{a} is mourning {b}.",
+    "place": {
+      "habitat": "They share the habitat.",
+      "green_room": "They keep company in the green room.",
+      "workshop": "They spend their hours in the workshop.",
+      "reactor": "They keep watch in the reactor.",
+      "archive": "They pass the hours in the archive.",
+      "comms": "They keep company at comms.",
+      "site": "They build side by side.",
+      "ice": "They work the ice together.",
+      "pit": "They dig the regolith together.",
+      "other": "They spend their days together."
+    }
+  },
+  "effects": { "friend_pull": 0.0, "lonely_pull": 0.0, "friend_pull_cap": 3 },
+  "balance": {
+    "probe_friend_pull": 0.25,
+    "probe_lonely_pull": 0.15,
+    "lonely_share_max": 0.35,
+    "friends_mean_min": 1.0,
+    "friends_mean_max": 12.0
+  }
+}

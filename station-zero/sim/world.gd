@@ -14,6 +14,10 @@ var colony: Colony
 ## Age system (spec ages.md); announce only. `ages_enabled` false skips the sol hook (test seam).
 var ages: Ages
 var ages_enabled := true
+## Relationships and trust (spec relationships.md); reads the world, writes only itself, stats.relationships and the log.
+## `relationships_enabled` false skips both hooks (test seam).
+var relationships: Relationships
+var relationships_enabled := true
 var resources: Resources
 ## Phase 5 scouting. On for founder worlds; blank test worlds start with it off so that tests that
 ## count rng draws are not disturbed (spec step 5 notes).
@@ -76,6 +80,7 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	colony = Colony.new(beings, buildings, rng, clock.sol_h)
 	resources = Resources.new(buildings, rng)
 	ages = Ages.new()
+	relationships = Relationships.new()
 	_log_cap = int(SimData.colony().log_cap)
 	_init_stats()
 	if not options.get("blank", false):
@@ -86,8 +91,10 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 		_log("founders_landed", "%d founders landed." % founders.size())
 		stats.pop_by_sol.append(colony.pop())
 		ages.begin(self, true)
+		relationships.begin(self, true)
 	else:
 		ages.begin(self, false)
+		relationships.begin(self, false)
 
 
 func _init_stats() -> void:
@@ -111,6 +118,7 @@ func _init_stats() -> void:
 		"max_ice_over_target": 0.0, "max_regolith_over_target": 0.0,
 		"age": Ages.LANDING, "age_changes": 0, "sols_in_age": {Ages.LANDING: 0, Ages.SETTLEMENT: 0},
 		"first_settlement_sol": null, "age_history": [],
+		"relationships": Relationships.new_stats(),
 	}
 	reset_window()
 
@@ -293,6 +301,9 @@ func step() -> void:
 	resources.expire_footprints(t, float(SimData.suits().footprint.fade_sols) * clock.sol_h)
 	_sample_power_stats()
 	_sample_being_stats()
+	# Phase 11b: relationship tick, once per relationships.tick_h (spec relationships.md section 4).
+	if relationships_enabled and relationships != null:
+		relationships.on_step(self, fixed_step)
 	if _sol_started:
 		stats.pop_by_sol.append(colony.pop())
 		_stat_add("sol_samples", 1)
@@ -301,6 +312,8 @@ func step() -> void:
 		# Phase 11 (age sample): the last thing a sol boundary does (spec ages.md 4.1).
 		if ages_enabled:
 			ages.on_sol(self)
+		if relationships_enabled and relationships != null:
+			relationships.on_sol(self)
 
 
 ## Removes up to `amount` ice from a field and returns what was taken. A field that runs dry leaves
