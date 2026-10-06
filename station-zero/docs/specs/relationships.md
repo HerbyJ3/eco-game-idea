@@ -386,7 +386,10 @@ Reviewers: emergence (Will Wright lens), feel (Eric Barone lens), clarity (Karol
 - **Reason in the first-friend line.** Emergence wants a temperament reason; clarity wants the place; feel wants the place. The place ships; the temperament reason goes to the owner (O3), because it risks naming hidden traits.
 - **Grief.** Emergence wanted a colony-wide mourning line; feel wanted two personal lines. Two personal lines adopted: smaller, and closer to the "names, not numbers" voice.
 
-## 18. Open for the owner
+## 18. Owner decisions (Herby, 2026-10-06) and options as posed
+Resolved: **O1 = (a)** build the pull shipped at 0, decide at the Task 4 close review with the probe report. **O2 = (a)** ages untouched. **O3 = (a)** the place in the first-friend line. **O4 = (a)** founders start as a crew at 0.35.
+
+### Options as posed
 Four questions. Each lists the recommendation first, with its cost and the facts behind it.
 
 **O1. Do relationships change what beings do, and when do we decide?** (plan Q2, Q6)
