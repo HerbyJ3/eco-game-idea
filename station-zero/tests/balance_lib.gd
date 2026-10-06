@@ -62,9 +62,9 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 			seed_in, sols, pstr, str(w.fixed_step), data_hash().substr(0, 16)])
 	lines.append("# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window")
 	var body: Array[String] = []
-	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s" % [
+	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s %s" % [
 			"sol", "pop", "min", "birth", "dead a/t/h/o/x", "oxygen", "food", "ice", "regol",
-			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2", "age"]
+			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2", "age", "web"]
 	body.append(head)
 	var prev := {"shorts": 0, "trips": 0}
 	var rows: Array[Dictionary] = []
@@ -98,7 +98,7 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 		var row := {"sol": s, "avg_e": avg_e, "asleep": asleep, "pop": w.colony.pop(),
 				"min_pop": win.min_pop, "min_ice": win.min_ice}
 		rows.append(row)
-		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s %s" % [
+		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s %s %.2f" % [
 				s, w.colony.pop(), _fmt_min(win.min_pop).replace(".0", ""), st.births,
 				"%d/%d/%d/%d/%d" % [d.air, d.thirst, d.hunger, d.suffocated_outside, d.other],
 				w.colony.oxygen, w.colony.food, w.colony.ice, w.colony.regolith,
@@ -106,7 +106,7 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 				"/".join(counts), w.resources.reachable_ice_count(), int(st.mining_trips) - int(prev.trips),
 				avg_e, asleep, float(win.hours_waiting_regolith) + float(win.hours_site_no_crew),
 				_fmt_min(win.min_ice), _fmt_min(win.min_oxygen),
-				"S" if w.ages.age == Ages.SETTLEMENT else "L"])
+				"S" if w.ages.age == Ages.SETTLEMENT else "L", float(st.relationships.web_share)])
 		prev.shorts = st.shorts
 		prev.trips = st.mining_trips
 		w.reset_window()
