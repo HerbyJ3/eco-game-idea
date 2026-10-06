@@ -50,6 +50,7 @@ Derived each use (never stored): `pop` (count of living beings), `green_rooms` (
 At most one: `building_id`, `parent_id`, `last_work_t`, derived `crew` (beings in state `work` with this job).
 ### Being
 `id`, `name`, `persona`, `role`, `earth_born`, `born_t`, `energy` (0..100), `state` in {`idle`, `to_door`, `transit`, `sleep`, `eva`, `work`, `mining`}, `building_id` (the building it is in, or the one it left from while `transit`/outside; no x,y inside), `wait_h`, `sleep_intent` (bool), `suit_up` (bool), `job` (the site or null), `mine` (`site`, `door`, `home_id`, or null), `mine_intent` (site or null), `air_h` (null unless outside), `x`, `y`, `heading` (only outside, else null), `path` (waypoints), `after` in {null, `mine`, `work`, `haul`, `enter`}, `returning` (bool), `load` (0), `work_left_h`, `step_acc_px`, `foot_side` (+1), `corridor_id`, `transit_t` (0..1), `from_a` (bool), `sleep_started_t` (t when the current sleep began, else null; feeds `max_sleep_h`).
+Task 3 adds two fields recorded at birth (state only, no behaviour, no RNG draw; see `docs/specs/ages.md` section 3): `parent_id` (the being that `rng.pick(here)` returns; 0 for founders, test-seam beings, or an empty pick) and `birth_building_id` (the habitat id).
 Derived flags for the view: `suit_kind` = `none` while inside; `construction` when outside with a `job` (state `work`, or `eva` going to or from the site); `eva` for any other outside state. `lamp_on` = outside and night.
 ### Resources
 `ice_fields`: `x`, `y`, `amount`, `start`, `dug`, `r`. `pit`s: `x`, `y`, `dug`, `r` (amount infinite). `footprints`: `x`, `y`, `heading`, `t`, `heavy`.
@@ -562,6 +563,7 @@ Balance run table: as in the plan section 4, plus the measured columns named in 
 | 7 | Mining reachable: zero `turn_backs_air` (the invariant makes them unnecessary); >= 2 reachable ice fields on >= 95% of **sol boundaries** (plan: 30-sol checkpoints, only 10 samples) | Adjusted sampling. The worst-case air margin is thin (about 0.3 to 0.5 h, section 8.5), so this target is what detects a loosened trip filter or longer shifts. |
 | 8 | Average energy 40..90 on every row; **time-averaged asleep share per window between 5% and 30%** (plan: <= 25% at any row); no sleep stretch > 18 h | Adjusted. Idle 11.8% asleep; busy builders (3 per h for 8-16 h) can push it to about 25%, so 25% at a snapshot is too tight; the window average is the right measure. The 18 h limit only holds while food > 0 (a fed sleep from 0 to 97 takes 8.8 h; starving takes up to 24 h). |
 | 9 | Same seed and sols give a byte-identical table (incl. data hash and `String.sha256_text` of the table body) | Confirmed. |
+| 10 | Ages (Task 3): first Settlement in sols 40 to 150, at most 4 age changes, gaps of at least the dwell, history complete | Defined in `docs/specs/ages.md` section 12 and 19.2; the table gains a trailing `age` column (L or S). |
 ### How each target is measured (section 16 has the stats keys)
 Every window figure below comes from `stats.window` (reset by the balance run after printing each row); run figures from `stats` itself. Nothing is read from the log, which is capped.
 | Target | Measured by |
@@ -622,7 +624,8 @@ Measured fields (all "sol" = elapsed sol, section 3), updated in phase 11 unless
 | `hours_waiting_regolith` | +5 h (the check interval) at each build check where a builder was ready and regolith < cost |
 | `hours_site_no_crew` | +dt each step a site exists with no crew |
 | `site_busy_h` | +dt each step a site exists |
-Log kinds: `founders_landed`, `ground_broken`, `building_done`, `short`, `back_online`, `born`, `died`, `air_low`, `food_empty`, `water_dry`, `need_regolith`, `waiting_for_builders`, `suit_low_air`, `ice_dry`, `ice_found`, `scouts_found`, `colony_silent`. Each entry `{t, sol, kind, text, being_id?, building_id?}`; texts follow the prototype wording.
+Task 3 stats keys (run-wide, never windowed; defined in `docs/specs/ages.md` section 8.2): `age`, `age_changes`, `sols_in_age`, `first_settlement_sol`, `age_history`.
+Log kinds: `age_began` (Task 3; extra fields `age`, `how`, `cause`; see `docs/specs/ages.md` section 8.1), `founders_landed`, `ground_broken`, `building_done`, `short`, `back_online`, `born`, `died`, `air_low`, `food_empty`, `water_dry`, `need_regolith`, `waiting_for_builders`, `suit_low_air`, `ice_dry`, `ice_found`, `scouts_found`, `colony_silent`. Each entry `{t, sol, kind, text, being_id?, building_id?}`; texts follow the prototype wording.
 
 ## 17. Open questions
 1. (Closed.) The founder retry changes RNG consumption but no Task 0 test pins founder values (only `world.founders[i].persona` equality per seed is tested), so nothing in Task 0 changes.
