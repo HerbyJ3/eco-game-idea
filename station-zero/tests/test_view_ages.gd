@@ -1,8 +1,6 @@
 extends RefCounted
 ## Task 3, step 3: the HUD half of spec docs/specs/ages.md section 10 test 19 and the speed-readout half of test 20
-## (section 9). WRITTEN NOW, RED UNTIL THE HUD STEP 6 (test 19) AND STEP 11 (test 20 readout): the clock line has no age
-## word, there is no chapters strip and no "running low" word, and the speed line has no readout. They fail cleanly on the
-## tree as it is (the HUD scene is built, the missing text is reported). The sim half of test 20 (budget) is in
+## (section 9). Green since steps 6 (test 19) and 11 (test 20 readout). The sim half of test 20 (budget) is in
 ## tests/test_ages.gd.
 ##
 ## Method as tests/test_view.gd: the HUD scene is instantiated and bound by hand (main.setup(sim)); the sim host is not in
@@ -138,6 +136,12 @@ func _entry(age: String, how: String, text: String, sol: int, clock_sol: int) ->
 			"t": 0.0, "sol": sol, "clock_sol": clock_sol}
 
 
+## The strip shows the text up to and including the first ". " (spec ages.md section 9).
+func _first(text: String) -> String:
+	var i := text.find(". ")
+	return text if i < 0 else text.substr(0, i + 1)
+
+
 func _shown(strip: String, entries: Array) -> Array:
 	var out: Array = []
 	for e in entries:
@@ -161,7 +165,8 @@ func test_t19_chapters_strip(t) -> void:
 	var landing: Dictionary = w.stats.age_history[0] if w.stats.has("age_history") and w.stats.age_history.size() > 0 else _entry("landing", "landing", "Landing text.", 0, 1)
 	w.stats.age_history = [landing]
 	h.main.refresh()
-	t.check(_txt(h.main, "Chapters").contains("sol %d  %s" % [int(landing.clock_sol), landing.text]), "one entry: `sol N  text`")
+	t.check(_txt(h.main, "Chapters").contains("sol %d  %s" % [int(landing.clock_sol), _first(landing.text)]), "one entry: `sol N  first sentence`")
+	t.check(not _txt(h.main, "Chapters").contains(str(landing.text).substr(_first(landing.text).length())) or _first(landing.text) == landing.text, "only the first sentence of the landing text is shown")
 	# Five entries: only the latest three, oldest first, using clock_sol (45), not sol (44).
 	var hist := [
 		_entry("landing", "landing", "Chapter one text.", 0, 1),
@@ -191,7 +196,7 @@ func test_t19_chapters_strip(t) -> void:
 		w._log("born", "Routine line %d." % i)
 	h.main.refresh()
 	t.check(not _txt(h.main, "Log").contains(landing.text), "the 8-line log has scrolled the landing line away")
-	t.check(_txt(h.main, "Chapters").contains(landing.text), "the strip still shows the Landing entry after 100 routine lines")
+	t.check(_txt(h.main, "Chapters").contains(_first(landing.text)), "the strip still shows the Landing entry after 100 routine lines")
 	# Age lines in the log keep appearing in the log itself (unchanged behaviour): the strip is additional.
 	w._log("age_began", "An age line.", {"age": "settlement", "how": "settled"})
 	h.main.refresh()
@@ -201,7 +206,16 @@ func test_t19_chapters_strip(t) -> void:
 		w._log("born", "More %d." % i)
 	h.main.refresh()
 	t.eq(w.log.size(), 500, "the world log is capped")
-	t.check(_txt(h.main, "Chapters").contains(landing.text), "log eviction does not touch the strip")
+	t.check(_txt(h.main, "Chapters").contains(_first(landing.text)), "log eviction does not touch the strip")
+	# Three chapters, one line each, first sentence only, `sol N  first sentence`.
+	var multi := [
+		_entry("landing", "landing", "The founders have landed at Jezero. For now, air is all.", 0, 1),
+		_entry("settlement", "settled", "Nobody is only surviving now. There are families here.", 44, 45),
+		_entry("landing", "fell_back", "Hard days have come back to Jezero. Water is on everyone's mind. Spring is rising.", 64, 65),
+	]
+	w.stats.age_history = multi
+	h.main.refresh()
+	t.eq(_txt(h.main, "Chapters"), "sol 1  The founders have landed at Jezero.\nsol 45  Nobody is only surviving now.\nsol 65  Hard days have come back to Jezero.", "exactly three lines, first sentences")
 	h.free_all()
 	_end(t)
 
@@ -284,11 +298,13 @@ func _code_only(src: String) -> String:
 	return "\n".join(out)
 
 
-func _view_scripts() -> Array[String]:
+func _view_scripts(dir: String = "res://view") -> Array[String]:
 	var out: Array[String] = []
-	for f in DirAccess.get_files_at("res://view"):
+	for f in DirAccess.get_files_at(dir):
 		if f.ends_with(".gd"):
-			out.append("res://view/" + f)
+			out.append(dir + "/" + f)
+	for d in DirAccess.get_directories_at(dir):
+		out.append_array(_view_scripts(dir + "/" + d))
 	return out
 
 
@@ -296,6 +312,13 @@ func test_t19_hud_source_reads_no_hidden_ages_state(t) -> void:
 	_begin(t)
 	var files := _view_scripts()
 	t.check(files.has("res://view/main.gd"), "the scan includes view/main.gd")
+	t.check(files.size() > 5, "the scan recurses into the view subfolders (%d files)" % files.size())
+	var has_world := false
+	var has_model := false
+	for f in files:
+		has_world = has_world or f.begins_with("res://view/world/")
+		has_model = has_model or f.begins_with("res://view/model/")
+	t.check(has_world and has_model, "the scan includes view/world and view/model")
 	var bad := RegEx.create_from_string("(?<!SimData)\\.ages\\b|\\blast_sample\\b|\\bsols_in_age\\b|\\bage_changes\\b")
 	for f in files:
 		var code := _code_only(FileAccess.get_file_as_string(f))
@@ -314,4 +337,103 @@ func test_t19_hud_source_reads_no_hidden_ages_state(t) -> void:
 	var main_src := _code_only(FileAccess.get_file_as_string("res://view/main.gd"))
 	t.check(main_src.contains("age_history"), "the HUD reads stats.age_history (chapters strip)")
 	t.check(main_src.contains("stats.age"), "the HUD reads stats.age (clock line)")
+	_end(t)
+
+
+# ---------------------------------------------------------------- 20. speed readout
+
+func _frames(h: Hud, n: int, hours_per_frame: float, dt: float = 0.1) -> void:
+	for i in n:
+		h.sim.world.t += hours_per_frame
+		h.main._process(dt)
+
+
+func _achieved(text: String) -> int:
+	var m := RegEx.create_from_string("running about (\\d+)x").search(text)
+	return int(m.get_string(1)) if m != null else -1
+
+
+func test_t20_speed_readout_and_throttle_line(t) -> void:
+	_begin(t)
+	var h := _hud()
+	h.main.set_speed(1000.0)
+	# Requested 1000 hours per real second: 100 hours in a 0.1 s frame. Warm the 1.0 s window.
+	_frames(h, 15, 100.0)
+	var ctl := _txt(h.main, "Controls")
+	t.check(ctl.contains("1000x max"), "the speed label is a maximum: %s" % ctl)
+	var got := _achieved(_all_text(h.main))
+	t.check(got >= 980 and got <= 1020, "achieved about 1000x when the world keeps up (read %d)" % got)
+	t.check(not _all_text(h.main).contains(THROTTLE), "no throttle line when achieved >= 0.9 of requested")
+	# 95 percent of the request: still no throttle line.
+	_frames(h, 20, 95.0)
+	got = _achieved(_all_text(h.main))
+	t.check(got >= 930 and got <= 970, "achieved about 950x (read %d)" % got)
+	t.check(not _all_text(h.main).contains(THROTTLE), "95 percent: no throttle line")
+	# 85 percent: throttle line, plain words, and the readout says what is really running.
+	_frames(h, 20, 85.0)
+	got = _achieved(_all_text(h.main))
+	t.check(got >= 830 and got <= 870, "achieved about 850x (read %d)" % got)
+	t.check(_all_text(h.main).contains(THROTTLE), "below 0.9: the throttle line appears")
+	# The figure is averaged over the window (1.0 s), not read from the last frame: frames alternating 100 and 70 hours
+	# (ending on a 100) average 850x, below 0.9 of 1000.
+	for i in 20:
+		_frames(h, 1, 100.0 if i % 2 == 1 else 70.0)
+	got = _achieved(_all_text(h.main))
+	t.check(got >= 830 and got <= 870, "alternating 700x / 1000x frames read about 850x, not the last frame (read %d)" % got)
+	t.check(_all_text(h.main).contains(THROTTLE), "and the average is below 0.9: throttled")
+	# 5 percent: heavy throttling, readout follows.
+	_frames(h, 20, 5.0)
+	got = _achieved(_all_text(h.main))
+	t.check(got >= 45 and got <= 55, "achieved about 50x (read %d)" % got)
+	t.check(_all_text(h.main).contains(THROTTLE), "still throttled")
+	t.check(_txt(h.main, "Controls").contains("1000x max"), "the label stays the requested maximum")
+	# Recovery removes the line.
+	_frames(h, 25, 100.0)
+	t.check(not _all_text(h.main).contains(THROTTLE), "back to full speed: the line is gone")
+	# Dropped hours are never shown as lost time.
+	var low := _all_text(h.main).to_lower()
+	t.check(not low.contains("lost") and not low.contains("dropped"), "no 'lost time' wording")
+	# Paused: no throttle line, no claim of running.
+	h.main.set_speed(0.0)
+	_frames(h, 15, 0.0)
+	t.check(not _all_text(h.main).contains(THROTTLE), "paused: no throttle line")
+	h.free_all()
+	_end(t)
+
+
+## What the readout shows: the Controls label (the clock line moves with the world, so it is left out) and whether the
+## throttle sentence is on screen anywhere.
+func _readout_state(main: Control) -> String:
+	return _txt(main, "Controls") + "|" + str(_all_text(main).contains(THROTTLE))
+
+
+func test_t20_readout_refreshes_at_most_every_half_second(t) -> void:
+	_begin(t)
+	var h := _hud()
+	h.main.set_speed(1000.0)
+	_frames(h, 15, 100.0)
+	var refresh_s := float(SimData.sim().speed_readout_refresh_s)
+	t.eq(refresh_s, 0.5, "data: speed_readout_refresh_s")
+	t.eq(float(SimData.sim().speed_readout_window_s), 1.0, "data: speed_readout_window_s")
+	t.eq(float(SimData.sim().speed_throttle_below), 0.9, "data: speed_throttle_below")
+	# The achieved speed swings every frame; the text must not follow every swing.
+	var rates := [100.0, 20.0, 80.0, 10.0, 90.0, 40.0, 100.0, 30.0]
+	var times: Array = []
+	var last := _readout_state(h.main)
+	var now := 0.0
+	for i in 60:
+		h.sim.world.t += float(rates[i % rates.size()])
+		h.main._process(0.1)
+		now += 0.1
+		var cur := _readout_state(h.main)
+		if cur != last:
+			times.append(now)
+			last = cur
+	t.check(times.size() >= 3, "the readout does change as the speed does (%d changes in 6 s)" % times.size())
+	var min_gap := 99.0
+	for i in range(1, times.size()):
+		min_gap = minf(min_gap, float(times[i]) - float(times[i - 1]))
+	t.check(times.size() < 2 or min_gap >= refresh_s - 0.06, "the text never changes twice within 0.5 s (shortest gap %.2f s)" % min_gap)
+	t.check(times.size() <= 13, "at most one change per refresh interval over 6 s (%d)" % times.size())
+	h.free_all()
 	_end(t)

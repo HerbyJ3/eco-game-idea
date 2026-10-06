@@ -4,8 +4,9 @@ extends Control
 
 const REFRESH_S := 0.1
 const LOG_LINES := 8
-## Slack of the sample's ice comparison (sim/ages.gd CMP_EPS), so the word flips at exactly the same stock.
-const LOW_EPS := 1e-9
+## Slack of the sample's ice comparison, so the word flips at exactly the same stock.
+const LOW_EPS := Ages.CMP_EPS
+const THROTTLE_NOTE := "The colony is too large to run this fast."
 ## Keyboard speed presets (multiples of real time). 0 pauses.
 const SPEEDS := {KEY_1: 1.0, KEY_2: 10.0, KEY_3: 100.0, KEY_4: 1000.0}
 const STATES: Array[String] = ["idle", "sleep", "work", "mining", "eva", "transit"]
@@ -31,6 +32,12 @@ var _sim: Node
 var _acc := 0.0
 var _printed := false
 var _resume_speed := 1.0
+## Speed readout (spec ages.md section 9): [frame real seconds, sim hours advanced in it] over the last
+## speed_readout_window_s, the cached readout (achieved multiple of real time, -1 = none yet) and the refresh timer.
+var _speed_samples: Array = []
+var _last_t := 0.0
+var _readout_acc := 0.0
+var _achieved := -1.0
 ## Last sampled stocks for the ice and regolith rate readout: [t, ice, regolith].
 var _prev: Array = []
 
@@ -61,6 +68,7 @@ func setup(sim: Node) -> void:
 	if not _world.debug_map_changed.is_connected(_show_debug_map):
 		_world.debug_map_changed.connect(_show_debug_map)
 	_show_debug_map(_world.vm != null and _world.vm.debug_map)
+	_reset_speed_readout()
 	refresh()
 
 
@@ -90,6 +98,7 @@ func apply_shot_view(opts: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	_sample_speed(delta)
 	_acc += delta
 	if _acc >= REFRESH_S:
 		_acc = 0.0
@@ -107,6 +116,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func set_speed(s: float) -> void:
+	if s != _sim.speed:
+		_reset_speed_readout()
 	_sim.speed = s
 	if s > 0.0:
 		_resume_speed = s
@@ -129,7 +140,7 @@ func refresh() -> void:
 	_beings.text = _beings_text(w)
 	_chapters.text = _chapters_text(w)
 	_log.text = _log_text(w)
-	_controls.text = "Speed: %s   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x" % _speed_name()
+	_controls.text = _controls_text()
 	_map.queue_redraw()
 	_fit_shade.call_deferred()
 	if not _printed:
@@ -139,7 +150,53 @@ func refresh() -> void:
 
 
 func _speed_name() -> String:
-	return "paused" if _sim.speed == 0.0 else "%dx" % int(_sim.speed)
+	return "paused" if _sim.speed == 0.0 else "%dx max" % int(_sim.speed)
+
+
+func _reset_speed_readout() -> void:
+	_speed_samples.clear()
+	_readout_acc = 0.0
+	_achieved = -1.0
+	if _sim != null and _sim.world != null:
+		_last_t = _sim.world.t
+
+
+## Called every frame: records the sim hours the world advanced in this frame, and refreshes the cached readout at most
+## every speed_readout_refresh_s so the text does not flicker.
+func _sample_speed(delta: float) -> void:
+	var w: SimWorld = _sim.world
+	var cfg: Dictionary = SimData.sim()
+	_speed_samples.append([delta, w.t - _last_t])
+	_last_t = w.t
+	var window := float(cfg.speed_readout_window_s)
+	var total := 0.0
+	for smp: Array in _speed_samples:
+		total += float(smp[0])
+	while _speed_samples.size() > 1 and total - float(_speed_samples[0][0]) >= window:
+		total -= float(_speed_samples[0][0])
+		_speed_samples.pop_front()
+	_readout_acc += delta
+	if _readout_acc < float(cfg.speed_readout_refresh_s) - 1e-6:
+		return
+	_readout_acc = 0.0
+	if _sim.speed == 0.0 or total <= 0.0:
+		_achieved = -1.0
+		return
+	var hours := 0.0
+	for smp: Array in _speed_samples:
+		hours += float(smp[1])
+	# Hours per real second, as a multiple of the 1x rate.
+	_achieved = hours / total * float(cfg.real_seconds_per_hour_at_1x)
+
+
+## Speed, the achieved readout and the throttle note, then the key help (spec ages.md section 9).
+func _controls_text() -> String:
+	var line := "Speed: " + _speed_name()
+	if _sim.speed > 0.0 and _achieved >= 0.0:
+		line += " (running about %dx)" % int(round(_achieved))
+		if _achieved < float(SimData.sim().speed_throttle_below) * _sim.speed:
+			line += "  " + THROTTLE_NOTE
+	return line + "   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x"
 
 
 func _clock_text(w: SimWorld) -> String:
@@ -157,14 +214,20 @@ func _clock_text(w: SimWorld) -> String:
 	return line
 
 
-## The pinned chapters strip: the last hud.chapters_shown age_history entries, oldest first, as `sol N  text`.
+## The pinned chapters strip: the last hud.chapters_shown age_history entries, oldest first, one line each, as
+## `sol N  <first sentence>` (the text up to and including the first ". "; the full text is in the log).
 func _chapters_text(w: SimWorld) -> String:
 	var n := int(SimData.ages().hud.chapters_shown)
 	var hist: Array = w.stats.age_history
-	var lines: PackedStringArray = ["Chapters"]
+	var lines: PackedStringArray = []
 	for e: Dictionary in hist.slice(maxi(0, hist.size() - n)):
-		lines.append("sol %d  %s" % [int(e.clock_sol), e.text])
+		lines.append("sol %d  %s" % [int(e.clock_sol), _first_sentence(str(e.text))])
 	return "\n".join(lines)
+
+
+func _first_sentence(text: String) -> String:
+	var i := text.find(". ")
+	return text if i < 0 else text.substr(0, i + 1)
 
 
 ## The low-stock word for the Oxygen, Food and Ice lines: the same thresholds as ages.sample (data keys), computed here
