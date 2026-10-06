@@ -1,15 +1,10 @@
-## DEFERRED (not run): the balance half of docs/specs/relationships.md section 14, parked in Task 4 step 3.
-## MOVE BACK TO tests/test_relationships_balance.gd (rename, drop .txt) IN STEP 6 (balance integration: the trailing `web`
-## column after `age`, verdict T11, `relationships` in data_hash). It needs balance_lib.run to print the column and a T11
-## verdict, which do not exist before step 6, so it cannot pass earlier. (balance_lib.data_hash covering relationships.json
-## is already tested in tests/test_relationships.gd test_t15c and goes green in step 4/6, whichever edits balance_lib.)
+## Balance half of docs/specs/relationships.md section 14 (moved in from tests/deferred in Task 4 step 6): the trailing
+## `web` column after `age` (two decimals, the latest `web_share`, spec 12) and the T11 verdict, which reads
+## stats.relationships only (spec 14, Balance). balance_lib.run(seed, sols, {}, every) returns {lines, verdicts, world}; a
+## verdict is {n, verdict, detail}.
 ##
-## API ASSUMED: balance_lib.run(seed, sols, {}, every) returns {lines, verdicts, world}; a verdict is {n, verdict, detail};
-## T11 is the verdict with n == 11 and reads stats.relationships only (spec 14, Balance). The `web` column is the final
-## whitespace-separated field of the table header and rows, two decimals, the latest `web_share` (spec 12).
-##
-## Cost: one 60-sol run (about 10 s) for the column and T11 shape; the 300-sol five-seed judgement is the balance log, not
-## a unit test.
+## Cost: two 60-sol runs (about 10 s each) for the column and T11 shape; the 300-sol five-seed judgement is the balance
+## log (docs/balance/task-4-log.md), not a unit test.
 
 extends RefCounted
 
@@ -60,11 +55,13 @@ func test_t11_is_judged_from_stats_relationships(t) -> void:
 	wmean /= maxf(1.0, float(win.size()))
 	# revision 6: (2) is the mean of the last lonely_window_sols readings; (5) no dropped events (total, while
 	# lines_dropped_by_type is not built; then lines_dropped_by_type.friend == 0)
+	t.check(not rs.has("lines_dropped_by_type"), "lines_dropped_by_type is not built, so (5) reads the total (update T11 and this test when it is)")
 	var judged_ok: bool = rs.web_by_sol.size() == rs.second_by_sol.size() and rs.web_by_sol.size() == rs.lonely_by_sol.size() \
+			and rs.web_by_sol.size() == r.world.stats.pop_by_sol.size() \
 			and wmean <= float(bal.lonely_share_max) and int(rs.lines_dropped) == 0 \
 			and float(rs.friends_mean) >= float(SimData.load_json("relationships.json").balance.friends_mean_min) \
 			and float(rs.friends_mean) <= float(SimData.load_json("relationships.json").balance.friends_mean_max) \
 			and rs.first_friendship_sol != null
-	if str(t11.get("verdict", "")) != "N/A":
-		t.eq(t11.get("verdict"), "PASS" if judged_ok else "FAIL", "T11 agrees with the five conditions read from stats.relationships")
+	t.check(str(t11.get("verdict", "")) != "N/A", "T11 is judged, not N/A")
+	t.eq(t11.get("verdict"), "PASS" if judged_ok else "FAIL", "T11 agrees with the five conditions read from stats.relationships")
 	t._failures.erase(_abort_msg(t))

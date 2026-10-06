@@ -2,8 +2,8 @@ extends RefCounted
 ## Task 4, step 3: the relationships tests, written first (red). Spec: docs/specs/relationships.md revision 3, section 14
 ## tests 1 to 26 (test 16, the view, lives in tests/test_view_relationships.gd; test 27 is the whole-suite run itself, see
 ## the end of this header). Section 12 (hash proof) is the separate script tests/relationships_hash_proof.gd, whose pure
-## helpers are tested here (test 17). The balance half (T11 and the `web` column) is parked in
-## tests/deferred/test_relationships_balance.gd.txt until step 6.
+## helpers are tested here (test 17). The balance half (T11 and the `web` column) is in
+## tests/test_relationships_balance.gd (Task 4 step 6).
 ##
 ## Naming: test_tNN_* is spec test NN (letters split one spec test into several functions so a failure points at one
 ## sentence). Everything is a hand-made blank world (SimWorld.new(seed, {"blank": true}), add_building, add_being) driven by

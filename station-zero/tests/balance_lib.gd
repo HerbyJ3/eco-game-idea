@@ -208,6 +208,7 @@ static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int, notok: Dic
 			emin, emax, amin, amax, st.max_sleep_h]))
 	out.append({"n": 9, "verdict": "N/A", "detail": "checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)"})
 	out.append(_t10(w, sols, notok))
+	out.append(_t11(w))
 	return out
 
 
@@ -259,3 +260,44 @@ static func _t10(w: SimWorld, sols: int, notok: Dictionary) -> Dictionary:
 	if not judged1 and ok2 and ok3 and ok4:
 		return {"n": 10, "verdict": "N/A", "detail": "run shorter than %d sols and not settled yet; " % hi + detail}
 	return _v(10, ok1 and ok2 and ok3 and ok4, detail)
+
+
+## Target 11, relationships (spec relationships.md sections 13 and 14, Balance), from `stats.relationships` only. Judged:
+## (1) the web, second, lonely and pop lists have the same length; (2) the mean of the last balance.lonely_window_sols
+## readings of lonely_by_sol (all of them if fewer) <= balance.lonely_share_max; (3) friends_mean in
+## balance.friends_mean_min..friends_mean_max; (4) first_friendship_sol is not null; (5) no dropped friend events
+## (lines_dropped_by_type.friend when that key exists, else the total lines_dropped, which is stricter). Reported:
+## web, second and lonely shares, friends_mean, friends as a share of the colony (friends_mean / (pop - 1), D2).
+static func _t11(w: SimWorld) -> Dictionary:
+	var rs: Dictionary = w.stats.relationships
+	var bal: Dictionary = SimData.relationships().balance
+	var n_pop: int = w.stats.pop_by_sol.size()
+	var ok1: bool = rs.web_by_sol.size() == rs.second_by_sol.size() and rs.web_by_sol.size() == rs.lonely_by_sol.size() \
+			and rs.web_by_sol.size() == n_pop
+	var lby: Array = rs.lonely_by_sol
+	var win: Array = lby.slice(maxi(0, lby.size() - int(bal.lonely_window_sols)))
+	var wmean := 0.0
+	for v in win:
+		wmean += float(v)
+	wmean /= maxf(1.0, float(win.size()))
+	var ok2 := wmean <= float(bal.lonely_share_max)
+	var fm := float(rs.friends_mean)
+	var ok3 := fm >= float(bal.friends_mean_min) and fm <= float(bal.friends_mean_max)
+	var ok4: bool = rs.first_friendship_sol != null
+	var dropped_friend := 0
+	var dropped_txt := "lines_dropped (total)"
+	if rs.has("lines_dropped_by_type"):
+		dropped_friend = int(rs.lines_dropped_by_type.get("friend", 0))
+		dropped_txt = "lines_dropped_by_type.friend"
+	else:
+		dropped_friend = int(rs.lines_dropped)
+	var ok5 := dropped_friend == 0
+	var pop := w.colony.pop()
+	var share := fm / float(pop - 1) if pop > 1 else 0.0
+	var detail := "(1) list lengths %d/%d/%d/%d %s; (2) lonely mean of last %d readings %.3f (max %.2f) %s; (3) friends_mean %.2f (%.1f..%.1f) %s; (4) first_friendship_sol %s %s; (5) %s %d %s; report: web %.2f second %.2f lonely %.2f friends_mean %.2f friends share of colony %.3f (pop %d)" % [
+			rs.web_by_sol.size(), rs.second_by_sol.size(), rs.lonely_by_sol.size(), n_pop, "ok" if ok1 else "BAD",
+			win.size(), wmean, float(bal.lonely_share_max), "ok" if ok2 else "BAD",
+			fm, float(bal.friends_mean_min), float(bal.friends_mean_max), "ok" if ok3 else "BAD",
+			str(rs.first_friendship_sol), "ok" if ok4 else "BAD", dropped_txt, dropped_friend, "ok" if ok5 else "BAD",
+			float(rs.web_share), float(rs.second_share), float(rs.lonely_share), fm, share, pop]
+	return _v(11, ok1 and ok2 and ok3 and ok4 and ok5, detail)
