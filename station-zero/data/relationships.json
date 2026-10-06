@@ -1,6 +1,6 @@
 {
   "tick_h": 1.0,
-  "grow": { "room_rate": 0.008, "warmth_base": 0.2, "work_rate": 0.03 },
+  "grow": { "room_rate": 0.010, "warmth_base": 0.2, "work_rate": 0.03 },
   "affinity": { "tempo_gap_coef": 0.6, "curiosity_soften": 0.5, "floor": 0.3 },
   "decay": { "per_h": 0.0005, "restless_base": 0.5, "close_hold": 0.25 },
   "lines": { "friend": 0.30, "friend_drop": 0.15, "close": 0.60, "close_drop": 0.40, "forget_below": 0.01 },
