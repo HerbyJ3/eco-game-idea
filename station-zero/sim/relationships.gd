@@ -1,6 +1,6 @@
 class_name Relationships
 extends RefCounted
-## Relationships and trust (spec docs/specs/relationships.md revision 4, Task 4). Every pair of beings that shares
+## Relationships and trust (spec docs/specs/relationships.md revision 8, Task 4). Every pair of beings that shares
 ## waking hours in a room, or a shift on a site or field, grows a private bond; bonds decay when apart. Above a line a bond
 ## is a friendship, higher still it is close. Trust is read once a sol as the reach of the friendship web. The layer reads
 ## the world and writes only itself, `stats.relationships` and the log. No RNG, no wall clock (except the probe-only

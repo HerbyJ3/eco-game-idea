@@ -349,9 +349,23 @@ func _talk_flags() -> Dictionary:
 				if other != id and (awake[other] as Vector2).distance_to(awake[id]) <= radius \
 						and (nearest < 0 or other < nearest):
 					nearest = other
-			if nearest >= 0:
+			if nearest >= 0 and _pair_talks(id, nearest):
 				out[id] = {"first": id < nearest}
 	return out
+
+
+## Talk gradient (relationships.md 10.1): friends talk the whole pause; other pairs talk `interior.stranger_talk_share` of each
+## `interior.stranger_talk_cycle_s`, offset by the lower id (golden-ratio phase, computed here) so a room does not pulse in step.
+## Reads the relationships module read-only; no RNG. A missing or disabled module is the Task 3 behaviour (everyone talks).
+func _pair_talks(a: int, b: int) -> bool:
+	var rel = world.relationships
+	if rel == null or not world.relationships_enabled:
+		return true
+	if rel.are_friends(a, b):
+		return true
+	var phase := (sqrt(2.0 * 2.0 + 1.0) - 1.0) / 2.0
+	var cycle := float(art.interior.stranger_talk_cycle_s)
+	return fposmod(real_time / cycle + float(mini(a, b)) * phase, 1.0) < float(art.interior.stranger_talk_share)
 
 
 func _forget_gone() -> void:

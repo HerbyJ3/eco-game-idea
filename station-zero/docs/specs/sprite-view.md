@@ -463,6 +463,7 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 | selection.halo_expand_px / halo_alpha / roof_fade_s | px / alpha / s | 1.6 / 0.3 / 0.25 |
 | selection.zoom_cut_start / zoom_cut_span / silhouette_cut_below | zoom / zoom / cut | 4.6 / 0.8 / 0.5 |
 | interior.walk_px_s / pause_s / talk_radius_px / talk_phase_s | px/s / s / px / s | 10 / [1.5,5.0] / 10 / 0.45 |
+| interior.stranger_talk_share / stranger_talk_cycle_s | share / s | 0.2 / 5.0 (non-friend pairs talk this share of each cycle; relationships.md 10.1) |
 | interior.being_cap / slot_reach_px | count / px | 25 / 0.8 |
 | interiors.habitat / comms / default (door, slots) | normalized to interior image | file |
 | corridor.edge_half_px / body_top_px / body_h_px / highlight_h_px | px | 3.5 / -3 / 5.5 / 1.2 |
