@@ -384,6 +384,16 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 	sum["ff_tail_per5"] = 5.0 * float(ff_end - ff150) / maxf(1.0, float(sols - 150))
 	sum["ff_base_per5"] = 5.0 * float(ff_end - ff20) / maxf(1.0, float(sols - 20))
 	sum["ff_tail_n"] = ff_end - ff150
+	# revision 7 (R13 context): births in sols 150..299 and found_friend lines per birth in that window
+	var b150 := 0
+	var b_end := 0
+	for r in recs:
+		if int(r.sol) == 150:
+			b150 = int(r.births)
+		if int(r.sol) == sols:
+			b_end = int(r.births)
+	sum["births_tail"] = b_end - b150
+	sum["ff_per_birth_tail"] = float(ff_end - ff150) / float(b_end - b150) if b_end > b150 else -1.0
 	sum["ff_base_n"] = ff_end - ff20
 	sum["zero_5sol_blocks"] = zero_blocks
 	sum["blocks_5sol"] = blocks
@@ -619,8 +629,11 @@ func _targets(sum: Dictionary) -> Dictionary:
 	var gap: Variant = null
 	if ffs != null and fb != null:
 		gap = int(ffs) - int(fb)
-	t["R1_first_grown_friendship_gap"] = [gap != null and int(gap) <= int(bal.first_friend_gap_sols), "first birth %s, first_friendship_sol %s, gap %s (max %d); first_mars_born_friendship_sol %s" % [
-			str(fb), str(ffs), "-" if gap == null else str(gap), int(bal.first_friend_gap_sols), str(sum.first_mars_born_friendship_sol)]]
+	# revision 7: R1 is birth-relative, the kin newborns' median wait (item 8 (b)); unresolved newborns are counted and left out.
+	var kn: Dictionary = sum.kinless
+	var kmed := float(kn.kin_median_sols)
+	t["R1_kin_newborn_median_wait"] = [int(kn.kin_resolved) > 0 and kmed <= float(bal.first_friend_gap_sols), "kin newborns median birth-to-first-friend %.1f sols (max %d), resolved %d, unresolved %d (left out); colony-first gap reported only: first birth %s, first_friendship_sol %s, gap %s" % [
+			kmed, int(bal.first_friend_gap_sols), int(kn.kin_resolved), int(kn.kin_unresolved), str(fb), str(ffs), "-" if gap == null else str(gap)]]
 	var fl: Variant = sum.first_capped_line_sol
 	t["R2_first_line_lt_30"] = [fl != null and int(fl) < 30, "first relationship line sol %s (first non-grief %s)" % [str(sum.first_rel_line_sol), str(fl)]]
 	var lw: float = float(sum.lonely_window_mean)
@@ -657,15 +670,18 @@ func _targets(sum: Dictionary) -> Dictionary:
 	t["R11_coldest_third_mean_stop"] = [cm <= float(bal.cold_third_friends_stop), "coldest-third mean %.2f (max %.1f)" % [cm, float(bal.cold_third_friends_stop)]]
 	var nl: Variant = sum.first_newcomer_line_sol
 	var early := fb != null and int(fb) < 15
-	var nl_ok: bool = nl != null and int(nl) >= int(bal.first_line_min_sol) and int(nl) <= int(bal.first_line_max_sol)
-	var nl_txt := "first newcomer line sol %s (window %d to %d), first birth %s" % [str(nl), int(bal.first_line_min_sol), int(bal.first_line_max_sol), str(fb)]
+	# revision 7: the lower bound is judged, the upper bound (first_line_max_sol) is reported only.
+	var nl_ok: bool = nl != null and int(nl) >= int(bal.first_line_min_sol)
+	var nl_over: bool = nl != null and int(nl) > int(bal.first_line_max_sol)
+	var nl_txt := "first newcomer line sol %s (judged: at or after %d; reported: by %d%s), first birth %s" % [str(nl), int(bal.first_line_min_sol), int(bal.first_line_max_sol), ", OVER" if nl_over else ", within", str(fb)]
 	if not nl_ok and nl != null and int(nl) < int(bal.first_line_min_sol) and early:
 		nl_txt += "; lower-bound miss on an early birth (before sol 15): read as an early birth, no key change"
-	t["R12_first_newcomer_line_window"] = [nl_ok, nl_txt]
+	t["R12_first_newcomer_line_lower_bound"] = [nl_ok, nl_txt]
 	var tail := float(sum.ff_tail_per5)
 	var base := float(sum.ff_base_per5)
-	t["R13_found_friend_late_tail"] = [tail <= float(bal.found_friend_tail_ratio_max) * base, "tail (150..299) %.2f per 5 sols (%d lines) vs mean (20..299) %.2f (%d lines); ratio %s (max %.1f)" % [
-			tail, int(sum.ff_tail_n), base, int(sum.ff_base_n), "inf" if base == 0.0 else "%.2f" % (tail / base), float(bal.found_friend_tail_ratio_max)]]
+	t["R13_found_friend_late_tail_ceiling"] = [tail <= float(bal.found_friend_tail_per5_max), "tail (150..299) %.2f per 5 sols (%d lines; max %.1f); reported: mean (20..299) %.2f (%d lines), ratio %s, births in 150..299 %d, found_friend lines per birth %s" % [
+			tail, int(sum.ff_tail_n), float(bal.found_friend_tail_per5_max), base, int(sum.ff_base_n), "inf" if base == 0.0 else "%.2f" % (tail / base),
+			int(sum.births_tail), "-" if float(sum.ff_per_birth_tail) < 0.0 else "%.2f" % float(sum.ff_per_birth_tail)]]
 	t["R14_no_dropped_friend_events"] = [int(sum.lines_dropped) == 0, "lines_dropped %d (total; lines_dropped_by_type not built)" % int(sum.lines_dropped)]
 	return t
 
@@ -684,8 +700,8 @@ func _report(sum: Dictionary) -> Array[String]:
 			int(sum.friendships_renewed), int(sum.close_formed), int(sum.drifted), int(sum.crew_drifted)])
 	o.append("  lines per sol max %d mean(20..300) %.3f; mean per 5 sols (20..300) %.2f; zero 5-sol blocks %d of %d" % [
 			int(sum.max_lines_per_sol), float(sum.mean_lines_per_sol), float(sum.mean_lines_per_5sols_20_300), int(sum.zero_5sol_blocks), int(sum.blocks_5sol)])
-	o.append("  R12 first newcomer line sol %s; R13 found_friend per 5 sols: tail(150..299) %.2f, mean(20..299) %.2f; dropped total %d (by type not built)" % [
-			str(sum.first_newcomer_line_sol), float(sum.ff_tail_per5), float(sum.ff_base_per5), int(sum.lines_dropped)])
+	o.append("  R12 first newcomer line sol %s; R13 found_friend per 5 sols: tail(150..299) %.2f, mean(20..299) %.2f; births 150..299 %d, found_friend per birth %.2f; dropped total %d (by type not built)" % [
+			str(sum.first_newcomer_line_sol), float(sum.ff_tail_per5), float(sum.ff_base_per5), int(sum.births_tail), float(sum.ff_per_birth_tail), int(sum.lines_dropped)])
 	o.append("item 2: readings %s" % str(sum.readings))
 	o.append("item 3: personality %s" % str(sum.personality))
 	o.append("  selectivity ratio %s, coldest-third mean %.2f" % [_ratio_txt(sum.personality), float(sum.personality.cold_mean)])
