@@ -349,7 +349,10 @@ The five questions posed in revision 2 were answered by the owner; items 1 to 4 
 4. **Speed on an age change:** the game never changes speed.
 5. **Task 5 gate:** not decided yet; Task 5 reads `age_history` and decides itself (the designer's recommendation stands as the default until Task 5 is designed).
 
-### Open for the owner (revision 5)
+### Resolved by the owner (revision 5, Herby, 2026-10-06)
+Items 6 and 7 were answered: **6 = (a) keep the rule** (a short crisis inside Settlement stays silent in the age voice; seed 2026 accepted). **7 = (a) first-sentence strip** (3 chapters, one line each, first sentence only; speed readout and throttle note on the controls line; log stays 8 lines).
+
+### Options as posed (revision 5)
 6. **A short, deadly crisis inside Settlement produces no age line.**
    - Fact (live 0.2 run, seed 2026): ice failed on sols 161 to 165 and 171 to 180. The worst 40-sol window held 15 failing sols, and the exit needs 17, so the margin is 2 sols. One shortage-death sol (178) fell in that crisis. Thirst deaths and water warnings appear on their own log lines, but no age line does. Sols 291 to 300 were failing again when the run ended; 5 thirst deaths by sol 300.
    - (a) **Keep the rule (recommended).** Falling back means a long stretch of hard sols, and a colony that comes through a fortnight of thirst is still a settled colony that had a hard spell. You decided that ice is pressure. The deaths are already told in their own lines, and the age is slow by design. Cost: the log's age voice is silent through short crises.

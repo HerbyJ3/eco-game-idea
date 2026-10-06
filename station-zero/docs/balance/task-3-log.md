@@ -1,8 +1,8 @@
 # Task 3 balance log (step 7: balance integration, ages announce-only)
 
 ## Setup
-- Base commit: 1321301060c560dc3d004710f74d7232a4c40afe (Task 3 step 5). The working tree is dirty: data/ages.json (distress_share_max 0.1 -> 0.2, the only data change), docs/specs/ages.md (revision 4), tests/balance_lib.gd (age column and T10), tests/test_ages.gd (test 6 at 0.2), plus the parallel HUD engineer's view changes. No sim/ or other data/ value was touched. data_hash in the run header: f9261a2c090f461f (differs from Task 1 by design: ages.json is now hashed).
-- Machine: 4 cores, godot 4.5.stable, headless, fixed_step 0.05 h. Five runs in parallel on 4 cores, so wall times are inflated against the sequential Task 1 times (the balance runs ran alone, 5 processes; the hash proof and the probe then ran together, 10 processes, so their times are longer still).
+- Base commit: 1321301060c560dc3d004710f74d7232a4c40afe (Task 3 step 5). The working tree is dirty: data/ages.json (distress_share_max 0.1 -> 0.2, the only data change), docs/specs/ages.md (revision 4), tests/balance_lib.gd (age column and T10), tests/test_ages.gd (test 6 at 0.2), plus the HUD step's view/ changes (steps 6 and 8; view only). No sim/ or other data/ value was touched. data_hash in the run header: f9261a2c090f461f (differs from Task 1 by design: ages.json is now hashed).
+- Machine: 4 cores, godot 4.5.stable, headless, fixed_step 0.05 h. Five runs in parallel on 4 cores, so wall times are inflated against the sequential Task 1 times. The five balance runs ran alone (5 processes); the hash proofs and the probes then ran together (10 processes), so their times are longer still.
 - Commands (N in 42 7 99 1234 2026):
   - balance: `godot --headless --path station-zero --script res://tests/balance_run.gd -- --seed N --sols 300`
   - hash proof: `godot --headless --path station-zero --script res://tests/age_hash_proof.gd -- --seed N`
