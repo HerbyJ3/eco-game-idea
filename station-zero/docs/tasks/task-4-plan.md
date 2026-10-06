@@ -2,7 +2,7 @@
 
 Process document. Every design detail (what a relationship is, how trust forms, what personality drives, thresholds, data keys, HUD words, test targets) lives in a spec the design team writes: `docs/specs/relationships.md`. The project manager does not design. Source of truth: station-zero-handoff/HANDOFF.md (sections 1, 3, 7, 8, 9, 10). Model: `docs/tasks/task-3-plan.md`. Tasks 0 to 3 done.
 
-**Status: NOT STARTED beyond this plan.** Task 5 stays blocked until Task 4 meets its definition of done.
+**Status: DONE (closed 2026-10-06).** Task 4 closed with owner decision: pulls built but shipped off. Closing record and learned items: HANDOFF section 8, Task 4. Task 5 is now the first unchecked task; its gate (Council reads age_history/web_by_sol/second_by_sol/lonely_by_sol) is still undecided.
 
 Rules in force (HANDOFF 10): design before code, headless tests before visuals, every tunable in `data/` (new file, name chosen by the spec), seeded RNG, one balance parameter per run, each step a commit that runs. Test command: `godot --headless --path station-zero --script res://tests/run_tests.gd`.
 
