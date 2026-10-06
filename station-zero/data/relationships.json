@@ -40,6 +40,6 @@
     "met_friend_share_flag": 0.35,
     "first_line_min_sol": 25,
     "first_line_max_sol": 55,
-    "found_friend_tail_ratio_max": 1.0
+    "found_friend_tail_per5_max": 3.0
   }
 }

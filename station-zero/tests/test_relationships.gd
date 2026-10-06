@@ -1602,8 +1602,8 @@ func _broken_rules(d: Dictionary, bkinds: Array, art_interior: Dictionary, fixed
 	var lo_ok: bool = float(b.first_line_min_sol) == float(int(b.first_line_min_sol)) and float(b.first_line_max_sol) == float(int(b.first_line_max_sol))
 	if not (lo_ok and int(b.first_line_min_sol) >= 0 and int(b.first_line_min_sol) < int(b.first_line_max_sol)):
 		f.append("balance.first_line_window")
-	if not float(b.found_friend_tail_ratio_max) > 0.0:
-		f.append("balance.found_friend_tail_ratio_max")
+	if not float(b.found_friend_tail_per5_max) > 0.0:
+		f.append("balance.found_friend_tail_per5_max")
 	return f
 
 
@@ -1650,7 +1650,7 @@ func test_t15b_data_sanity_rules_hold_and_each_can_fail(t) -> void:
 		["balance", "first_line_min_sol", 55, "balance.first_line_window"],
 		["balance", "first_line_min_sol", 25.5, "balance.first_line_window"],
 		["balance", "first_line_max_sol", 55.5, "balance.first_line_window"],
-		["balance", "found_friend_tail_ratio_max", 0.0, "balance.found_friend_tail_ratio_max"],
+		["balance", "found_friend_tail_per5_max", 0.0, "balance.found_friend_tail_per5_max"],
 		["art", "stranger_talk_share", 0.0, "stranger_talk_share"],
 		["art", "stranger_talk_cycle_s", 0.0, "stranger_talk_cycle_s"],
 	]
