@@ -85,6 +85,7 @@ func _run() -> void:
 		return
 	_host.speed = 0.0
 	_host.world = _world
+	_host.set_process(false)
 	root.add_child(_scene)
 	_view = _scene.get_node("WorldLayer/WorldView")
 	_scene.apply_shot_view({"select": "habitat", "peek": true})
@@ -135,6 +136,8 @@ func _hold(n: int, label: String, mode := "", a := Vector2.ZERO, b := Vector2.ZE
 	var tick_ms: Array = []
 	var frames_tick: Array = []
 	var frames_plain: Array = []
+	var proc_tick: Array = []
+	var proc_plain: Array = []
 	var steps_tick: Array = []
 	var steps_plain: Array = []
 	var pairs: Array = []
@@ -142,6 +145,8 @@ func _hold(n: int, label: String, mode := "", a := Vector2.ZERO, b := Vector2.ZE
 	var last := Time.get_ticks_usec()
 	var last_ticks := rel.ticks
 	var last_step := _world.step_index
+	var hps := 1.0 / float(SimData.sim().real_seconds_per_hour_at_1x)
+	var prev_delta := 1.0 / 60.0
 	var last_dropped := _world.advance_dropped_h
 	var dropped0 := last_dropped
 	for i in n:
@@ -149,25 +154,34 @@ func _hold(n: int, label: String, mode := "", a := Vector2.ZERO, b := Vector2.ZE
 			var ph := float(i) / 300.0 * TAU
 			var zoom := exp(lerpf(log(0.6), log(6.0), 0.5 + 0.5 * sin(ph)))
 			_scene.set_camera(zoom, a.lerp(b, 0.5 + 0.5 * sin(ph * 0.7)))
+		# The host's own _process is switched off for the run and replaced by this identical call (delta x speed x hours per
+		# second into world.advance), so the sim's share of the frame is timed on its own.
+		var a0 := Time.get_ticks_usec()
+		_world.advance(prev_delta * float(_host.speed) * hps)
+		var adv_ms := float(Time.get_ticks_usec() - a0) / 1000.0
 		await RenderingServer.frame_post_draw
 		var now := Time.get_ticks_usec()
+		prev_delta = float(now - last) / 1e6
 		var ms := float(now - last) / 1000.0
 		last = now
 		var dt: int = rel.ticks - last_ticks
 		var ds: int = _world.step_index - last_step
 		last_ticks = rel.ticks
 		last_step = _world.step_index
+		var proc := adv_ms
 		if dt > 0:
+			proc_tick.append(proc)
 			frames_tick.append(ms)
 			steps_tick.append(ds)
 			tick_ms.append(rel.last_tick_ms)
 		else:
+			proc_plain.append(proc)
 			frames_plain.append(ms)
 			steps_plain.append(ds)
 		pairs.append(rel.pairs.size())
 	if label == "":
 		return {}
-	return {"label": label, "n": n, "tick": _sorted(frames_tick), "plain": _sorted(frames_plain), "tick_ms": _sorted(tick_ms),
+	return {"label": label, "n": n, "tick": _sorted(frames_tick), "plain": _sorted(frames_plain), "tick_ms": _sorted(tick_ms), "ptick": _sorted(proc_tick), "pplain": _sorted(proc_plain),
 			"steps_tick": steps_tick, "steps_plain": steps_plain, "pairs": _sorted(pairs), "pop": _world.colony.pop(),
 			"dropped_h": _world.advance_dropped_h - dropped0}
 
@@ -194,16 +208,28 @@ func _print_rows(rows: Array) -> void:
 		print("| %s | %d (%d / %d) | %s | %s | %.1f / %.1f | %s | %d (%d-%d) | %d | %.1f |" % [r.label, r.n, t.size(), p.size(), tp, pp,
 				_mean_i(r.steps_tick), _mean_i(r.steps_plain), tkm, int(_pct(pr, 0.5)), int(pr[0]), int(pr[pr.size() - 1]),
 				r.pop, r.dropped_h])
+	print("")
+	print("| condition | advance() ms (the sim's share, no render) tick frames p95 / max | plain frames p95 / max |")
+	print("|---|---|---|")
+	for r in rows:
+		var t: Array = r.ptick
+		var p: Array = r.pplain
+		print("| %s | %s | %s |" % [r.label, "n/a" if t.is_empty() else "%.1f / %.1f" % [_pct(t, 0.95), float(t[t.size() - 1])],
+				"n/a" if p.is_empty() else "%.1f / %.1f" % [_pct(p, 0.95), float(p[p.size() - 1])]])
 	# Trigger verdicts (3a: tick-frame p95 over 16.7 ms with plain-frame p95 under 16.7; 3b: a tick frame over 33 ms with the
 	# plain-frame max under 33). 16.7 and 33 are the spec's thresholds (relationships.md section 13), used here only to judge.
 	print("")
 	for r in rows:
-		var t: Array = r.tick
-		var p: Array = r.plain
-		var p95_t := _pct(t, 0.95)
-		var p95_p := _pct(p, 0.95)
-		var max_t := 0.0 if t.is_empty() else float(t[t.size() - 1])
-		var max_p := 0.0 if p.is_empty() else float(p[p.size() - 1])
-		print("verdict %s: 3a tick p95 %.1f vs plain p95 %.1f -> %s; 3b tick max %.1f vs plain max %.1f -> %s" % [
-				String(r.label).substr(0, 1), p95_t, p95_p, "TRIPS" if (not t.is_empty() and p95_t > 16.7 and p95_p < 16.7) else "no",
-				max_t, max_p, "TRIPS" if (max_t > 33.0 and max_p < 33.0) else "no"])
+		_verdict("wall", r, r.tick, r.plain)
+	for r in rows:
+		_verdict("advance ms", r, r.ptick, r.pplain)
+
+
+func _verdict(kind: String, r: Dictionary, t: Array, p: Array) -> void:
+	var p95_t := _pct(t, 0.95)
+	var p95_p := _pct(p, 0.95)
+	var max_t := 0.0 if t.is_empty() else float(t[t.size() - 1])
+	var max_p := 0.0 if p.is_empty() else float(p[p.size() - 1])
+	print("verdict (%s) %s: 3a tick p95 %.1f vs plain p95 %.1f -> %s; 3b tick max %.1f vs plain max %.1f -> %s" % [kind,
+			String(r.label).substr(0, 1), p95_t, p95_p, "TRIPS" if (not t.is_empty() and p95_t > 16.7 and p95_p < 16.7) else "no",
+			max_t, max_p, "TRIPS" if (max_t > 33.0 and max_p < 33.0) else "no"])

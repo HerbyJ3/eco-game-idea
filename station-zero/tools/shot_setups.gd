@@ -7,7 +7,7 @@ extends RefCounted
 ## Setups that need an empty world instead of the founders.
 const BLANK: Array[String] = ["showcase", "showcase_offline", "showcase_door_habitat", "showcase_door_workshop",
 		"showcase_suits", "showcase_born_pair", "showcase_lamp_dusk", "showcase_interior_habitat", "showcase_interior_comms",
-		"showcase_interior_workshop"]
+		"showcase_interior_workshop", "showcase_interior_talk"]
 ## Door setups: name -> kind of the building whose door opens.
 const DOOR_KIND := {"showcase_door_habitat": "habitat", "showcase_door_workshop": "workshop"}
 ## Interior setups: name -> [kind, [[role, state], ...]] of the beings placed inside that building.
@@ -62,6 +62,10 @@ static func apply(name: String, world: SimWorld) -> bool:
 		"dead_colony":
 			# Every being gone, stocks as they were: the HUD hides the age at pop 0.
 			world.beings.clear()
+			return true
+		"showcase_interior_talk":
+			_showcase(world)
+			_interior_talk(world)
 			return true
 		"showcase_interior_habitat", "showcase_interior_comms", "showcase_interior_workshop":
 			_showcase(world)
@@ -165,4 +169,22 @@ static func _interior(world: SimWorld, kind: String, who: Array) -> void:
 			var g := world.add_being(b.id, String(w[0]))
 			g.earth_born = true
 			g.state = String(w[1])
+		return
+
+
+## Relationships 10.1 shot: six idle beings in the habitat; the first two (ids lowest) are made friends through the module's
+## test seam so the shot can show friends talking the whole pause against strangers who mostly stand. Shot staging only; the
+## game never calls debug_set_bond.
+static func _interior_talk(world: SimWorld) -> void:
+	for b in world.buildings.list:
+		if b.kind != "habitat":
+			continue
+		var ids: Array[int] = []
+		for role in ["social", "tender", "builder", "curious", "social", "builder"]:
+			var g := world.add_being(b.id, role)
+			g.earth_born = true
+			g.state = "idle"
+			ids.append(g.id)
+		world.relationships.debug_set_bond(ids[0], ids[1], 0.9)
+		world.relationships.debug_set_bond(ids[2], ids[3], 0.9)
 		return
