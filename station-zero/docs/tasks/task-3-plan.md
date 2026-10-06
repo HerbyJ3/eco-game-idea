@@ -2,6 +2,8 @@
 
 Process document. Every design detail (clauses, thresholds, windows, texts, HUD behaviour, tests, targets) lives in `docs/specs/ages.md` (revision 3, approved by the code-reviewer, owner decisions in its section 18). The project manager does not design: where this plan once held design proposals (Settlement definition and alternatives, announce-only recommendation, latch, Mars-born count, A1 to A9 ambiguities, estimated crossing sols), they are replaced by the spec's decisions and removed. Source of truth: station-zero-handoff/HANDOFF.md (sections 1, 2, 7, 8, 9, 10). Tasks 0 to 2 done; Task 4 not started.
 
+**Status: DONE (October 2026).** Closed in HANDOFF section 8. Open owner items: Task 5 gate (Council reads age_history) and the texture memory decision (47.1 of 48 MB).
+
 Rules in force (HANDOFF 10): design before code, headless tests before visuals, every tunable in data/ (new `data/ages.json`, new keys in `data/sim.json`), seeded RNG (ages never draw from `SimRng`), one balance parameter per run, each step is a commit that runs. Test command: `godot --headless --path station-zero --script res://tests/run_tests.gd`.
 
 ## 1. Scope
