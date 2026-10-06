@@ -34,7 +34,27 @@ var last_tick_ms := 0.0
 ## Tick-local.
 var _cfg: Dictionary = {}
 var _seeded: Dictionary = {}
-var _info: Dictionary = {}
+## Per-tick trait readings indexed by being id (ids stay below SHIFT; sized to the largest living id + 1, 0.0 elsewhere):
+## warmth (sociability + care) / 2, tempo (restless - steady), curiosity, restless.
+var _warm := PackedFloat64Array()
+var _tempo := PackedFloat64Array()
+var _cur := PackedFloat64Array()
+var _rest := PackedFloat64Array()
+## Slot mirror of `pairs` for the decay pass (packed arrays are several times cheaper to walk than the pair dictionaries).
+## Slot i describes the pair with key _sk[i]: low and high id, bond (always equal to pairs[key].bond), flag bits (1 friends,
+## 2 close) and the pair dictionary itself. `_slot` maps key -> slot. Every module write to a pair's bond or flags goes
+## through _set_bond / _flag_step / _get_or_make / _remove_pair, which keep the mirror in step.
+var _slot: Dictionary = {}
+var _sk := PackedInt64Array()
+var _sl := PackedInt32Array()
+var _sh := PackedInt32Array()
+var _sb := PackedFloat64Array()
+var _sf := PackedByteArray()
+var _sp: Array = []
+var _mask := PackedByteArray()
+var _max_id := 0
+## Places of this tick's growth groups: [place, building_id] by group index (a grown pair stores its group index).
+var _groups: Array = []
 
 
 ## The initial `stats.relationships` dictionary (zeros, nulls, empty lists).
@@ -68,7 +88,7 @@ func are_friends(a: int, b: int) -> bool:
 func debug_set_bond(a: int, b: int, bond: float) -> void:
 	_cfg = SimData.relationships()
 	var p := _get_or_make(mini(a, b), maxi(a, b))
-	p.bond = bond
+	_set_bond(p, bond)
 	_flag_step(p)
 
 
@@ -89,7 +109,7 @@ func begin(world: SimWorld, founders_world: bool) -> void:
 	for i in ids.size():
 		for j in range(i + 1, ids.size()):
 			var p := _get_or_make(ids[i], ids[j])
-			p.bond = crew
+			_set_bond(p, crew)
 			p.crew = true
 			_flag_step(p)
 	_reading(world)
@@ -111,19 +131,38 @@ func on_step(world: SimWorld, dt: float) -> void:
 
 func _tick(world: SimWorld) -> void:
 	ticks += 1
-	var by_id := {}
-	_info.clear()
-	for b in world.beings:
-		by_id[b.id] = b
-		var tr: Dictionary = b.persona.traits
-		_info[b.id] = PackedFloat64Array([(float(tr.sociability) + float(tr.care)) / 2.0,
-				float(tr.restless) - float(tr.steady), float(tr.curiosity), float(tr.restless)])
+	var by_id := _prepare(world)
 	_seeded.clear()
 	_deaths(world, by_id)
 	_births(world, by_id)
 	var grown := _growth(world)
 	var ev := _decay_and_flags(world, by_id, grown)
 	_lines_step(world, by_id, ev)
+
+
+## Fills the per-tick trait arrays and returns being id -> being.
+func _prepare(world: SimWorld) -> Dictionary:
+	var by_id := {}
+	var top := 0
+	for b in world.beings:
+		top = maxi(top, b.id + 1)
+	_warm.resize(top)
+	_warm.fill(0.0)
+	_tempo.resize(top)
+	_tempo.fill(0.0)
+	_cur.resize(top)
+	_cur.fill(0.0)
+	_rest.resize(top)
+	_rest.fill(0.0)
+	for b in world.beings:
+		var bid: int = b.id
+		by_id[bid] = b
+		var tr: Dictionary = b.persona.traits
+		_warm[bid] = (float(tr.sociability) + float(tr.care)) / 2.0
+		_tempo[bid] = float(tr.restless) - float(tr.steady)
+		_cur[bid] = float(tr.curiosity)
+		_rest[bid] = float(tr.restless)
+	return by_id
 
 
 # ---------------------------------------------------------------- 5.1 deaths
@@ -196,7 +235,7 @@ func _births(world: SimWorld, by_id: Dictionary) -> void:
 		if pairs.has(key):
 			continue
 		var p := _get_or_make(mini(b.id, b.parent_id), maxi(b.id, b.parent_id))
-		p.bond = float(sd.kin_base) + float(sd.kin_warmth) * (_info[b.id][0] + _info[b.parent_id][0]) / 2.0
+		_set_bond(p, float(sd.kin_base) + float(sd.kin_warmth) * (_warm[b.id] + _warm[b.parent_id]) / 2.0)
 		p.kin = true
 		_flag_step(p)
 		_seeded[key] = true
@@ -204,7 +243,7 @@ func _births(world: SimWorld, by_id: Dictionary) -> void:
 
 # ---------------------------------------------------------------- 5.3 growth
 
-## Returns key -> [place, building_id] for every pair that grew this tick.
+## Returns key -> group index (into `_groups`: [place, building_id]) for every pair that grew this tick.
 func _growth(world: SimWorld) -> Dictionary:
 	var grown := {}
 	var gr: Dictionary = _cfg.grow
@@ -231,6 +270,7 @@ func _growth(world: SimWorld) -> Dictionary:
 				mine_groups[s] = []
 			mine_groups[s].append(b.id)
 	present = {}
+	_groups.clear()
 	var bids: Array = inside.keys()
 	bids.sort()
 	for bid in bids:
@@ -239,78 +279,139 @@ func _growth(world: SimWorld) -> Dictionary:
 		var ids: Array = inside[bid]
 		if ids.size() < 2:
 			continue
-		var kind := str(kinds.get(bid, ""))
-		for i in ids.size():
-			for j in range(i + 1, ids.size()):
-				var a: int = ids[i]
-				var c: int = ids[j]
-				var rf: float = float(gr.warmth_base) + (_info[a][0] + _info[c][0]) / 2.0
-				var k: float = float(gr.room_rate) * tick_h * rf * _affinity(a, c, af)
-				_grow(grown, a, c, k, kind, bid)
+		_groups.append([str(kinds.get(bid, "")), bid])
+		_grow_group(grown, ids, _groups.size() - 1, float(gr.room_rate) * tick_h, float(gr.warmth_base), af)
 	if world.buildings.site != null and work_crew.size() >= 2:
-		_grow_crew(grown, work_crew, "site", gr, af, tick_h)
+		_groups.append(["site", null])
+		_grow_group(grown, work_crew, _groups.size() - 1, float(gr.work_rate) * tick_h, -1.0, af)
 	var fields: Array = []
 	fields.append_array(world.resources.ice_fields)
 	fields.append_array(world.resources.pits)
 	for f in fields:
 		if mine_groups.has(f) and mine_groups[f].size() >= 2:
-			_grow_crew(grown, mine_groups[f], f.kind, gr, af, tick_h)
+			_groups.append([f.kind, null])
+			_grow_group(grown, mine_groups[f], _groups.size() - 1, float(gr.work_rate) * tick_h, -1.0, af)
 	return grown
 
 
-func _grow_crew(grown: Dictionary, ids: Array, place: String, gr: Dictionary, af: Dictionary, tick_h: float) -> void:
-	for i in ids.size():
-		for j in range(i + 1, ids.size()):
-			var k := float(gr.work_rate) * tick_h * _affinity(ids[i], ids[j], af)
-			_grow(grown, ids[i], ids[j], k, place, null)
-
-
-func _affinity(a: int, b: int, af: Dictionary) -> float:
-	var gap := absf(_info[a][1] - _info[b][1]) * (1.0 - float(af.curiosity_soften) * maxf(_info[a][2], _info[b][2]))
-	return clampf(1.0 - float(af.tempo_gap_coef) * gap, float(af.floor), 1.0)
-
-
-func _grow(grown: Dictionary, a: int, b: int, k: float, place: String, building_id: Variant) -> void:
-	var key := key_of(a, b)
-	if grown.has(key):
-		return
-	var p := _get_or_make(mini(a, b), maxi(a, b))
-	if _seeded.has(key):
-		return
-	p.bond += k * (1.0 - p.bond)
-	grown[key] = [place, building_id]
+## Grows every pair of `ids` (spec 5.3). `rate` is room_rate x tick_h for a room (`warmth_base` >= 0: the room term
+## warmth_base + mean warmth multiplies it) or work_rate x tick_h for a crew (`warmth_base` < 0: no warmth term).
+func _grow_group(grown: Dictionary, ids: Array, gi: int, rate: float, warmth_base: float, af: Dictionary) -> void:
+	var coef := float(af.tempo_gap_coef)
+	var soften := float(af.curiosity_soften)
+	var lo_aff := float(af.floor)
+	var room := warmth_base >= 0.0
+	var has_seeded := not _seeded.is_empty()
+	var n := ids.size()
+	for i in n:
+		var a: int = ids[i]
+		var wa := _warm[a]
+		var ta := _tempo[a]
+		var ca := _cur[a]
+		for j in range(i + 1, n):
+			var c: int = ids[j]
+			var key := mini(a, c) * SHIFT + maxi(a, c)
+			if grown.has(key):
+				continue
+			var gap := absf(ta - _tempo[c]) * (1.0 - soften * maxf(ca, _cur[c]))
+			var aff := clampf(1.0 - coef * gap, lo_aff, 1.0)
+			var k := rate * (warmth_base + (wa + _warm[c]) / 2.0) * aff if room else rate * aff
+			var slot: int = _slot.get(key, -1)
+			if slot < 0:
+				_get_or_make(mini(a, c), maxi(a, c))
+				slot = _slot[key]
+			if has_seeded and _seeded.has(key):
+				continue
+			var nb: float = _sb[slot] + k * (1.0 - _sb[slot])
+			_sb[slot] = nb
+			_sp[slot].bond = nb
+			grown[key] = gi
 
 
 # ---------------------------------------------------------------- 5.5 decay, forgetting, flags
 
 ## Returns {friend: [...], close: [...], drift: [...]}: events in ascending pair key within each list.
+## One pass over the slot mirror decays every pair that did not grow or get seeded this tick (same arithmetic, same order
+## of operations); the pairs whose flags may change are then handled in ascending key order (the flag step, the counters
+## and the events depend on that order).
 func _decay_and_flags(world: SimWorld, by_id: Dictionary, grown: Dictionary) -> Dictionary:
 	var ev := {"friend": [], "close": [], "drift": []}
+	if _sk.size() != pairs.size():
+		_rebuild_slots()
 	var dc: Dictionary = _cfg.decay
-	var tick_h := float(_cfg.tick_h)
-	var forget := float(_cfg.lines.forget_below)
+	var ln: Dictionary = _cfg.lines
+	var rate := float(dc.per_h) * float(_cfg.tick_h)
+	var rbase := float(dc.restless_base)
+	var hold := float(dc.close_hold)
+	var forget := float(ln.forget_below)
+	var f_on := float(ln.friend)
+	var f_off := float(ln.friend_drop)
+	var c_on := float(ln.close)
+	var c_off := float(ln.close_drop)
 	var rs: Dictionary = world.stats.relationships
-	var keys: Array = pairs.keys()
-	keys.sort()
-	for k in keys:
-		if _seeded.has(k):
+	var n := _sk.size()
+	if _rest.size() <= _max_id:
+		_rest.resize(_max_id + 1)
+	_mask.resize(n)
+	_mask.fill(0)
+	for k in grown:
+		_mask[_slot[k]] = 1
+	for k in _seeded:
+		_mask[_slot[k]] = 1
+	var maybe := PackedInt64Array()
+	var forgot := PackedInt64Array()
+	# Locals are cheaper than members in the hot loop; the bond mirror is written back after the pass.
+	var mask := _mask
+	var sf := _sf
+	var sl := _sl
+	var sh := _sh
+	var sk := _sk
+	var rest := _rest
+	var sp := _sp
+	var sb := _sb
+	for i in n:
+		if mask[i] != 0:
 			continue
+		var f := sf[i]
+		var d := rate * (rbase + (rest[sl[i]] + rest[sh[i]]) / 2.0)
+		if f & 2:
+			d *= hold
+		var b := maxf(0.0, sb[i] - d)
+		sb[i] = b
+		sp[i].bond = b
+		if f & 2:
+			if b < c_off:
+				maybe.append(sk[i])
+			elif f & 1:
+				if b < f_off:
+					maybe.append(sk[i])
+			elif b >= f_on:
+				maybe.append(sk[i])
+		elif b >= c_on:
+			maybe.append(sk[i])
+		elif b >= f_on:
+			if not (f & 1):
+				maybe.append(sk[i])
+		elif b < f_off:
+			if f & 1:
+				maybe.append(sk[i])
+			elif b < forget:
+				forgot.append(sk[i])
+	_sb = sb
+	for k in forgot:
+		_remove_pair(k)
+	var cand := maybe
+	for k in grown:
+		cand.append(k)
+	cand.sort()
+	for k in cand:
 		var p: Dictionary = pairs[k]
-		var g: Variant = grown.get(k)
-		if g == null:
-			var rl: float = _info[p.lo][3] if _info.has(p.lo) else 0.0
-			var rh: float = _info[p.hi][3] if _info.has(p.hi) else 0.0
-			var d := float(dc.per_h) * tick_h * (float(dc.restless_base) + (rl + rh) / 2.0) \
-					* (float(dc.close_hold) if p.close else 1.0)
-			p.bond = maxf(0.0, p.bond - d)
-			if p.bond < forget and not p.friends and not p.close:
-				_remove_pair(k)
-				continue
+		var gi: int = grown.get(k, -1)
 		var r := _flag_step(p)
 		if r == 0:
 			continue
-		var place: String = g[0] if g != null else ""
-		var bid: Variant = g[1] if g != null else null
+		var place: String = _groups[gi][0] if gi >= 0 else ""
+		var bid: Variant = _groups[gi][1] if gi >= 0 else null
 		if r & 1:
 			if p.kin or p.crew:
 				rs.friendships_renewed += 1
@@ -436,29 +537,52 @@ func on_sol(world: SimWorld) -> void:
 
 func _reading(world: SimWorld) -> void:
 	var rs: Dictionary = world.stats.relationships
-	var uf := {}
+	if _sk.size() != pairs.size():
+		_rebuild_slots()
 	var ids: Array = []
+	var top := 0
 	for b in world.beings:
 		ids.append(b.id)
+		top = maxi(top, b.id + 1)
 	ids.sort()
+	# Union-find over living ids in packed arrays (a root is always the smallest id of its component, so the result does
+	# not depend on the order the pairs are visited). alive: 1 for a living id; seen: 1 for an id with a friend pair.
+	var uf := PackedInt32Array()
+	uf.resize(top)
+	var alive := PackedByteArray()
+	alive.resize(top)
+	alive.fill(0)
+	var seen := PackedByteArray()
+	seen.resize(top)
+	seen.fill(0)
 	for id in ids:
 		uf[id] = id
+		alive[id] = 1
 	var friend_pairs := 0
 	var close_pairs := 0
-	var degree := {}
-	for k in pairs:
-		var p: Dictionary = pairs[k]
-		if p.close:
+	var degree_n := 0
+	var sf := _sf
+	var sl := _sl
+	var sh := _sh
+	for i in sf.size():
+		var f := sf[i]
+		if f & 2:
 			close_pairs += 1
-		if not p.friends:
+		if not (f & 1):
 			continue
 		friend_pairs += 1
-		if not (uf.has(p.lo) and uf.has(p.hi)):
+		var lo := sl[i]
+		var hi := sh[i]
+		if lo >= top or hi >= top or alive[lo] == 0 or alive[hi] == 0:
 			continue
-		degree[p.lo] = true
-		degree[p.hi] = true
-		var ra := _find(uf, p.lo)
-		var rb := _find(uf, p.hi)
+		if seen[lo] == 0:
+			seen[lo] = 1
+			degree_n += 1
+		if seen[hi] == 0:
+			seen[hi] = 1
+			degree_n += 1
+		var ra := _find_packed(uf, lo)
+		var rb := _find_packed(uf, hi)
 		if ra != rb:
 			uf[maxi(ra, rb)] = mini(ra, rb)
 	var pop := ids.size()
@@ -469,7 +593,7 @@ func _reading(world: SimWorld) -> void:
 	if pop > 0:
 		var sizes := {}
 		for id in ids:
-			var r := _find(uf, id)
+			var r := _find_packed(uf, id)
 			sizes[r] = int(sizes.get(r, 0)) + 1
 		var sz: Array = sizes.values()
 		sz.sort()
@@ -477,7 +601,7 @@ func _reading(world: SimWorld) -> void:
 		web = float(sz[0]) / float(pop)
 		if sz.size() > 1 and sz[1] >= 2:
 			second = float(sz[1]) / float(pop)
-		lonely = float(pop - degree.size()) / float(pop)
+		lonely = float(pop - degree_n) / float(pop)
 		fmean = 2.0 * float(friend_pairs) / float(pop)
 	rs.web_by_sol.append(web)
 	rs.second_by_sol.append(second)
@@ -491,14 +615,11 @@ func _reading(world: SimWorld) -> void:
 	rs.close_pairs = close_pairs
 
 
-static func _find(uf: Dictionary, x: int) -> int:
+## Root of x (no path compression: a packed array passed in would be copied on write).
+static func _find_packed(uf: PackedInt32Array, x: int) -> int:
 	var r := x
 	while uf[r] != r:
 		r = uf[r]
-	while uf[x] != r:
-		var nx: int = uf[x]
-		uf[x] = r
-		x = nx
 	return r
 
 
@@ -532,7 +653,41 @@ func _get_or_make(lo: int, hi: int) -> Dictionary:
 		p = {"lo": lo, "hi": hi, "bond": 0.0, "friends": false, "close": false, "was_close": false,
 				"kin": false, "crew": false}
 		pairs[key] = p
+		_slot[key] = _sk.size()
+		_sk.append(key)
+		_sl.append(lo)
+		_sh.append(hi)
+		_sb.append(0.0)
+		_sf.append(0)
+		_sp.append(p)
+		_max_id = maxi(_max_id, maxi(lo, hi))
 	return p
+
+
+func _set_bond(p: Dictionary, v: float) -> void:
+	p.bond = v
+	_sb[_slot[int(p.lo) * SHIFT + int(p.hi)]] = v
+
+
+## Rebuilds the slot mirror from `pairs` (only when something outside the module changed the set of pairs).
+func _rebuild_slots() -> void:
+	_slot.clear()
+	_sk.clear()
+	_sl.clear()
+	_sh.clear()
+	_sb.clear()
+	_sf.clear()
+	_sp.clear()
+	for k in pairs:
+		var p: Dictionary = pairs[k]
+		_slot[k] = _sk.size()
+		_sk.append(k)
+		_sl.append(p.lo)
+		_sh.append(p.hi)
+		_sb.append(p.bond)
+		_sf.append((1 if p.friends else 0) | (2 if p.close else 0))
+		_sp.append(p)
+		_max_id = maxi(_max_id, maxi(int(p.lo), int(p.hi)))
 
 
 func _remove_pair(key: int) -> void:
@@ -544,6 +699,24 @@ func _remove_pair(key: int) -> void:
 		_bump(close_count, p.lo, -1)
 		_bump(close_count, p.hi, -1)
 	pairs.erase(key)
+	var i: int = _slot[key]
+	var last := _sk.size() - 1
+	if i != last:
+		var lk := _sk[last]
+		_sk[i] = lk
+		_sl[i] = _sl[last]
+		_sh[i] = _sh[last]
+		_sb[i] = _sb[last]
+		_sf[i] = _sf[last]
+		_sp[i] = _sp[last]
+		_slot[lk] = i
+	_sk.resize(last)
+	_sl.resize(last)
+	_sh.resize(last)
+	_sb.resize(last)
+	_sf.resize(last)
+	_sp.resize(last)
+	_slot.erase(key)
 
 
 static func _bump(d: Dictionary, id: int, delta: int) -> void:
@@ -580,4 +753,6 @@ func _flag_step(p: Dictionary) -> int:
 		_bump(close_count, p.lo, -1)
 		_bump(close_count, p.hi, -1)
 		r |= 8
+	if r != 0:
+		_sf[_slot[int(p.lo) * SHIFT + int(p.hi)]] = (1 if p.friends else 0) | (2 if p.close else 0)
 	return r
