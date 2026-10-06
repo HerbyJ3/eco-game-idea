@@ -40,3 +40,5 @@ age_fallback_seed99 | --seed 99 --steps 88800 --hour 12 --zoom 1.2
 age_settlement_night | --seed 7 --steps 39440 --hour 23 --zoom 1.2
 age_dead_colony | --seed 42 --steps 9864 --hour 12 --zoom 2 --setup dead_colony
 sol100_zoom_out | --seed 42 --steps 49320 --hour 12 --zoom 0.6 --center colony --view hud=false
+t4_roof_talk_a | --seed 42 --hour 12 --setup showcase_interior_talk --zoom 4.0 --center habitat --view select=habitat,peek=true,hud=false --settle 2.5
+t4_roof_talk_b | --seed 42 --hour 12 --setup showcase_interior_talk --zoom 4.0 --center habitat --view select=habitat,peek=true,hud=false --settle 4.0
