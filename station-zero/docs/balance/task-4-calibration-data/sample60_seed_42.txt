@@ -1,0 +1,8 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# sample vs per-step: seed=42 sols 1..60, tick_h 1.00, step_h 0.050
+pairs with any per-step togetherness: 348
+per pair over the whole window: relative difference |tick hours - step hours| / step hours: median 0.0215 p90 0.0714 max 1.2222; mean signed 0.0056
+  pairs with >= 10 step-hours: 314, median 0.0193 p90 0.0554
+  total together hours: per-step 20296.4, tick 20264.0, ratio 0.9984
+per pair per sol (pair-sols with step-hours > 0): n 4715, median 0.1111 p90 1.0000
