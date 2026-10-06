@@ -1,5 +1,8 @@
 extends SceneTree
-## Relationships calibration probe (spec docs/specs/relationships.md revision 4, section 13; plan task-4 step 5).
+## Relationships calibration probe (spec docs/specs/relationships.md revision 6, section 13; plan task-4 step 5).
+## Revision 6 adds: newcomer-line sol, late found_friend tail, selectivity ratio and coldest-third mean, population share of
+## friends, diagnostics D1 to D3, and targets R1 to R14 (R9 and R8 are not judged here). `lines_dropped_by_type` is not built,
+## so R14 is judged on the total `lines_dropped`.
 ## READ-ONLY: changes no data file and no sim code. Overrides (the pull runs, --param) go through the SimData cache only
 ## (tests/balance_lib.gd apply_param) and live for the process.
 ##
@@ -209,6 +212,7 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 	var first_line := {}
 	var first_any_rel: Variant = null
 	var first_capped_line: Variant = null
+	var first_newcomer_sol: Variant = null
 	# per-tick observers
 	var seen := {}
 	for b in w.beings:
@@ -242,6 +246,9 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 				if kd != "rel_grief" and (first_capped_line == null or int(e.sol) < int(first_capped_line)):
 					first_capped_line = int(e.sol)
 			k -= 1
+		# --- revision 6 (R12): first logged newcomer line, read from the run-wide counters so log eviction cannot hide it
+		if first_newcomer_sol == null and int(rs.lines.friends) + int(rs.lines.found_friend) > 0:
+			first_newcomer_sol = w.sol()
 		# --- per-tick observers
 		if rel.ticks != last_ticks:
 			last_ticks = rel.ticks
@@ -292,7 +299,7 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 					"pairs": int(rs.pairs), "friend_pairs": int(rs.friend_pairs), "close_pairs": int(rs.close_pairs),
 					"web": float(rs.web_share), "second": float(rs.second_share), "lonely": float(rs.lonely_share),
 					"friends_mean": float(rs.friends_mean), "lines": capped - prev_capped, "grief": grief - prev_grief,
-					"lines_cum": capped, "capped_cum": int(rs.lines_capped), "dropped_cum": int(rs.lines_dropped),
+					"lines_cum": capped, "ff_cum": int(rs.lines.found_friend), "capped_cum": int(rs.lines_capped), "dropped_cum": int(rs.lines_dropped),
 					"stale_cum": int(rs.lines_stale), "pending": rel.pending.size(), "formed_cum": int(rs.friendships_formed),
 					"close_cum": int(rs.close_formed), "log_size": w.log.size()})
 			prev_capped = capped
@@ -323,6 +330,7 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 	sum["first_friendship_sol"] = rs.first_friendship_sol
 	sum["first_mars_born_friendship_sol"] = rs.first_mars_born_friendship_sol
 	sum["first_rel_line_sol"] = first_any_rel
+	sum["first_newcomer_line_sol"] = first_newcomer_sol
 	sum["first_capped_line_sol"] = first_capped_line
 	sum["first_line_by_kind"] = first_line
 	sum["lines"] = rs.lines.duplicate()
@@ -362,6 +370,21 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 		if tot == 0:
 			zero_blocks += 1
 		bi += 5
+	# R13: found_friend lines per 5 sols, sols 150..299, against the mean over sols 20..299 (cum at the sol-N record = lines before sol N)
+	var ff20 := 0
+	var ff150 := 0
+	var ff_end := 0
+	for r in recs:
+		if int(r.sol) == 20:
+			ff20 = int(r.ff_cum)
+		if int(r.sol) == 150:
+			ff150 = int(r.ff_cum)
+		if int(r.sol) == sols:
+			ff_end = int(r.ff_cum)
+	sum["ff_tail_per5"] = 5.0 * float(ff_end - ff150) / maxf(1.0, float(sols - 150))
+	sum["ff_base_per5"] = 5.0 * float(ff_end - ff20) / maxf(1.0, float(sols - 20))
+	sum["ff_tail_n"] = ff_end - ff150
+	sum["ff_base_n"] = ff_end - ff20
 	sum["zero_5sol_blocks"] = zero_blocks
 	sum["blocks_5sol"] = blocks
 	# item 2
@@ -369,7 +392,8 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 	for r in recs:
 		if int(r.sol) in READ_SOLS:
 			reads[str(int(r.sol))] = {"web": r.web, "second": r.second, "lonely": r.lonely, "friends_mean": r.friends_mean,
-					"pop": r.pop, "friend_pairs": r.friend_pairs, "parts3": parts_at.get(int(r.sol), -1)}
+					"pop": r.pop, "friends_pop_share": (float(r.friends_mean) / float(int(r.pop) - 1)) if int(r.pop) > 1 else 0.0,
+					"friend_pairs": r.friend_pairs, "parts3": parts_at.get(int(r.sol), -1)}
 	sum["readings"] = reads
 	# item 3 personality
 	var rows: Array = []
@@ -381,6 +405,17 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 				"awake_ticks": aw, "born_sol": int(seen[b.id].born_sol)})
 	sum["n_alive"] = rows.size()
 	sum["personality"] = _third_split(rows)
+	# R3 window mean and D3 (dead lonely signal)
+	var win := int(SimData.relationships().balance.lonely_window_sols)
+	var lby: Array = rs.lonely_by_sol
+	var tail: Array = lby.slice(maxi(0, lby.size() - win))
+	sum["lonely_window_mean"] = _mean(tail)
+	sum["lonely_window_n"] = tail.size()
+	var dead := not tail.is_empty()
+	for v in tail:
+		if float(v) != 0.0:
+			dead = false
+	sum["d3_lonely_dead"] = dead
 	# item 4 work check: split by work share, then warm vs cold third inside each half
 	var by_work := rows.duplicate()
 	by_work.sort_custom(func(x: Dictionary, y: Dictionary) -> bool:
@@ -429,6 +464,19 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 	sum["together"] = {"friend_pairs": fh.size(), "friend_median": _median(fh), "friend_mean": _mean(fh),
 			"nonfriend_pairs_co_present": nh.size(), "nonfriend_median_co_present": _median(nh),
 			"nonfriend_pairs_all": nh_all.size(), "nonfriend_median_all": _median(nh_all)}
+	# D1: friend pairs among the living over living pairs ever together at a tick (own set, from `together`)
+	var ever := 0
+	var ever_friend := 0
+	for key in together:
+		var lo_id: int = int(key) >> 20
+		var hi_id: int = int(key) & ((1 << 20) - 1)
+		if by_id.has(lo_id) and by_id.has(hi_id):
+			ever += 1
+			if rel.are_friends(lo_id, hi_id):
+				ever_friend += 1
+	var fp_alive := int(rs.friend_pairs)
+	sum["d1"] = {"friend_pairs": fp_alive, "ever_together_pairs": ever, "friend_pairs_ever_together": ever_friend,
+			"share": float(fp_alive) / maxf(1.0, float(ever)), "share_both": float(ever_friend) / maxf(1.0, float(ever))}
 	# item 7: newborns after sol 100
 	var cohort: Array = []
 	for r in rows:
@@ -567,31 +615,58 @@ func _targets(sum: Dictionary) -> Dictionary:
 	var bal: Dictionary = SimData.relationships().balance
 	var t := {}
 	var ffs: Variant = sum.first_friendship_sol
-	t["first_grown_friendship_lt_20"] = [ffs != null and int(ffs) < 20, "first_friendship_sol %s, first_birth_sol %s, first_mars_born_friendship_sol %s" % [
-			str(ffs), str(sum.first_birth_sol), str(sum.first_mars_born_friendship_sol)]]
-	var fl: Variant = sum.first_capped_line_sol
-	t["first_line_lt_30"] = [fl != null and int(fl) < 30, "first relationship line sol %s (first non-grief %s)" % [str(sum.first_rel_line_sol), str(fl)]]
-	var fm: Variant = sum.first_mars_born_friendship_sol
 	var fb: Variant = sum.first_birth_sol
-	t["first_mars_born_friendship_within_15_of_first_birth"] = [fm != null and fb != null and int(fm) - int(fb) <= 15,
-			"first birth %s, first Mars-born friendship %s, gap %s" % [str(fb), str(fm), "-" if (fm == null or fb == null) else str(int(fm) - int(fb))]]
+	var gap: Variant = null
+	if ffs != null and fb != null:
+		gap = int(ffs) - int(fb)
+	t["R1_first_grown_friendship_gap"] = [gap != null and int(gap) <= int(bal.first_friend_gap_sols), "first birth %s, first_friendship_sol %s, gap %s (max %d); first_mars_born_friendship_sol %s" % [
+			str(fb), str(ffs), "-" if gap == null else str(gap), int(bal.first_friend_gap_sols), str(sum.first_mars_born_friendship_sol)]]
+	var fl: Variant = sum.first_capped_line_sol
+	t["R2_first_line_lt_30"] = [fl != null and int(fl) < 30, "first relationship line sol %s (first non-grief %s)" % [str(sum.first_rel_line_sol), str(fl)]]
+	var lw: float = float(sum.lonely_window_mean)
+	t["R3_lonely_window_mean_le_max"] = [lw <= float(bal.lonely_share_max), "mean of last %d readings %.3f (max %.2f)%s" % [
+			int(sum.lonely_window_n), lw, float(bal.lonely_share_max), "; D3 DEAD" if bool(sum.d3_lonely_dead) else ""]]
 	var r300: Dictionary = sum.readings.get(str(int(sum.sols)), {})
-	var lo: float = float(r300.get("lonely", -1.0))
-	t["lonely_share_300_in_0.05_0.35"] = [lo >= 0.05 and lo <= float(bal.lonely_share_max), "lonely_share %.3f" % lo]
 	var fmn: float = float(r300.get("friends_mean", -1.0))
-	t["friends_mean_300_in_1_12"] = [fmn >= float(bal.friends_mean_min) and fmn <= float(bal.friends_mean_max), "friends_mean %.2f" % fmn]
+	t["R4_friends_mean_300_in_band"] = [fmn >= float(bal.friends_mean_min) and fmn <= float(bal.friends_mean_max), "friends_mean %.2f (band %.1f to %.1f)" % [
+			fmn, float(bal.friends_mean_min), float(bal.friends_mean_max)]]
 	var logged := 0
 	for f in CAPPED:
 		logged += int(sum.lines[f])
 	var den := logged + int(sum.lines_dropped)
 	var dr := float(sum.lines_dropped) / maxf(1.0, float(den))
-	var dr2 := float(sum.lines_dropped) / maxf(1.0, float(sum.lines_capped))
-	t["dropped_lt_5pct"] = [dr < 0.05, "dropped %d of %d capped-kind events (logged %d + dropped %d) = %.2f%%; of lines_capped %d = %.2f%%" % [
-			int(sum.lines_dropped), den, logged, int(sum.lines_dropped), 100.0 * dr, int(sum.lines_capped), 100.0 * dr2]]
-	t["lines_ge_1_per_5_sols_20_300"] = [float(sum.mean_lines_per_5sols_20_300) >= 1.0, "%.2f lines per 5 sols (%d lines in sols 20 to 299); zero-line 5-sol blocks %d of %d" % [
+	t["R5_dropped_lt_5pct"] = [dr < 0.05, "dropped %d of %d capped-kind events (logged %d + dropped %d) = %.2f%%" % [
+			int(sum.lines_dropped), den, logged, int(sum.lines_dropped), 100.0 * dr]]
+	t["R6_lines_ge_1_per_5_sols_20_300"] = [float(sum.mean_lines_per_5sols_20_300) >= 1.0, "%.2f lines per 5 sols (%d lines in sols 20 to 299); zero-line 5-sol blocks %d of %d" % [
 			float(sum.mean_lines_per_5sols_20_300), int(sum.lines_20_300), int(sum.zero_5sol_blocks), int(sum.blocks_5sol)]]
 	var pe: Dictionary = sum.personality
-	t["warmest_third_more_friends_than_coldest"] = [float(pe.warm_mean) > float(pe.cold_mean), "warm %.2f vs cold %.2f" % [float(pe.warm_mean), float(pe.cold_mean)]]
+	var wm := float(pe.warm_mean)
+	var cm := float(pe.cold_mean)
+	t["R7_warmest_third_more_friends"] = [wm > cm, "warm %.2f vs cold %.2f" % [wm, cm]]
+	var ratio_ok := true
+	var ratio_txt := ""
+	if cm == 0.0 and wm == 0.0:
+		ratio_txt = "n/a (both means 0)"
+		ratio_ok = false
+	elif cm == 0.0:
+		ratio_txt = "inf"
+	else:
+		ratio_txt = "%.2f" % (wm / cm)
+		ratio_ok = wm / cm >= float(bal.selectivity_ratio_min)
+	t["R10_selectivity_ratio_stop"] = [ratio_ok, "ratio %s = warm %.2f / cold %.2f (min %.1f)" % [ratio_txt, wm, cm, float(bal.selectivity_ratio_min)]]
+	t["R11_coldest_third_mean_stop"] = [cm <= float(bal.cold_third_friends_stop), "coldest-third mean %.2f (max %.1f)" % [cm, float(bal.cold_third_friends_stop)]]
+	var nl: Variant = sum.first_newcomer_line_sol
+	var early := fb != null and int(fb) < 15
+	var nl_ok: bool = nl != null and int(nl) >= int(bal.first_line_min_sol) and int(nl) <= int(bal.first_line_max_sol)
+	var nl_txt := "first newcomer line sol %s (window %d to %d), first birth %s" % [str(nl), int(bal.first_line_min_sol), int(bal.first_line_max_sol), str(fb)]
+	if not nl_ok and nl != null and int(nl) < int(bal.first_line_min_sol) and early:
+		nl_txt += "; lower-bound miss on an early birth (before sol 15): read as an early birth, no key change"
+	t["R12_first_newcomer_line_window"] = [nl_ok, nl_txt]
+	var tail := float(sum.ff_tail_per5)
+	var base := float(sum.ff_base_per5)
+	t["R13_found_friend_late_tail"] = [tail <= float(bal.found_friend_tail_ratio_max) * base, "tail (150..299) %.2f per 5 sols (%d lines) vs mean (20..299) %.2f (%d lines); ratio %s (max %.1f)" % [
+			tail, int(sum.ff_tail_n), base, int(sum.ff_base_n), "inf" if base == 0.0 else "%.2f" % (tail / base), float(bal.found_friend_tail_ratio_max)]]
+	t["R14_no_dropped_friend_events"] = [int(sum.lines_dropped) == 0, "lines_dropped %d (total; lines_dropped_by_type not built)" % int(sum.lines_dropped)]
 	return t
 
 
@@ -609,8 +684,16 @@ func _report(sum: Dictionary) -> Array[String]:
 			int(sum.friendships_renewed), int(sum.close_formed), int(sum.drifted), int(sum.crew_drifted)])
 	o.append("  lines per sol max %d mean(20..300) %.3f; mean per 5 sols (20..300) %.2f; zero 5-sol blocks %d of %d" % [
 			int(sum.max_lines_per_sol), float(sum.mean_lines_per_sol), float(sum.mean_lines_per_5sols_20_300), int(sum.zero_5sol_blocks), int(sum.blocks_5sol)])
+	o.append("  R12 first newcomer line sol %s; R13 found_friend per 5 sols: tail(150..299) %.2f, mean(20..299) %.2f; dropped total %d (by type not built)" % [
+			str(sum.first_newcomer_line_sol), float(sum.ff_tail_per5), float(sum.ff_base_per5), int(sum.lines_dropped)])
 	o.append("item 2: readings %s" % str(sum.readings))
 	o.append("item 3: personality %s" % str(sum.personality))
+	o.append("  selectivity ratio %s, coldest-third mean %.2f" % [_ratio_txt(sum.personality), float(sum.personality.cold_mean)])
+	o.append("item 11: D1 %s; D2 friends_pop_share at 300 %.3f (friends_mean %.2f, pop %s); D3 lonely window mean %.3f over %d readings%s" % [
+			str(sum.d1), float(sum.readings.get(str(int(sum.sols)), {}).get("friends_pop_share", 0.0)), float(sum.readings.get(str(int(sum.sols)), {}).get("friends_mean", 0.0)),
+			str(sum.readings.get(str(int(sum.sols)), {}).get("pop", "-")), float(sum.lonely_window_mean), int(sum.lonely_window_n), " DEAD" if bool(sum.d3_lonely_dead) else ""])
+	if float(sum.d1.share) > float(SimData.relationships().balance.met_friend_share_flag):
+		o.append("  D1 flag HIGH: friend share of acquaintances %.3f above %.2f" % [float(sum.d1.share), float(SimData.relationships().balance.met_friend_share_flag)])
 	o.append("  bond age (all) %s; (grown only) %s" % [str(sum.bond_age), str(sum.bond_age_grown)])
 	o.append("item 4: work check %s" % str(sum.work_check))
 	o.append("item 5: together h/sol %s" % str(sum.together))
@@ -620,6 +703,14 @@ func _report(sum: Dictionary) -> Array[String]:
 	for n in sum.targets:
 		o.append("  target %-52s %s  %s" % [n, "PASS" if sum.targets[n][0] else "FAIL", sum.targets[n][1]])
 	return o
+
+
+static func _ratio_txt(pe: Dictionary) -> String:
+	var wm := float(pe.warm_mean)
+	var cm := float(pe.cold_mean)
+	if cm == 0.0:
+		return "n/a" if wm == 0.0 else "inf"
+	return "%.2f" % (wm / cm)
 
 
 # ------------------------------------------------------------------ replay (balance table hash)
@@ -804,6 +895,20 @@ func _tables(dir: String) -> void:
 					_n(l.friends), _n(l.found_friend), _n(l.close), _n(l.close_crew), _n(l.drifted), _n(l.grief), _n(r.lines_capped), _n(r.lines_dropped),
 					_n(r.lines_stale), _n(r.friendships_formed), _n(r.max_lines_per_sol), float(r.mean_lines_per_sol), float(r.mean_lines_per_5sols_20_300),
 					_n(r.zero_5sol_blocks), _n(r.blocks_5sol)])
+		print("\n**Revision 6: newcomer line, late tail, dropped, D1 to D3**\n")
+		print("| seed | first newcomer line sol | found_friend per 5 sols 150-299 / 20-299 | dropped (total) | selectivity ratio (warm / cold) | coldest-third mean | D1 friend pairs / ever-together pairs = share | D2 friends share of colony at 300 (friends_mean, pop) | D3 lonely window mean (DEAD?) |")
+		print("|---|---|---|---|---|---|---|---|---|")
+		for s in SEEDS:
+			var r: Dictionary = d[s]
+			if r.is_empty():
+				continue
+			var pe: Dictionary = r.personality
+			var d1: Dictionary = r.d1
+			var q3: Dictionary = r.readings.get("300", {})
+			print("| %d | %s | %.2f / %.2f | %s | %s (%.2f / %.2f) | %.2f | %s / %s = %.3f%s | %.3f (%.2f, %s) | %.3f%s |" % [s, _n(r.first_newcomer_line_sol), float(r.ff_tail_per5), float(r.ff_base_per5),
+					_n(r.lines_dropped), _ratio_txt(pe), float(pe.warm_mean), float(pe.cold_mean), float(pe.cold_mean), _n(d1.friend_pairs), _n(d1.ever_together_pairs), float(d1.share),
+					" HIGH" if float(d1.share) > float(SimData.relationships().balance.met_friend_share_flag) else "",
+					float(q3.get("friends_pop_share", 0.0)), float(q3.get("friends_mean", 0.0)), _n(q3.get("pop", 0)), float(r.lonely_window_mean), " DEAD" if bool(r.d3_lonely_dead) else ""])
 		print("\n**Item 2: trust readings (web / second / lonely / friends_mean; parts of size 3+ at the last sol)**\n")
 		print("| seed | " + " | ".join(PackedStringArray(READ_SOLS.map(func(x: int) -> String: return "sol %d" % x))) + " | web parts >= 3 at 300 |")
 		print("|---|" + "---|".repeat(READ_SOLS.size() + 1))

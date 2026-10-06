@@ -51,11 +51,20 @@ func test_t11_is_judged_from_stats_relationships(t) -> void:
 	t.check(str(t11.get("detail", "")) != "", "with a detail line")
 	var rs: Dictionary = r.world.stats.relationships
 	t.eq(rs.web_by_sol.size(), r.world.stats.pop_by_sol.size(), "(1) lists have the length of pop_by_sol")
+	var bal: Dictionary = SimData.load_json("relationships.json").balance
+	var lby: Array = rs.lonely_by_sol
+	var win: Array = lby.slice(maxi(0, lby.size() - int(bal.lonely_window_sols)))
+	var wmean := 0.0
+	for v in win:
+		wmean += float(v)
+	wmean /= maxf(1.0, float(win.size()))
+	# revision 6: (2) is the mean of the last lonely_window_sols readings; (5) no dropped events (total, while
+	# lines_dropped_by_type is not built; then lines_dropped_by_type.friend == 0)
 	var judged_ok: bool = rs.web_by_sol.size() == rs.second_by_sol.size() and rs.web_by_sol.size() == rs.lonely_by_sol.size() \
-			and float(rs.lonely_share) <= float(SimData.load_json("relationships.json").balance.lonely_share_max) \
+			and wmean <= float(bal.lonely_share_max) and int(rs.lines_dropped) == 0 \
 			and float(rs.friends_mean) >= float(SimData.load_json("relationships.json").balance.friends_mean_min) \
 			and float(rs.friends_mean) <= float(SimData.load_json("relationships.json").balance.friends_mean_max) \
 			and rs.first_friendship_sol != null
 	if str(t11.get("verdict", "")) != "N/A":
-		t.eq(t11.get("verdict"), "PASS" if judged_ok else "FAIL", "T11 agrees with the four conditions read from stats.relationships")
+		t.eq(t11.get("verdict"), "PASS" if judged_ok else "FAIL", "T11 agrees with the five conditions read from stats.relationships")
 	t._failures.erase(_abort_msg(t))
