@@ -1,0 +1,7 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+seed 42: web present, age present | drop web da166c4f8b202820 expected da166c4f8b202820 MATCH | drop web and age 02032b2388529913 expected 02032b2388529913 MATCH
+seed 7: web present, age present | drop web 30c53f90949d979b expected 30c53f90949d979b MATCH | drop web and age 830c7d0c441823f5 expected 830c7d0c441823f5 MATCH
+seed 99: web present, age present | drop web 54ad1e15b934bf9a expected 54ad1e15b934bf9a MATCH | drop web and age 0e3e83a7108140ef expected 0e3e83a7108140ef MATCH
+seed 1234: web present, age present | drop web 7052c92936a75157 expected 7052c92936a75157 MATCH | drop web and age bca6eb2ca93ba0c1 expected bca6eb2ca93ba0c1 MATCH
+seed 2026: web present, age present | drop web 67e3dcf057200eb9 expected 67e3dcf057200eb9 MATCH | drop web and age 2645033a417ec400 expected 2645033a417ec400 MATCH

@@ -379,3 +379,203 @@ With both terms the loneliest third is not below shipped on seeds 42, 99, 2026 a
 8. Pull target ("loneliest-third newborn friend count with both terms not below shipped on any seed") fails on 2 of 5 seeds. It compares different colonies (cohort sizes 20 to 115); a paired design (same seed, same cohort definition on births before the runs diverge) or a mean over several seeds would test the pull rather than the divergence.
 9. Section 6 arithmetic: measured median hours together per sol for friend pairs is 1.7 to 2.7 against the 3.5 h balance point the spec gives for a typical pair; friendships here survive largely through the seed bonds and the close-bond decay hold. Worth rechecking section 6's "about 10 h a sol" roommate figure against the 1.9 to 2.7 h measured.
 10. Define "capped-kind events" in the dropped-events target (the probe used logged + dropped; `lines_capped` gives the same verdict, 0 dropped everywhere). The cap is almost never reached (`lines_capped` 0 to 3 per run), so the dropped-events target does not test the cap.
+
+
+## Run 2: room_rate 0.010
+
+One parameter changed: `relationships.grow.room_rate` 0.008 to 0.010 (commit `0f0e1c2`), seeds 42, 7, 99, 1234, 2026, 300 sols, both pulls 0.0. Spec: `docs/specs/relationships.md` revision 6, section 13. Godot 4.5.stable. Raw outputs: `docs/balance/task-4-calibration-data/run2_room_rate_0.008/` (baseline, same probe, same commit state before the parameter commit, `data_hash` `196495a5493a4f78`) and `.../run2_room_rate_0.010/` (the run, `data_hash` `7b7c0e1fabaa9389`, plus replay and hash proof outputs). The 0.008 column was run with the revision 6 probe so the two columns are judged by the same code; its R1 gaps (32, 15, 42, 20, 36) and R12 sols (45, 34, 68, 41, 54) equal the figures the spec quotes for the shipped run.
+
+Commit order followed: (1) `5bb16c1` target keys and test 15; (2) `6018980` probe and parked T11 check; (3) `0f0e1c2` room_rate 0.010 alone; run; then (4) `a2bce5f` revert to 0.008 because stop rule R11 failed (this commit also restores the shipped data, so the branch head has room_rate 0.008). `tests/test_relationships.gd` after each commit: 646 checks 0 failures (commits 1 and 2, and the revert); 652 checks 0 failures at the 0.010 commit (the extra 6 checks are data-dependent test branches, not new tests).
+
+### Commands
+
+```
+godot --headless --path station-zero --script res://tools/relationships_probe.gd -- --seed N --sols 300 --pull shipped --out <abs>/docs/balance/task-4-calibration-data/run2_room_rate_<rate>   (4 processes in parallel, then 2026)
+godot --headless --path station-zero --script res://tools/relationships_probe.gd -- --hash --seed N --sols 300 --pull shipped
+godot --headless --path station-zero --script res://tests/relationships_hash_proof.gd
+godot --headless --path station-zero --script res://tools/relationships_probe.gd -- --tables <dir>
+```
+
+### Stop rules (read first, as stated before the run)
+
+- **R10 (selectivity ratio at or above 2.0): PASS on every seed**, but narrowly on two: 2.13 on seed 7 and 2.13 on seed 1234 (from 2.49 and 2.53 at 0.008).
+- **R11 (coldest-third mean at or under 10.0): FAIL on seed 7: 12.79** (7.54 at 0.008). Seed 1234 is at 9.38 (4.23 at 0.008), under the line by 0.62. The other three seeds are 1.33, 1.96, 1.46.
+- Per the spec, a stop-rule failure means `room_rate` goes back to 0.008 in its own commit. Done (`a2bce5f`). Nothing else was tuned. The spec's next step (the birth-relative restatement of R1, with R12's upper bound reported and not judged) goes through a spec revision before use; it is not applied here.
+
+### Hash proof and replay (the run at 0.010)
+
+- `tests/relationships_hash_proof.gd`, all five seeds: web column present, age column present; "drop web" hash equals the Task 3 hash and "drop web and age" equals the Task 1 hash: **MATCH on all five seeds, both checks** (output in `run2_room_rate_0.010/hash_proof.txt`). The old columns are unchanged by `room_rate`, as the spec predicted; only the `web` column is allowed to change.
+- The `web` column did change: balance table sha256 (first 16 hex) seed 7, 0.008 `a4968e2fcc48ec36`, 0.010 `e4d754a1a06ae50d`. The 0.010 table hashes of the other seeds are `a021ec1b106d4f92` (42), `ef4d53069469e59b` (99), `4ca29abfc48189f8` (1234), `030644a255aaa872` (2026); the 0.008 table hashes were measured for seed 7 only.
+- Replay check (`--hash`, which runs `balance_lib.run` with the same overrides): the end-state digest equals the probe run's digest on all five seeds (42 `29ec479b21604885`, 7 `463a11d21450b816`, 99 `6ea6abc4a5db258e`, 1234 `166b03249593a323`, 2026 `128ceae162494b41`), so the observer did not disturb the run.
+- Paired comparison holds: population, births, deaths and age history are identical between 0.008 and 0.010 on all five seeds (table below). Only relationship stats differ.
+
+### Per-target tables (0.008 baseline -> 0.010; bold is the 0.010 verdict)
+
+
+**R1: first grown friendship within 30 sols of the first birth**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | birth 13, first friendship 45, gap 32 | birth 13, first friendship 35, gap 22 | FAIL -> **PASS** |
+| 7 | birth 19, first friendship 34, gap 15 | birth 19, first friendship 27, gap 8 | PASS -> **PASS** |
+| 99 | birth 26, first friendship 68, gap 42 | birth 26, first friendship 52, gap 26 | FAIL -> **PASS** |
+| 1234 | birth 21, first friendship 41, gap 20 | birth 21, first friendship 39, gap 18 | PASS -> **PASS** |
+| 2026 | birth 18, first friendship 54, gap 36 | birth 18, first friendship 39, gap 21 | FAIL -> **PASS** |
+
+**R2: first relationship line before sol 30**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | sol 21 | sol 22 | PASS -> **PASS** |
+| 7 | sol 16 | sol 14 | PASS -> **PASS** |
+| 99 | sol 19 | sol 5 | PASS -> **PASS** |
+| 1234 | sol 21 | sol 21 | PASS -> **PASS** |
+| 2026 | sol 14 | sol 9 | PASS -> **PASS** |
+
+**R3: lonely_share mean of the last 50 readings at or under 0.35**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 0.307 | 0.163 | PASS -> **PASS** |
+| 7 | 0.039 | 0.023 | PASS -> **PASS** |
+| 99 | 0.313 | 0.145 | PASS -> **PASS** |
+| 1234 | 0.159 | 0.056 | PASS -> **PASS** |
+| 2026 | 0.327 | 0.143 | PASS -> **PASS** |
+
+**R4: friends_mean at sol 300 in 1.0 to 15.0**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 2.01 (pop 164) | 4.48 (pop 164) | PASS -> **PASS** |
+| 7 | 12.67 (pop 72) | 19.67 (pop 72) | PASS -> **FAIL** |
+| 99 | 1.78 (pop 157) | 4.46 (pop 157) | PASS -> **PASS** |
+| 1234 | 7.56 (pop 142) | 15.10 (pop 142) | PASS -> **FAIL** |
+| 2026 | 1.28 (pop 156) | 2.77 (pop 156) | PASS -> **PASS** |
+
+**R5/R14: dropped events (total lines_dropped; by type not built)**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 0 of 115 capped-kind events | 0 of 135 capped-kind events | PASS -> **PASS** |
+| 7 | 0 of 59 capped-kind events | 0 of 58 capped-kind events | PASS -> **PASS** |
+| 99 | 0 of 120 capped-kind events | 0 of 155 capped-kind events | PASS -> **PASS** |
+| 1234 | 0 of 136 capped-kind events | 0 of 148 capped-kind events | PASS -> **PASS** |
+| 2026 | 0 of 113 capped-kind events | 0 of 138 capped-kind events | PASS -> **PASS** |
+
+**R6: capped-kind lines per 5 sols, sols 20 to 299, at least 1.0**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 2.05 | 2.41 | PASS -> **PASS** |
+| 7 | 1.04 | 1.02 | PASS -> **PASS** |
+| 99 | 2.12 | 2.75 | PASS -> **PASS** |
+| 1234 | 2.43 | 2.64 | PASS -> **PASS** |
+| 2026 | 2.00 | 2.45 | PASS -> **PASS** |
+
+**R7: warmest-third mean against coldest-third mean**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 3.91 / 0.59 | 8.24 / 1.33 | PASS -> **PASS** |
+| 7 | 18.75 / 7.54 | 27.21 / 12.79 | PASS -> **PASS** |
+| 99 | 3.06 / 0.63 | 7.56 / 1.96 | PASS -> **PASS** |
+| 1234 | 10.72 / 4.23 | 20.00 / 9.38 | PASS -> **PASS** |
+| 2026 | 1.92 / 0.83 | 4.37 / 1.46 | PASS -> **PASS** |
+
+**R10 (stop rule): selectivity ratio at or above 2.0**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 6.59 | 6.18 | PASS -> **PASS** |
+| 7 | 2.49 | 2.13 | PASS -> **PASS** |
+| 99 | 4.82 | 3.85 | PASS -> **PASS** |
+| 1234 | 2.53 | 2.13 | PASS -> **PASS** |
+| 2026 | 2.33 | 2.99 | PASS -> **PASS** |
+
+**R11 (stop rule): coldest-third mean friends at or under 10.0**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 0.59 | 1.33 | PASS -> **PASS** |
+| 7 | 7.54 | 12.79 | PASS -> **FAIL** |
+| 99 | 0.63 | 1.96 | PASS -> **PASS** |
+| 1234 | 4.23 | 9.38 | PASS -> **PASS** |
+| 2026 | 0.83 | 1.46 | PASS -> **PASS** |
+
+**R12: first newcomer line between sols 25 and 55**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | sol 45 (first birth 13) | sol 35 (first birth 13) | PASS -> **PASS** |
+| 7 | sol 34 (first birth 19) | sol 27 (first birth 19) | PASS -> **PASS** |
+| 99 | sol 68 (first birth 26) | sol 52 (first birth 26) | FAIL -> **PASS** |
+| 1234 | sol 41 (first birth 21) | sol 39 (first birth 21) | PASS -> **PASS** |
+| 2026 | sol 54 (first birth 18) | sol 39 (first birth 18) | PASS -> **PASS** |
+
+**R13: found_friend lines per 5 sols, tail (150 to 299) at or under 1.0 times the mean (20 to 299)**
+
+| seed | 0.008 | 0.010 | verdict 0.008 -> 0.010 |
+|---|---|---|---|
+| 42 | 1.80 / 1.45 = 1.24 | 2.03 / 1.84 = 1.11 | FAIL -> **FAIL** |
+| 7 | 0.33 / 0.75 = 0.44 | 0.23 / 0.77 = 0.30 | PASS -> **PASS** |
+| 99 | 2.37 / 1.64 = 1.44 | 2.80 / 2.29 = 1.23 | FAIL -> **FAIL** |
+| 1234 | 2.30 / 1.86 = 1.24 | 2.10 / 2.09 = 1.01 | FAIL -> **FAIL** |
+| 2026 | 2.10 / 1.59 = 1.32 | 2.37 / 2.04 = 1.16 | FAIL -> **FAIL** |
+
+**Diagnostics D1 to D3 (reported, judge nothing)**
+
+| seed | D1 share 0.008 | D1 share 0.010 | D2 friends share of colony at 300, 0.008 | D2, 0.010 | D3 dead? 0.008 / 0.010 |
+|---|---|---|---|---|---|
+| 42 | 0.013 (165 / 12733) | 0.029 (367 / 12733) | 0.012 | 0.027 | no / no |
+| 7 | 0.236 (456 / 1936) | 0.366 (708 / 1936) HIGH | 0.178 | 0.277 | no / no |
+| 99 | 0.012 (140 / 11658) | 0.030 (350 / 11658) | 0.011 | 0.029 | no / no |
+| 1234 | 0.054 (537 / 9996) | 0.107 (1072 / 9996) | 0.054 | 0.107 | no / no |
+| 2026 | 0.009 (100 / 11129) | 0.019 (216 / 11129) | 0.008 | 0.018 | no / no |
+
+**Item 8 (b): kin newborns' median sols from birth to first grown friendship (the birth-relative R1 restatement of the stop-rule branch)**
+
+| seed | 0.008 (resolved / unresolved) | 0.010 (resolved / unresolved) |
+|---|---|---|
+| 42 | 28.0 (128 / 39) | 18.5 (138 / 29) |
+| 7 | 25.0 (45 / 20) | 14.5 (46 / 19) |
+| 99 | 29.0 (133 / 39) | 19.0 (154 / 18) |
+| 1234 | 26.0 (131 / 4) | 17.5 (134 / 1) |
+| 2026 | 29.0 (120 / 34) | 21.0 (133 / 21) |
+
+**Paired check (population, births, deaths, ages identical between the two runs)**
+
+| seed | pop end | births | deaths | age history identical | digest 0.008 | digest 0.010 (relationship stats differ) |
+|---|---|---|---|---|---|---|
+| 42 | 164 / 164 | 167 / 167 | 10 / 10 | True | 4df486651b1ff854 | 29ec479b21604885 |
+| 7 | 72 / 72 | 65 / 65 | 0 / 0 | True | 6aa1d8b5a65ebd23 | 463a11d21450b816 |
+| 99 | 157 / 157 | 172 / 172 | 22 / 22 | True | c69ef2f856a2f69c | 6ea6abc4a5db258e |
+| 1234 | 142 / 142 | 135 / 135 | 0 / 0 | True | 08808dea1ea565d5 | 166b03249593a323 |
+| 2026 | 156 / 156 | 154 / 154 | 5 / 5 | True | 0cb6d4ff44a214b9 | 128ceae162494b41 |
+
+**Friends_mean over time at 0.010 (sols 30, 60, 100, 150, 200, 300), for the reading of R4**
+
+| seed | 0.008 | 0.010 |
+|---|---|---|
+| 42 | 3.05 / 2.15 / 1.86 / 1.78 / 1.57 / 2.01 | 3.37 / 3.11 / 3.02 / 3.46 / 3.46 / 4.48 |
+| 7 | 4.17 / 2.55 / 3.25 / 4.30 / 9.96 / 12.67 | 4.33 / 3.45 / 5.69 / 7.57 / 14.85 / 19.67 |
+| 99 | 3.80 / 2.00 / 1.61 / 1.15 / 1.33 / 1.78 | 4.20 / 2.14 / 2.58 / 2.10 / 2.44 / 4.46 |
+| 1234 | 4.00 / 2.07 / 2.25 / 2.43 / 3.88 / 7.56 | 4.00 / 2.52 / 3.82 / 4.18 / 7.52 / 15.10 |
+| 2026 | 4.33 / 2.15 / 1.45 / 1.56 / 1.94 / 1.28 | 4.33 / 2.77 / 1.83 / 2.54 / 3.89 / 2.77 |
+
+
+### Not measured in this run
+
+- Item 8 (a) unmoored newborns and (c) the zero-friend share of newborns after sol 100 as a labelled item are not in the revision 6 probe commit list; the probe still prints the post-sol-100 cohort (`newborn_after_100` in the JSON; zero-friend newborns at 0.010: seed 42 18 of 111, seed 7 0 of 40, seed 99 10 of 95, seed 1234 5 of 75; seed 2026 in the JSON).
+- Tick cost and the view-step frame measurement (R8) were not re-run; stored pair counts at pop above 120 were not recorded in this run. Pull runs (R9) were not part of it.
+- `lines_dropped_by_type` is not built (the spec says it is built with the next sim code change); R14 is judged on the total `lines_dropped`, which is 0 on all ten runs.
+- The T11 balance check (5) and the lonely window mean are written into `tests/deferred/test_relationships_balance.gd.txt`, because `balance_lib.gd` has no T11 yet (parked until step 6); nothing was added to `balance_lib.gd`.
+
+### Facts-only recommendations for the lead
+
+1. Stop rule R11 failed on seed 7 (12.79 over 10.0), so the spec's branch applies: `room_rate` is 0.008 on the branch head. R10 held on all seeds (minimum 2.13).
+2. At 0.010, R1 passes on all five seeds (gaps 22, 8, 26, 18, 21; seed 99 narrowest), R3 passes on all five (window means 0.163, 0.023, 0.145, 0.056, 0.143), R12 passes on all five (sols 35, 27, 52, 39, 39). At 0.008 R1 fails on 3 seeds (42, 99, 2026) and R12 on seed 99.
+3. At 0.010 R4 fails on seed 7 (19.67) and seed 1234 (15.10, 0.10 over the 15.0 bound); seed 7 is also flagged D1 HIGH (0.366 of ever-together pairs are friends, flag 0.35) and its friends share of the colony is 0.277 (0.178 at 0.008). Seed 7 is the small colony (pop 72); the other four have pop 142 to 164 and friends share of colony 0.018 to 0.107.
+4. R13 (late tail) fails on 4 of 5 seeds at both rates (0.010 ratios 1.11, 0.30, 1.23, 1.01, 1.16; 0.008 ratios 1.24, 0.44, 1.44, 1.24, 1.32). The ratio is lower at 0.010 than at 0.008 on all five seeds; seed 1234 is 1.01 against a max of 1.0. The spec's stated remedy for R13 is the "new" bar in 5.6, not `room_rate`.
+5. R14 and R5 hold (0 dropped on all runs). D3 never fires (lonely signal is not dead on any seed at either rate). Selectivity ratios fell on 4 seeds and rose on seed 2026 (2.33 to 2.99).
+6. The birth-relative restatement the spec names for this branch (kin newborns' median sols from birth to first grown friendship, at or under 30) measures 28.0, 25.0, 29.0, 26.0, 29.0 at 0.008 (PASS on all five, margins 1 to 5 sols) and 18.5, 14.5, 19.0, 17.5, 21.0 at 0.010.
+7. The spec's rule for the run after (room_rate 0.009 if R1 and R3 pass and only seed 7 breaks R4) is conditional on the stop rules holding; they did not, so it does not apply as written. Values between 0.008 and 0.010 were not measured.

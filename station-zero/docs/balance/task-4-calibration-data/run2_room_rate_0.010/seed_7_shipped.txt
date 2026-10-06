@@ -1,0 +1,31 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# relationships probe: seed=7 sols=300 pull=shipped data_hash=7b7c0e1fabaa9389 digest=463a11d21450b816 wall 73.7 s
+pop_end 72 births 65 first_birth_sol 19 deaths { "air": 0, "thirst": 0, "hunger": 0, "suffocated_outside": 0, "other": 0 } age_history [{ "sol": 0, "age": "landing", "how": "landing", "cause": "" }, { "sol": 58, "age": "settlement", "how": "settled", "cause": "" }]
+item 1: first_friendship_sol 27, first_mars_born_friendship_sol 27, first relationship line 14 (non-grief 14), first line by kind { "rel_close_crew": 14, "rel_drifted": 24, "rel_friends": 27, "rel_found_friend": 38, "rel_close": 77 }
+  lines { "friends": 5, "found_friend": 43, "close": 5, "close_crew": 1, "drifted": 4, "grief": 0 }; capped 0 dropped 0 stale 0; formed 1284 renewed 21 close 252 drifted 1 crew_drifted 22
+  lines per sol max 2 mean(20..300) 0.204; mean per 5 sols (20..300) 1.02; zero 5-sol blocks 27 of 56
+  R12 first newcomer line sol 27; R13 found_friend per 5 sols: tail(150..299) 0.23, mean(20..299) 0.77; dropped total 0 (by type not built)
+item 2: readings { "30": { "web": 1.0, "second": 0.0, "lonely": 0.0, "friends_mean": 4.33333333333333, "pop": 12, "friends_pop_share": 0.39393939393939, "friend_pairs": 26, "parts3": 1 }, "60": { "web": 0.90909090909091, "second": 0.09090909090909, "lonely": 0.0, "friends_mean": 3.45454545454545, "pop": 22, "friends_pop_share": 0.16450216450216, "friend_pairs": 38, "parts3": 1 }, "100": { "web": 1.0, "second": 0.0, "lonely": 0.0, "friends_mean": 5.6875, "pop": 32, "friends_pop_share": 0.18346774193548, "friend_pairs": 91, "parts3": 1 }, "150": { "web": 0.95744680851064, "second": 0.0, "lonely": 0.04255319148936, "friends_mean": 7.57446808510638, "pop": 47, "friends_pop_share": 0.16466234967623, "friend_pairs": 178, "parts3": 1 }, "200": { "web": 0.97872340425532, "second": 0.0, "lonely": 0.02127659574468, "friends_mean": 14.8510638297872, "pop": 47, "friends_pop_share": 0.32284921369103, "friend_pairs": 349, "parts3": 1 }, "300": { "web": 0.98611111111111, "second": 0.0, "lonely": 0.01388888888889, "friends_mean": 19.6666666666667, "pop": 72, "friends_pop_share": 0.27699530516432, "friend_pairs": 708, "parts3": 1 } }
+item 3: personality { "n": 72, "third": 24, "warm_mean": 27.2083333333333, "cold_mean": 12.7916666666667, "warm_warmth": 0.49381944444444, "cold_warmth": 0.305 }
+  selectivity ratio 2.13, coldest-third mean 12.79
+item 11: D1 { "friend_pairs": 708, "ever_together_pairs": 1936, "friend_pairs_ever_together": 708, "share": 0.36570247933884, "share_both": 0.36570247933884 }; D2 friends_pop_share at 300 0.277 (friends_mean 19.67, pop 72); D3 lonely window mean 0.023 over 50 readings
+  D1 flag HIGH: friend share of acquaintances 0.366 above 0.35
+  bond age (all) { "n": 708, "third": 236, "restless_top_age": 64.7584745762712, "restless_bottom_age": 81.6101694915254, "restless_top": 0.42186440677966, "restless_bottom": 0.28456271186441 }; (grown only) { "n": 668, "third": 222, "restless_top_age": 58.9009009009009, "restless_bottom_age": 80.4099099099099, "restless_top": 0.41657747747748, "restless_bottom": 0.28363063063063 }
+item 4: work check { "top_half": { "n": 36, "third": 12, "warm_mean": 23.5833333333333, "cold_mean": 15.25, "warm_warmth": 0.46041666666667, "cold_warmth": 0.279 }, "bottom_half": { "n": 36, "third": 12, "warm_mean": 24.6666666666667, "cold_mean": 10.5833333333333, "warm_warmth": 0.52522222222222, "cold_warmth": 0.333 }, "top_share_mean": 0.03733093248953, "bottom_share_mean": 0.01173965518822 }
+item 5: together h/sol { "friend_pairs": 708, "friend_median": 2.43753956240539, "friend_mean": 2.51164693276878, "nonfriend_pairs_co_present": 1228, "nonfriend_median_co_present": 1.55777777777778, "nonfriend_pairs_all": 1848, "nonfriend_median_all": 1.0 }
+item 7: newborns after sol 100 { "n": 40, "mean_friends": 14.375, "loneliest_third_n": 13, "loneliest_third_mean": 1.0, "zero_friends": 0 }
+item 8: kinless { "births": 65, "kinless": 0, "kin": 65, "kinless_share": 0.0, "kinless_median_sols": -1.0, "kinless_resolved": 0, "kinless_unresolved": 0, "kin_median_sols": 14.5, "kin_resolved": 46, "kin_unresolved": 19 }
+item 10: log { "total_entries": 453, "rel_entries": 58, "rel_share": 0.1280353200883, "rel_capped_kinds": 58, "by_kind": { "founders_landed": 1, "age_began": 2, "ground_broken": 20, "waiting_for_builders": 28, "exhausted": 242, "building_done": 19, "rel_close_crew": 1, "born": 65, "rel_drifted": 4, "rel_friends": 5, "rel_found_friend": 43, "rel_close": 5, "ice_found": 9, "ice_dry": 9 }, "log_size_end": 453, "oldest_sol_end": 0 }
+  target R1_first_grown_friendship_gap                        PASS  first birth 19, first_friendship_sol 27, gap 8 (max 30); first_mars_born_friendship_sol 27
+  target R2_first_line_lt_30                                  PASS  first relationship line sol 14 (first non-grief 14)
+  target R3_lonely_window_mean_le_max                         PASS  mean of last 50 readings 0.023 (max 0.35)
+  target R4_friends_mean_300_in_band                          FAIL  friends_mean 19.67 (band 1.0 to 15.0)
+  target R5_dropped_lt_5pct                                   PASS  dropped 0 of 58 capped-kind events (logged 58 + dropped 0) = 0.00%
+  target R6_lines_ge_1_per_5_sols_20_300                      PASS  1.02 lines per 5 sols (57 lines in sols 20 to 299); zero-line 5-sol blocks 27 of 56
+  target R7_warmest_third_more_friends                        PASS  warm 27.21 vs cold 12.79
+  target R10_selectivity_ratio_stop                           PASS  ratio 2.13 = warm 27.21 / cold 12.79 (min 2.0)
+  target R11_coldest_third_mean_stop                          FAIL  coldest-third mean 12.79 (max 10.0)
+  target R12_first_newcomer_line_window                       PASS  first newcomer line sol 27 (window 25 to 55), first birth 19
+  target R13_found_friend_late_tail                           PASS  tail (150..299) 0.23 per 5 sols (7 lines) vs mean (20..299) 0.77 (43 lines); ratio 0.30 (max 1.0)
+  target R14_no_dropped_friend_events                         PASS  lines_dropped 0 (total; lines_dropped_by_type not built)
