@@ -1922,3 +1922,318 @@ func test_t09e_the_again_text_and_the_reraise_clock(t) -> void:
 	_meet(wc, 60, [vc.yes[0], vc.yes[1], vc.yes[2], vc.neu[0], vc.neu[1]])
 	t.check(wc.council.open != null, "with the hard share under 0.5 it is raised again")
 	_end(t)
+
+
+# ================================================================ 10. votes
+
+func _being(w, id: int) -> Variant:
+	for b in w.beings:
+		if b.id == id:
+			return b
+	return null
+
+
+func _set_traits(w, id: int, traits: Dictionary) -> void:
+	var b = _being(w, id)
+	for k in traits:
+		b.persona.traits[k] = traits[k]
+
+
+## The meeting that raises the dome (sol 45, the room is the first `k` ids of `room_ids`), then nothing else.
+func _raise(w, room_ids: Array) -> void:
+	_meet(w, 45, room_ids)
+
+
+func _open(w) -> Dictionary:
+	return w.council.open if w.council.open != null else {}
+
+
+func test_t10a_counts_are_exact_at_the_carry_and_reject_lines(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(6, 4, 0)
+	var w = v.w
+	_raise(w, v.yes)
+	t.eq(_kinds(w), ["council_proposal"], "staging: raised")
+	_meet(w, 50, v.yes)
+	t.eq(int(_open(w).get("carry_run", -1)), 1, "6 of 10 is 0.6: the vote carries")
+	t.eq(int(_open(w).get("reject_run", -1)), 0, "and does not reject")
+	t.eq(int(_open(w).get("votes", -1)), 1, "one vote counted")
+	var v2 := _vw(5, 5, 0)
+	var w2 = v2.w
+	_raise(w2, v2.yes)
+	_meet(w2, 50, v2.yes)
+	t.eq(int(_open(w2).get("carry_run", -1)), 0, "5 of 10 does not carry")
+	t.eq(int(_open(w2).get("reject_run", -1)), 1, "and 5 no of 10 is 0.5: it rejects")
+	var rec: Dictionary = _cs(w2).session_log.back()
+	t.check(int(rec.yes) == 5 and int(rec.no) == 5, "session_log holds the counts")
+	_end(t)
+
+
+func test_t10b_a_carrying_vote_then_a_failing_one_resets_the_run(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(6, 4, 0)
+	var w = v.w
+	_raise(w, v.yes)
+	_meet(w, 50, v.yes)
+	t.eq(int(_open(w).carry_run), 1, "run 1")
+	_set_traits(w, v.yes[0], {"drive": 0.5, "curiosity": 0.5, "restless": 0.5, "steady": 0.9, "care": 0.9})
+	_meet(w, 55, v.yes)
+	t.eq(int(_open(w).carry_run), 0, "five yes of ten: the run is reset")
+	t.check(not w.council.pledged.has("dome"), "no pledge")
+	_set_traits(w, v.yes[0], {"drive": 0.9, "curiosity": 0.9, "restless": 0.9, "steady": 0.5, "care": 0.5})
+	_meet(w, 60, v.yes)
+	t.eq(int(_open(w).carry_run), 1, "carrying again: run 1")
+	t.check(not w.council.pledged.has("dome"), "still no pledge")
+	_meet(w, 65, v.yes)
+	t.check(w.council.pledged.has("dome") and int(w.council.pledged["dome"]) == 65, "two in a row pledge, at sol 65")
+	_end(t)
+
+
+func test_t10c_two_rejecting_votes_set_the_dome_aside(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(2, 8, 0)
+	var w = v.w
+	_raise(w, v.all.slice(0, 5))
+	_meet(w, 50, v.all.slice(0, 5))
+	t.check(w.council.open != null, "one rejecting vote is not enough")
+	_meet(w, 55, v.all.slice(0, 5))
+	t.check(w.council.open == null, "two close it")
+	t.eq(_kinds(w), ["council_proposal", "council_set_aside"], "the plain set-aside line")
+	t.eq(str(_last_line(w).text), _fmt(_dt("set_aside"), {"b": "N%d" % v.no[0]}), "naming the no speaker (equal stance, no friends: the lowest id)")
+	t.eq(int(_last_line(w).being_id), int(v.no[0]), "being_id is the no speaker")
+	var p: Dictionary = _cs(w).proposals[0]
+	t.check(str(p.outcome) == "set_aside" and int(p.outcome_sol) == 55, "proposals: outcome set_aside at 55")
+	t.check(int(w.council.set_aside["dome"].sol) == 55 and not bool(w.council.set_aside["dome"].hard), "set_aside record, not hard")
+	_end(t)
+
+
+func _hard_set_aside(entries: Array) -> Dictionary:
+	var v := _vw(2, 8, 0)
+	var w = v.w
+	_raise(w, v.all.slice(0, 5))
+	w.council.hard_win = entries.duplicate(true)
+	_meet(w, 50, v.all.slice(0, 5))
+	w.council.hard_win = entries.duplicate(true)
+	_meet(w, 55, v.all.slice(0, 5))
+	return {"w": w, "v": v}
+
+
+func test_t10d_the_hard_set_aside_names_the_clause(t) -> void:
+	if not _api(t):
+		return
+	var r := _hard_set_aside(_hard_entries(9, 0))
+	var w = r.w
+	t.eq(_kinds(w), ["council_proposal", "council_set_aside_hard"], "hard share 0.9: the hard text")
+	t.eq(str(_last_line(w).text), _fmt(_dt("set_aside_hard"), {"clause": _clause("ice")}), "with the ice phrase")
+	t.check(bool(w.council.set_aside["dome"].hard), "the record is hard")
+	t.check(bool(_cs(w).proposals[0].hard), "and so is the proposals entry")
+	# a single hard sol in a calm window gives the plain text
+	var r2 := _hard_set_aside(_hard_entries(1, 8))
+	t.eq(_kinds(r2.w), ["council_proposal", "council_set_aside"], "one hard sol of ten: the plain text, naming the no speaker")
+	# clause choice: the failing clause with the most sols; ties ice, air, food
+	var air: Array = []
+	for i in 5:
+		air.append({"hard": true, "ice": false, "air": true, "food": false})
+	var mixed: Array = _hard_entries(4, 0) + air
+	t.eq(str(_last_line(_hard_set_aside(mixed).w).text), _fmt(_dt("set_aside_hard"), {"clause": _clause("air")}), "air failing on 5 sols beats ice on 4")
+	var food: Array = []
+	for i in 6:
+		food.append({"hard": true, "ice": false, "air": false, "food": true})
+	t.eq(str(_last_line(_hard_set_aside(food).w).text), _fmt(_dt("set_aside_hard"), {"clause": _clause("food")}), "food alone")
+	var tie: Array = _hard_entries(3, 0) + air.slice(0, 3) + food.slice(0, 3)
+	t.eq(str(_last_line(_hard_set_aside(tie).w).text), _fmt(_dt("set_aside_hard"), {"clause": _clause("ice")}), "a three-way tie: ice")
+	var tie2: Array = air.slice(0, 3) + food.slice(0, 3)
+	t.eq(str(_last_line(_hard_set_aside(tie2).w).text), _fmt(_dt("set_aside_hard"), {"clause": _clause("air")}), "air and food tied: air")
+	_end(t)
+
+
+## A divided council: 3 yes (ids 1 to 3), 3 no (4 to 6) and 4 undecided; runs the raise (45) and the first vote (50).
+func _divided_world(edits: Dictionary = {}) -> Dictionary:
+	var v := _vw(3, 3, 4, edits)
+	_raise(v.w, v.yes)
+	return v
+
+
+func test_t10e_twelve_open_votes_let_the_dome_rest(t) -> void:
+	if not _api(t):
+		return
+	var v := _divided_world()
+	var w = v.w
+	for i in 11:
+		_meet(w, 50 + 5 * i, v.yes)
+	t.check(w.council.open != null and int(w.council.open.votes) == 11, "after 11 votes the talk goes on")
+	t.eq(_cs(w).proposals[0].outcome, null, "no outcome yet")
+	_meet(w, 105, v.yes)
+	t.check(w.council.open == null, "the 12th vote closes it")
+	t.eq(str(_last_line(w).kind), "council_set_aside_long", "with the rest line")
+	t.eq(str(_last_line(w).text), _dt("set_aside_long"), "its text")
+	t.check(int(w.council.set_aside["dome"].sol) == 105 and not bool(w.council.set_aside["dome"].hard), "set_aside record at 105, not hard")
+	t.eq(str(_cs(w).proposals[0].outcome), "set_aside", "outcome set_aside")
+	var nd := 0
+	for k in _kinds(w):
+		if k == "council_divided":
+			nd += 1
+	t.eq(nd, 1, "the divided line was offered once in the proposal")
+	_end(t)
+
+
+func test_t10f_divided_names_both_speakers_with_their_reasons(t) -> void:
+	if not _api(t):
+		return
+	var v := _divided_world()
+	var w = v.w
+	_friend(w, v.yes[0], v.yes[1])
+	_friend(w, v.yes[1], v.yes[2])
+	_friend(w, v.no[0], v.no[1])
+	_friend(w, v.no[1], v.no[2])
+	_meet(w, 50, v.yes)
+	t.eq(_kinds(w), ["council_proposal", "council_divided"], "the divided line at the first vote")
+	var e: Dictionary = _last_line(w)
+	t.eq(int(e.being_id), int(v.yes[1]), "the yes speaker has the most friends inside the yes camp")
+	t.eq(int(e.other_id), int(v.no[1]), "the no speaker likewise")
+	var want := _fmt(_dt("divided"), {"a": "N%d" % v.yes[1], "b": "N%d" % v.no[1],
+			"ra": _yes_reason("personal", "driven"), "rb": _no_reason("personal", "nurturing")})
+	t.eq(str(e.text), want, "text: personal reasons with the top adjective of each camp (ties in persona.dims order)")
+	_meet(w, 55, v.yes)
+	t.eq(_kinds(w), ["council_proposal", "council_divided"], "offered once")
+	_end(t)
+
+
+func _divided_names(w, v: Dictionary) -> Array:
+	_meet(w, 50, v.yes)
+	var e := _last_line(w)
+	if str(e.get("kind", "")) != "council_divided":
+		return [-1, -1]
+	return [int(e.being_id), int(e.other_id)]
+
+
+func test_t10g_speaker_ties(t) -> void:
+	if not _api(t):
+		return
+	var v := _divided_world()
+	t.eq(_divided_names(v.w, v), [v.yes[0], v.no[0]], "all equal, no friends: the lower id in each camp")
+	var v2 := _divided_world()
+	_set_traits(v2.w, v2.yes[2], {"drive": 1.0, "curiosity": 1.0, "restless": 1.0})
+	_set_traits(v2.w, v2.no[2], {"steady": 1.0, "care": 1.0})
+	t.eq(_divided_names(v2.w, v2), [v2.yes[2], v2.no[2]], "equal friend counts: the higher yes stance, the lower no stance")
+	var v3 := _divided_world()
+	_set_traits(v3.w, v3.yes[2], {"drive": 1.0, "curiosity": 1.0, "restless": 1.0})
+	_set_traits(v3.w, v3.no[2], {"steady": 1.0, "care": 1.0})
+	_friend(v3.w, v3.yes[0], v3.yes[1])
+	_friend(v3.w, v3.no[0], v3.no[1])
+	t.eq(_divided_names(v3.w, v3), [v3.yes[0], v3.no[0]], "the friend count in the camp beats stance; the tie between the two friends goes to the lower id")
+	_end(t)
+
+
+func test_t10h_the_no_reason_is_the_hard_clause_when_hardship_dominates(t) -> void:
+	if not _api(t):
+		return
+	var v := _divided_world({"dome.lean.base": 0.3})
+	var w = v.w
+	w.council.hard_win = _hard_entries(9, 0)
+	_meet(w, 50, v.yes)
+	var e: Dictionary = _last_line(w)
+	t.eq(str(e.kind), "council_divided", "staging: a divided line at the first vote")
+	t.eq(int(e.other_id), int(v.no[0]), "the no speaker")
+	var want := _fmt(_dt("divided"), {"a": "N%d" % v.yes[0], "b": "N%d" % v.no[0],
+			"ra": _yes_reason("personal", "driven"), "rb": _no_reason("hard", "", _clause("ice"))})
+	t.eq(str(e.text), want, "the no speaker's largest term is hardship: the clause phrase")
+	_end(t)
+
+
+func test_t10i_the_yes_reason_is_size_when_size_is_the_largest_term(t) -> void:
+	if not _api(t):
+		return
+	var w = _world()
+	var neu := _voices(w, 89)
+	var no := _voices(w, 31, NO)
+	var kid = _voice(w, {}, neu[0], 40.0)  # born at sol 40: a living child of the first voice, not a voice itself
+	_calm(w)
+	_settle(w, 10)
+	_council(w, 40)
+	_raise(w, neu.slice(0, 6))
+	t.eq(_kinds(w), ["council_proposal"], "staging: raised by the voice with the child (the highest stance)")
+	t.eq(int(_last_line(w).being_id), int(neu[0]), "staging: the proposer")
+	_meet(w, 50, neu.slice(0, 6))
+	var e: Dictionary = _last_line(w)
+	t.eq(str(e.kind), "council_divided", "89 yes and 31 no of 120: divided")
+	t.eq(int(e.being_id), int(neu[0]), "the yes speaker")
+	t.eq(int(e.other_id), int(no[0]), "the no speaker")
+	t.eq(str(e.text), _fmt(_dt("divided"), {"a": "N%d" % neu[0], "b": "N%d" % no[0],
+			"ra": _yes_reason("size"), "rb": _no_reason("personal", "nurturing")}),
+			"size and child equal at 0.15: the tie order gives size")
+	_end(t)
+
+
+func _friends_world(strong_friends_lean_negative: bool) -> Dictionary:
+	var w = _world()
+	var s = _voice(w, {"steady": 0.8, "care": 0.8} if strong_friends_lean_negative else {})
+	var f1 = _voice(w, {"drive": 1.0, "curiosity": 1.0, "restless": 1.0, "steady": 0.0, "care": 0.0} if strong_friends_lean_negative else YES)
+	var f2 = _voice(w, {"drive": 1.0, "curiosity": 1.0, "restless": 1.0, "steady": 0.0, "care": 0.0} if strong_friends_lean_negative else YES)
+	var no := _voices(w, 3, NO)
+	var neu := _voices(w, 4)
+	_calm(w)
+	_settle(w, 10)
+	_council(w, 40)
+	_friend(w, s.id, f1.id)
+	_friend(w, s.id, f2.id)
+	return {"w": w, "s": s.id, "f": [f1.id, f2.id], "no": no, "neu": neu}
+
+
+func test_t10j_friends_is_the_reason_inside_the_band_and_across_zero(t) -> void:
+	if not _api(t):
+		return
+	# a lean of exactly yes_above is inside the band: stance comes from friends
+	var r := _friends_world(false)
+	var w = r.w
+	_ccfg(w).dome.lean.base = 0.1
+	var room: Array = [r.f[0], r.f[1], r.no[0], r.no[1], r.no[2]]
+	_raise(w, room)
+	t.eq(_kinds(w), ["council_proposal"], "staging: raised")
+	_meet(w, 50, room)
+	var e: Dictionary = _last_line(w)
+	t.eq(str(e.kind), "council_divided", "staging: divided at the first vote")
+	t.eq(int(e.being_id), int(r.s), "staging: the voice with two friends in the yes camp speaks")
+	t.near(float(w.council.lean_of(r.s)), 0.1, CMP, "staging: its lean is exactly yes_above")
+	t.check(float(w.council.stance_of(r.s)) > 0.1, "staging: its stance is yes")
+	t.eq(str(e.text), _fmt(_dt("divided"), {"a": "N%d" % r.s, "b": "N%d" % r.no[0],
+			"ra": _yes_reason("friends"), "rb": _no_reason("personal", "nurturing")}), "'as their friends do'")
+	# a negative lean with a positive stance
+	var r2 := _friends_world(true)
+	var w2 = r2.w
+	var room2: Array = [r2.f[0], r2.f[1], r2.neu[0], r2.neu[1], r2.neu[2]]
+	_raise(w2, room2)
+	t.eq(_kinds(w2), ["council_proposal"], "staging 2: raised")
+	_meet(w2, 50, room2)
+	t.check(not ("council_divided" in _kinds(w2)), "staging 2: not divided yet at 50 (the speaker's friends have not moved it past yes)")
+	_meet(w2, 55, room2)
+	t.check(float(w2.council.lean_of(r2.s)) < float(_ccfg(w2).support.no_below), "staging 2: lean below the band")
+	t.check(float(w2.council.stance_of(r2.s)) > float(_ccfg(w2).support.yes_above), "staging 2: stance above it")
+	var e2: Dictionary = _last_line(w2)
+	t.eq(str(e2.kind), "council_divided", "divided at the second vote")
+	t.eq(int(e2.being_id), int(r2.s), "by the voice whose friends carried it")
+	t.eq(str(e2.text), _fmt(_dt("divided"), {"a": "N%d" % r2.s, "b": "N%d" % r2.no[0],
+			"ra": _yes_reason("friends"), "rb": _no_reason("personal", "nurturing")}), "the sign differs: 'as their friends do'")
+	_end(t)
+
+
+func test_t10k_the_personal_fallback_when_no_term_is_positive(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(0, 0, 10, {"dome.lean.base": 0.3})
+	var w = v.w
+	_raise(w, v.all.slice(0, 5))
+	t.eq(_kinds(w), ["council_proposal"], "staging: raised")
+	_meet(w, 50, v.all.slice(0, 5), GREEN)
+	t.eq(int(_open(w).get("carry_run", 0)), 1, "staging: a carrying vote")
+	_meet(w, 55, v.all.slice(0, 5), GREEN)
+	t.check(w.council.pledged.has("dome"), "pledged")
+	var e: Dictionary = _last_line(w)
+	t.eq(str(e.kind), "council_pledge", "the pledge line")
+	t.eq(str(e.text), _fmt(_dt("pledge"), {"a": "N%d" % v.all[0], "place": _place("green_room"), "why": _dt("pledge_why_personal")}),
+			"every term is zero, the base lifts the lean: the reason is personal")
+	t.eq(str(_cs(w).proposals[0].reason), "personal", "stored in the proposals entry")
+	_end(t)
