@@ -2723,3 +2723,484 @@ func test_t15b_a_council_log_line_is_the_data_text_exactly(t) -> void:
 	_meet(w, 45, v.all.slice(0, 6))
 	t.eq(str(_last_line(w).text), _tx("quiet"), "a Council line is the data text exactly")
 	_end(t)
+
+
+# ================================================================ 16. purity
+
+func _run_sols(w, n: int) -> void:
+	while w.sol() < n:
+		w.step()
+
+
+func _override_entry(w) -> void:
+	_ccfg(w).entry.trust_share_min = 0.0
+	_ccfg(w).entry.chosen_share_min = 0.0
+	_ccfg(w).entry.voices_min = 1
+
+
+## Three 160-sol seed-42 worlds shared by tests 16 and 22: [module on, module on (a twin), module off from creation]. The
+## staged override is applied to all three right after creation.
+func _pure_worlds() -> Array:
+	if _pw == null:
+		var a = SimWorld.new(42)
+		var b = SimWorld.new(42)
+		var c = SimWorld.new(42)
+		c.council_enabled = false
+		for w in [a, b, c]:
+			_override_entry(w)
+			_run_sols(w, 160)
+		_pw = [a, b, c]
+	return _pw
+
+
+func _snap(w) -> Dictionary:
+	var be: Array = []
+	for b in w.beings:
+		be.append([b.id, b.building_id, b.state, b.energy])
+	var draws: Array = []
+	var out := {"beings": be, "stocks": [w.colony.oxygen, w.colony.food, w.colony.ice, w.colony.regolith],
+			"rel": str(w.stats.relationships), "pop": str(w.stats.pop_by_sol), "births": w.stats.births,
+			"deaths": str(w.stats.deaths_list)}
+	for i in 1000:
+		draws.append(w.rng.randf())
+	out["draws"] = draws
+	return out
+
+
+## The age history projected onto landing / not landing: [[projected age, sol], ...] at each change of the projection.
+func _projection(hist: Array) -> Array:
+	var out: Array = []
+	var last := ""
+	for e in hist:
+		var p := "L" if str(e.age) == "landing" else "S"
+		if p != last:
+			out.append([p, int(e.sol)])
+			last = p
+	return out
+
+
+func test_t16a_the_guard_the_council_actually_ran(t) -> void:
+	if not _api(t):
+		return
+	var a = _pure_worlds()[0]
+	var entered := false
+	for e in a.stats.age_history:
+		entered = entered or str(e.age) == "council"
+	t.check(entered, "the enabled world has a council entry in age_history (the override opens the gate)")
+	t.check(int(_cs(a).sessions) >= 3, "at least 3 meetings (%d)" % int(_cs(a).sessions))
+	var n := 0
+	for k in _kinds(a):
+		if k == "council_proposal" or k == "council_quiet":
+			n += 1
+	t.check(n >= 1, "at least one raise or quiet line")
+	_end(t)
+
+
+func test_t16b_the_module_changes_nothing_beings_do(t) -> void:
+	if not _api(t):
+		return
+	var ws := _pure_worlds()
+	var sa := _snap(ws[0])
+	var sc := _snap(ws[2])
+	t.eq(sa.beings, sc.beings, "enabled vs disabled: equal beings (id, building, state, energy)")
+	t.eq(sa.stocks, sc.stocks, "equal stocks")
+	t.eq(sa.rel, sc.rel, "equal relationship stats")
+	t.eq(sa.pop, sc.pop, "equal pop_by_sol")
+	t.eq(sa.deaths, sc.deaths, "equal deaths")
+	t.eq(sa.draws, sc.draws, "equal next 1,000 rng draws")
+	t.eq(_projection(ws[0].stats.age_history), _projection(ws[2].stats.age_history), "the age history projected onto landing / not landing is equal")
+	_end(t)
+
+
+func test_t16c_same_seed_same_override_same_council(t) -> void:
+	if not _api(t):
+		return
+	var ws := _pure_worlds()
+	t.eq(str(_cs(ws[0])), str(_cs(ws[1])), "identical stats.council")
+	var la: Array = []
+	var lb: Array = []
+	for e in ws[0].log:
+		la.append(str(e.text))
+	for e in ws[1].log:
+		lb.append(str(e.text))
+	t.eq(la, lb, "identical logs")
+	_end(t)
+
+
+# ================================================================ 17. data
+
+func _spec_keys() -> Array:
+	var spec := FileAccess.get_file_as_string("res://docs/specs/council.md")
+	var i0 := spec.find("```keys:")
+	if i0 < 0:
+		return []
+	var i1 := spec.find("```", i0 + 8)
+	var out: Array = []
+	for l in spec.substr(i0 + 8, i1 - i0 - 8).split("\n"):
+		var s := l.strip_edges()
+		if s != "":
+			out.append(s)
+	return out
+
+
+func _leaves(node: Variant, prefix: String, out: Array) -> void:
+	if node is Dictionary:
+		for k in node:
+			_leaves(node[k], prefix + "." + str(k), out)
+	else:
+		out.append(prefix)
+
+
+func test_t17a_key_path_parity_both_ways(t) -> void:
+	if not _api(t):
+		return
+	var keys := _spec_keys()
+	t.check(keys.size() >= 100, "the spec key list parses (%d keys)" % keys.size())
+	var spec_council: Array = []
+	var spec_rel: Array = []
+	for k in keys:
+		if k.begins_with("council."):
+			spec_council.append(k)
+		elif k.begins_with("relationships."):
+			spec_rel.append(k)
+		else:
+			t.check(false, "unexpected key family in the spec list: %s" % k)
+	var leaves: Array = []
+	_leaves(_cd(), "council", leaves)
+	for k in spec_council:
+		t.check(k in leaves, "spec key %s exists in data/council.json" % k)
+	for k in leaves:
+		t.check(k in spec_council, "data/council.json leaf %s is listed in the spec" % k)
+	t.eq(leaves.size(), spec_council.size(), "same number of leaves")
+	t.check(_cd().get("topics", null) is Array, "council.topics is a list leaf")
+	var rel_leaves: Array = []
+	_leaves(SimData.load_json("relationships.json"), "relationships", rel_leaves)
+	for k in spec_rel:
+		t.check(k in rel_leaves, "spec key %s exists in data/relationships.json (existence only)" % k)
+	var sd = load("res://sim/sim_data.gd")
+	t.check(_has_static(sd, "council"), "SimData.council() exists")
+	if _has_static(sd, "council"):
+		t.eq(sd.call("council").hash(), _cd().hash(), "SimData.council() returns data/council.json")
+	_end(t)
+
+
+func test_t17b_balance_data_hash_covers_council(t) -> void:
+	if not _api(t):
+		return
+	var lib: GDScript = load("res://tests/balance_lib.gd")
+	var h0: String = lib.data_hash()
+	_edit(_cd(), "min_dwell_sols", 21)
+	var h1: String = lib.data_hash()
+	_restore()
+	t.check(h0 != h1, "balance data_hash covers data/council.json")
+	t.eq(lib.data_hash(), h0, "and returns to the old value when the data is restored")
+	_end(t)
+
+
+## The sanity rules of spec section 13 test 17, as a list of failed rule names for a data copy.
+func _broken_rules(d: Dictionary, ages: Dictionary, bkinds: Array) -> Array:
+	var f: Array = []
+	if not float(d.exit.trust_share_below) < float(d.entry.trust_share_min):
+		f.append("exit below entry")
+	var win := int(d.trust.window_sols)
+	for p in [["entry", "trust_ok_min"], ["entry", "recent_ok"], ["exit", "split_min"], ["exit", "recent_below"]]:
+		if not int(d[p[0]][p[1]]) <= win:
+			f.append("%s.%s within the window" % p)
+	if not (float(d.support.no_below) < 0.0 and 0.0 < float(d.support.yes_above)):
+		f.append("support band")
+	if not float(d.decide.carry_share) > 0.5:
+		f.append("carry_share")
+	if not float(d.decide.divided_share) < 0.5:
+		f.append("divided_share")
+	if not (d.topics is Array and not d.topics.is_empty()):
+		f.append("topics")
+	else:
+		for topic in d.topics:
+			if not (d.has(topic) and d[topic].has("text") and d[topic].has("lean")):
+				f.append("topic block " + str(topic))
+	if not int(d.entry.settled_sols) >= int(ages.min_dwell_sols):
+		f.append("entry.settled_sols")
+	if not int(d.min_dwell_sols) >= int(ages.min_dwell_sols):
+		f.append("min_dwell_sols")
+	if not int(d.decide.max_open_votes) >= maxi(int(d.decide.carry_sessions), int(d.decide.reject_sessions)) + 1:
+		f.append("max_open_votes")
+	if not int(d.lines.after_pledge_sols) >= int(d.lines.aftermath_sols):
+		f.append("after_pledge_sols")
+	if not int(d.session.interval_sols) >= 1:
+		f.append("interval_sols")
+	if not int(d.session.gathering_max_age_sols) >= 1:
+		f.append("gathering_max_age_sols")
+	if not float(d.dome.lean.trait_centre) > 0.0:
+		f.append("trait_centre")
+	if not int(d.chosen.kin_generations) >= 0:
+		f.append("kin_generations")
+	for kind in bkinds:
+		if not d.text.place.has(kind):
+			f.append("text.place." + kind)
+	return f
+
+
+func test_t17c_data_sanity_rules_hold_and_each_can_fail(t) -> void:
+	if not _api(t):
+		return
+	var ages: Dictionary = SimData.load_json("ages.json")
+	var bk: Array = SimData.buildings().kinds.keys()
+	t.eq(_broken_rules(_cd(), ages, bk), [], "the shipped data breaks no rule")
+	var cases := [
+		["exit.trust_share_below", 0.5, "exit below entry"],
+		["entry.trust_ok_min", 21, "entry.trust_ok_min within the window"],
+		["entry.recent_ok", 21, "entry.recent_ok within the window"],
+		["exit.split_min", 21, "exit.split_min within the window"],
+		["exit.recent_below", 21, "exit.recent_below within the window"],
+		["support.no_below", 0.0, "support band"],
+		["support.yes_above", 0.0, "support band"],
+		["decide.carry_share", 0.5, "carry_share"],
+		["decide.divided_share", 0.5, "divided_share"],
+		["topics", [], "topics"],
+		["entry.settled_sols", 19, "entry.settled_sols"],
+		["min_dwell_sols", 19, "min_dwell_sols"],
+		["decide.max_open_votes", 2, "max_open_votes"],
+		["lines.after_pledge_sols", 3, "after_pledge_sols"],
+		["session.interval_sols", 0, "interval_sols"],
+		["session.gathering_max_age_sols", 0, "gathering_max_age_sols"],
+		["dome.lean.trait_centre", 0.0, "trait_centre"],
+		["chosen.kin_generations", -1, "kin_generations"]]
+	for c in cases:
+		var d: Dictionary = _cd().duplicate(true)
+		_set_path(d, str(c[0]), c[1])
+		t.check(str(c[2]) in _broken_rules(d, ages, bk), "%s = %s breaks '%s'" % [c[0], str(c[1]), c[2]])
+	var d2: Dictionary = _cd().duplicate(true)
+	d2.text.place.erase("archive")
+	t.check("text.place.archive" in _broken_rules(d2, ages, bk), "a building kind without a place phrase breaks the rule")
+	var d3: Dictionary = _cd().duplicate(true)
+	d3.erase("dome")
+	t.check("topic block dome" in _broken_rules(d3, ages, bk), "a topic without its block breaks the rule")
+	_end(t)
+
+
+func test_t17d_no_council_key_in_ages_json(t) -> void:
+	if not _api(t):
+		return
+	var ages: Dictionary = SimData.load_json("ages.json")
+	t.check(not ages.has("council"), "ages.json has no council key")
+	var leaves: Array = []
+	_leaves(ages, "ages", leaves)
+	var hit: Array = []
+	for k in leaves:
+		if "council" in str(k).to_lower():
+			hit.append(k)
+	t.eq(hit, [], "and no leaf mentions the Council")
+	_end(t)
+
+
+# ================================================================ 18. balance helpers
+
+func _synth(header: String, rows: Array) -> Array:
+	var out: Array = [header]
+	out.append_array(rows)
+	return out
+
+
+func test_t18a_council_hash_proof_strips_cn_web_age_in_turn(t) -> void:
+	if not _api(t):
+		return
+	var hp: GDScript = load("res://tests/council_hash_proof.gd")
+	var full := _synth("sol pop x age web cn", ["30 12 a S 0.50 -", "60 15 b S 0.75 C", "90 18 c L 0.80 P"])
+	var r1: Dictionary = hp.drop_cn(full)
+	t.eq(r1.body, ["sol pop x age web", "30 12 a S 0.50", "60 15 b S 0.75", "90 18 c L 0.80"], "drop cn removes the last field of header and rows")
+	t.check(not r1.cn_absent, "cn present")
+	var r2: Dictionary = hp.drop_cn_web(full)
+	t.eq(r2.body, ["sol pop x age", "30 12 a S", "60 15 b S", "90 18 c L"], "drop cn and web")
+	t.check(not r2.cn_absent and not r2.web_absent, "both present")
+	var r3: Dictionary = hp.drop_cn_web_age(full)
+	t.eq(r3.body, ["sol pop x", "30 12 a", "60 15 b", "90 18 c"], "drop cn, web and age")
+	t.check(not r3.cn_absent and not r3.web_absent and not r3.age_absent, "all three present")
+	# a Task 4 table (no cn): check 1 is the identity and reports cn ABSENT; the chain goes on
+	var t4 := _synth("sol pop x age web", ["30 12 a S 0.50"])
+	var a1: Dictionary = hp.drop_cn(t4)
+	t.eq(a1.body, t4, "no cn column: the body is unchanged")
+	t.check(a1.cn_absent, "and cn is reported absent")
+	var a2: Dictionary = hp.drop_cn_web(t4)
+	t.eq(a2.body, ["sol pop x age", "30 12 a S"], "the web strip still works")
+	t.check(a2.cn_absent and not a2.web_absent, "cn absent, web present")
+	_end(t)
+
+
+func test_t18b_council_hash_proof_refuses_wrong_columns(t) -> void:
+	if not _api(t):
+		return
+	var hp: GDScript = load("res://tests/council_hash_proof.gd")
+	var reordered := _synth("sol pop x age cn web", ["30 12 a S - 0.50"])
+	var r: Dictionary = hp.drop_cn(reordered)
+	t.eq(r.body, reordered, "cn is not last: nothing is stripped")
+	t.check(r.cn_absent, "cn ABSENT")
+	var r2: Dictionary = hp.drop_cn_web_age(reordered)
+	t.eq(r2.body, ["sol pop x age cn", "30 12 a S -"], "only web is last, so only web goes; age is then not last")
+	t.check(r2.cn_absent and r2.age_absent and not r2.web_absent, "cn and age ABSENT, web present")
+	var renamed := _synth("sol pop x age web CN", ["30 12 a S 0.50 -"])
+	t.check(hp.drop_cn(renamed).cn_absent, "a column called CN is not cn")
+	var other := _synth("sol pop x age web cnt", ["30 12 a S 0.50 -"])
+	t.check(hp.drop_cn(other).cn_absent, "nor is cnt")
+	t.check(hp.drop_cn([]).cn_absent, "an empty table has no cn")
+	t.check(not hp.has_last_column(_synth("a b cn", []), "cnx"), "has_last_column compares the whole name")
+	_end(t)
+
+
+func test_t18c_council_hash_proof_hashes_and_references(t) -> void:
+	if not _api(t):
+		return
+	var hp: GDScript = load("res://tests/council_hash_proof.gd")
+	t.eq(hp.EXPECTED_T4, {42: "a96b8a9562fd75d0", 7: "a4968e2fcc48ec36", 99: "2210719cf48d8612", 1234: "19437e397d1dff88",
+			2026: "6e7fe68477161196"}, "the Task 4 hashes (docs/balance/task-4-log.md)")
+	t.eq(hp.expected_t3(), load("res://tests/relationships_hash_proof.gd").EXPECTED_T3, "Task 3 hashes by reference")
+	t.eq(hp.expected_t1(), load("res://tests/age_hash_proof.gd").EXPECTED, "Task 1 hashes by reference")
+	var lines: Array = ["# header one", "# header two", "sol pop age web cn", "30 12 S 0.5 -", "60 14 S 0.6 C", "",
+			"targets for seed 1 (60 sols):", "  T1 PASS x"]
+	var h: Dictionary = hp.proof_hashes(lines)
+	t.eq(h.check1, "sol pop age web\n30 12 S 0.5\n60 14 S 0.6".sha256_text(), "check 1 hashes the body without cn")
+	t.eq(h.check2, "sol pop age\n30 12 S\n60 14 S".sha256_text(), "check 2 without cn and web")
+	t.eq(h.check3, "sol pop\n30 12\n60 14".sha256_text(), "check 3 without cn, web and age")
+	t.check(not h.cn_absent and not h.web_absent and not h.age_absent, "nothing absent")
+	_end(t)
+
+
+func test_t18d_relationships_hash_proof_strips_cn_first(t) -> void:
+	if not _api(t):
+		return
+	var rp: GDScript = load("res://tests/relationships_hash_proof.gd")
+	var full := _synth("sol pop x age web cn", ["30 12 a S 0.50 -", "60 15 b S 0.75 C"])
+	var r: Dictionary = rp.drop_web_and_age(full)
+	t.eq(r.body, ["sol pop x", "30 12 a", "60 15 b"], "cn, then web, then age are stripped (spec 9.1)")
+	t.check(not r.web_absent and not r.age_absent, "web and age reported present")
+	var r1: Dictionary = rp.drop_web(full)
+	t.eq(r1.body, ["sol pop x age", "30 12 a S", "60 15 b S"], "drop_web strips cn first as well")
+	var reordered := _synth("sol pop x age cn web", ["30 12 a S - 0.50"])
+	var rr: Dictionary = rp.drop_web_and_age(reordered)
+	t.check(rr.body != ["sol pop x", "30 12 a"], "a reordered table (cn not last) is still refused")
+	t.check(bool(rr.age_absent), "and age is reported absent")
+	var t4 := _synth("sol pop x age web", ["30 12 a S 0.50"])
+	t.eq(rp.drop_web_and_age(t4).body, ["sol pop x", "30 12 a"], "a Task 4 table (no cn) still strips as before")
+	_end(t)
+
+
+func test_t18e_balance_lib_projections(t) -> void:
+	if not _api(t):
+		return
+	var lib: GDScript = load("res://tests/balance_lib.gd")
+	var need := ["age_column", "cn_column", "project_ages", "projected_changes"]
+	var missing: Array[String] = []
+	for m in need:
+		if not _has_static(lib, m):
+			missing.append("BalanceLib." + m + "()")
+	t.check(missing.is_empty(), "missing API: " + ", ".join(PackedStringArray(missing)))
+	if not missing.is_empty():
+		_end(t)
+		return
+	var w = _world()
+	_voices(w, 3)
+	# age column: S for any age but landing
+	w.ages.age = "landing"
+	t.eq(lib.age_column(w), "L", "landing prints L")
+	w.ages.age = "settlement"
+	t.eq(lib.age_column(w), "S", "settlement prints S")
+	w.ages.age = "council"
+	t.eq(lib.age_column(w), "S", "council prints S (the projected column)")
+	# cn column: - before any entry or outside Council without a pledge, C in Council, P after the pledge
+	w.ages.age = "landing"
+	t.eq(lib.cn_column(w), "-", "landing without a pledge: -")
+	w.ages.age = "settlement"
+	t.eq(lib.cn_column(w), "-", "settlement without a pledge: -")
+	w.ages.age = "council"
+	t.eq(lib.cn_column(w), "C", "council without a pledge: C")
+	w.council.pledged["dome"] = 55
+	t.eq(lib.cn_column(w), "P", "council after the pledge: P")
+	w.ages.age = "settlement"
+	t.eq(lib.cn_column(w), "P", "after the pledge in any age: P")
+	w.ages.age = "landing"
+	t.eq(lib.cn_column(w), "P", "even in landing")
+	# T10 projection: (S, C, L, S, C, S) is (S, L, S), two projected changes
+	var hist: Array = []
+	for a in ["settlement", "council", "landing", "settlement", "council", "settlement"]:
+		hist.append({"age": a})
+	t.eq(lib.project_ages(hist), ["S", "L", "S"], "the history projects to S, L, S")
+	t.eq(int(lib.projected_changes(hist)), 2, "with two projected changes")
+	var plain: Array = []
+	for a in ["landing", "settlement", "landing", "settlement"]:
+		plain.append({"age": a})
+	t.eq(lib.project_ages(plain), ["L", "S", "L", "S"], "a Task 3 history projects to itself")
+	t.eq(int(lib.projected_changes(plain)), 3, "three changes, as in Task 3")
+	_end(t)
+
+
+# ================================================================ 20. relationships off
+
+func _off_world() -> Variant:
+	var w = _world()
+	_voices(w, 6)
+	_calm(w)
+	return w
+
+
+func _step_a_sol(w, sols: int) -> void:
+	for i in sols * 500:
+		w.step()
+		w.colony.oxygen = w.colony.o2_cap()
+		w.colony.food = w.colony.food_cap()
+		w.colony.ice = 1000.0
+
+
+func test_t20a_relationships_disabled_reads_zero_and_does_nothing(t) -> void:
+	if not _api(t):
+		return
+	var w = _off_world()
+	w.relationships_enabled = false
+	_settle(w, 0)
+	_step_a_sol(w, 2)
+	var n: int = w.stats.pop_by_sol.size()
+	t.check(n >= 1, "staging: a sol boundary passed (%d)" % n)
+	t.eq(_cs(w).trust_by_sol.size(), n, "trust_by_sol keeps the length of pop_by_sol")
+	t.eq(_cs(w).chosen_by_sol.size(), n, "chosen_by_sol too")
+	var zeros := true
+	for x in _cs(w).trust_by_sol + _cs(w).chosen_by_sol:
+		zeros = zeros and float(x) == 0.0
+	t.check(zeros, "every reading is 0.0")
+	t.check(w.council.stance.is_empty(), "the stances are empty")
+	t.check(str(w.stats.age) != "council", "nothing enters")
+	t.eq(_clines(w).size(), 0, "no Council line")
+	t.eq(int(_cs(w).voices), 6, "voices is the live count")
+	_end(t)
+
+
+func test_t20b_a_null_relationships_module_does_the_same(t) -> void:
+	if not _api(t):
+		return
+	var w = _off_world()
+	w.relationships = null
+	_step_a_sol(w, 2)
+	var n: int = w.stats.pop_by_sol.size()
+	t.check(n >= 1, "staging: a sol boundary passed (%d)" % n)
+	t.eq(_cs(w).trust_by_sol.size(), n, "trust_by_sol keeps the length of pop_by_sol")
+	t.eq(_cs(w).chosen_by_sol.size(), n, "chosen_by_sol too")
+	t.check(w.council.stance.is_empty(), "the stances are empty")
+	t.check(str(w.stats.age) != "council", "nothing enters")
+	t.eq(_clines(w).size(), 0, "no Council line")
+	_end(t)
+
+
+# ================================================================ 22. module off
+
+func test_t22_council_off_from_creation(t) -> void:
+	if not _api(t):
+		return
+	var c = _pure_worlds()[2]
+	t.check(c.stats.pop_by_sol.size() >= 100, "staging: a long run (%d boundaries)" % c.stats.pop_by_sol.size())
+	t.eq(_cs(c).trust_by_sol.size(), 1, "trust_by_sol holds only the initial reading")
+	t.eq(_cs(c).chosen_by_sol.size(), 1, "chosen_by_sol too")
+	t.eq(int(c.stats.sols_in_age.council), 0, "sols_in_age.council stays 0")
+	var entered := false
+	for e in c.stats.age_history:
+		entered = entered or str(e.age) == "council"
+	t.check(not entered, "no hook ran: the staged override cannot make it enter")
+	t.eq(int(_cs(c).sessions), 0, "no meeting")
+	t.eq(_clines(c).size(), 0, "no Council line")
+	_end(t)
