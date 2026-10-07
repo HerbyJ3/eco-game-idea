@@ -14,6 +14,6 @@
 #    - drop cn, web, age  -> Task 1 hashes.
 # 3. T10 on a printed run: the T10 verdict line uses the projected history (S, C, L, S, C, S counts as S, L, S, 2 changes),
 #    and its report line names `council` among the sols_in_age keys.
-# 4. T12 (Council targets, spec section 12): the verdict line exists and, with the module on, reports the council_min_seeds
-#    and pledge_min_seeds counts; with `--param council_enabled=false`... (not a data key; use the world seam in balance_lib).
+# 4. T12 (Council targets, spec section 12): the verdict line exists and reports the council_min_seeds and pledge_min_seeds
+#    counts from data/council.json.
 # 5. The projected T10 helper agrees with tools/age_probe.gd on the same history (age_probe line 281 comparison).
