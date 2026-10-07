@@ -1,0 +1,7 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# hash run: seed=42 sols=300 overrides={  }
+table_sha256 330325504427720a
+digest ea5190275431d465 pop_end 164
+T10 PASS first settlement sol 67 (40..150), age_changes 2 (<=4), min gap between consecutive history entries 67 (>=20), history 4 entries (changes+1 = 4); report: sols_in_age landing 154 settlement 48 council 98, age at end landing, changes [sol 67 settled; sol 115 council; sol 213 fell_back (cause ice)], fall back causes [sol 213 ice], not-ok sols 94 (by group, a sol can fail several: ice 80, food 1, oxygen 1, power 0, death 9, unrest 13)
+T12 PASS (1) list lengths 301/301/301 ok; (2) C2 ok; (3) council changes 1 (<=4) ok; (4) proposals 2 ok; (5) one Council line per boundary ok; report: first Council sol 115, meetings 19, proposals [dome@120 set_aside; dome@175 set_aside], pledge sol <null> reason -, lines {"divided":2,"proposal":1,"proposal_again":1,"set_aside":1,"set_aside_hard":1}, dropped 0; council_min_seeds 3 pledge_min_seeds 1

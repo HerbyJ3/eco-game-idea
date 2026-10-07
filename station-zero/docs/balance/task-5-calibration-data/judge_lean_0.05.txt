@@ -1,0 +1,201 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+## Judge: tag lean_0.05, seeds [42, 7, 99, 1234, 2026]
+
+### Voices over time (pop / voices / trust / chosen share at the sol)
+| seed | sol 30 | sol 60 | sol 100 | sol 150 | sol 200 | sol 250 | sol 300 |
+|---|---|---|---|---|---|---|---|
+| 42 | 19 / 7 / 1.00 / 0.00 L | 27 / 12 / 0.67 / 0.00 L | 57 / 27 / 0.63 / 0.59 S | 82 / 62 / 0.56 / 0.44 C | 107 / 87 / 0.47 / 0.59 C | 142 / 119 / 0.61 / 0.61 L | 164 / 143 / 0.52 / 0.51 L |
+| 7 | 12 / 7 / 1.00 / 0.00 L | 22 / 8 / 0.88 / 0.00 S | 32 / 22 / 0.86 / 0.73 C | 47 / 37 / 0.84 / 0.78 C | 47 / 47 / 0.91 / 0.91 C | 52 / 52 / 0.96 / 0.96 C | 72 / 52 / 0.96 / 0.96 C |
+| 99 | 10 / 7 / 1.00 / 0.00 L | 29 / 7 / 0.71 / 0.00 S | 72 / 29 / 0.17 / 0.21 S | 97 / 77 / 0.27 / 0.44 S | 122 / 97 / 0.44 / 0.46 L | 139 / 119 / 0.40 / 0.45 L | 157 / 144 / 0.55 / 0.63 L |
+| 1234 | 12 / 7 / 1.00 / 0.00 L | 27 / 7 / 0.86 / 0.00 L | 65 / 27 / 0.37 / 0.22 S | 102 / 72 / 0.51 / 0.51 S | 112 / 107 / 0.71 / 0.70 C | 142 / 112 / 0.61 / 0.63 C | 142 / 142 / 0.87 / 0.86 C |
+| 2026 | 12 / 7 / 1.00 / 0.00 L | 26 / 9 / 0.89 / 0.00 S | 47 / 26 / 0.38 / 0.35 S | 78 / 52 / 0.27 / 0.29 S | 107 / 90 / 0.56 / 0.57 S | 129 / 112 / 0.66 / 0.69 C | 156 / 130 / 0.32 / 0.45 C |
+(age letter: L landing, S settlement, C council)
+
+### Crossings
+| seed | projected sequence (sols) | Task 3 settle / changes | age_history (sol how) | Council entries (sol, how, last clause passed, onsets settled/web/chosen/voices) | splits | fall-backs from Council | changes |
+|---|---|---|---|---|---|---|---|
+| 42 | L@0 S@67 L@213 | 67 / 2 (match) | 0 landing/landing; 67 settlement/settled; 115 council/council; 213 landing/fell_back | 115 council: web (97/115/109/59; settled-clause wait 18) | [] | [213] | 1 |
+| 7 | L@0 S@58 | 58 / 1 (match) | 0 landing/landing; 58 settlement/settled; 95 council/council | 95 council: chosen (88/20/95/63; settled-clause wait 7) | [] | [] | 1 |
+| 99 | L@0 S@54 L@174 | 54 / 2 (match) | 0 landing/landing; 54 settlement/settled; 174 landing/fell_back | none | [] | [] | 0 |
+| 1234 | L@0 S@65 | 65 / 1 (match) | 0 landing/landing; 65 settlement/settled; 160 council/council | 160 council: web (95/160/155/67; settled-clause wait 65) | [] | [] | 1 |
+| 2026 | L@0 S@53 | 53 / 1 (match) | 0 landing/landing; 53 settlement/settled; 206 council/council | 206 council: web+chosen (83/206/206/63; settled-clause wait 123) | [] | [] | 1 |
+
+### Trust discrimination (from sol 60) and flags FLOOR / CEILING
+| seed | trust min / max | chosen min / max | min web since settled-30 | min chosen since settled-30 | min web after first entry | chosen pairs Mars-born+unrelated (end) | mean leak share | pairs turned to family (end / max) |
+|---|---|---|---|---|---|---|---|---|
+| 42 | 0.346 / 0.818 | 0.000 / 0.663 | 0.346 | 0.365 | 0.346 | 120 of 139 (0.86) | 0.70 | 5 / 8 |
+| 7 | 0.643 / 0.962 | 0.000 / 0.962 | 0.682 | 0.519 | 0.682 | 259 of 351 (0.74) | 0.60 | 74 / 100 |
+| 99 | 0.077 / 0.714 | 0.000 / 0.633 | 0.077 | 0 | -1 | 106 of 116 (0.91) | 0.81 | 4 / 7 |
+| 1234 | 0.324 / 0.889 | 0.000 / 0.866 | 0.324 | 0.148 | 0.524 | 414 of 489 (0.85) | 0.71 | 38 / 38 |
+| 2026 | 0.190 / 1.000 | 0.000 / 0.785 | 0.190 | 0.119 | 0.315 | 51 of 63 (0.81) | 0.60 | 2 / 17 |
+FLOOR web (no seed's web reading ever below 0.50 after its 30 settled sols): clear
+FLOOR chosen (no seed's chosen reading ever below 0.50 after its 30 settled sols): clear
+CEILING (on every seed that enters, web never below 0.5 after the entry): clear
+
+### Proposals
+| seed | # | raised sol | proposer | again | votes | outcome (sol) | reason | hard | vote sols | mean lean at outcome: total = personal + size + means - hard + child |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 42 | 0 | 120 | 11 | false | 6 | set_aside (150) | - | true | [125, 130, 135, 140, 145, 150] | -0.347 = -0.059 + 0.068 + -0.022 - 0.394 + 0.010 |
+| 42 | 1 | 180 | 11 | true | 3 | set_aside (195) | - | true | [185, 190, 195] | -0.207 = -0.047 + 0.109 + -0.025 - 0.307 + 0.014 |
+| 7 | 0 | 100 | 13 | false | 12 | set_aside (160) | - | false | [105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160] | 0.040 = -0.063 + 0.011 + 0.042 - 0.000 + 0.000 |
+| 7 | 1 | 190 | 8 | true | 12 | set_aside (250) | - | false | [195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245, 250] | 0.056 = -0.056 + 0.019 + 0.043 - 0.000 + 0.000 |
+| 7 | 2 | 280 | 42 | true | 4 | - (-) | - | - | [285, 290, 295, 300] | - |
+| 1234 | 0 | 165 | 4 | false | 12 | set_aside (225) | - | false | [170, 175, 180, 185, 190, 195, 200, 205, 210, 215, 220, 225] | 0.169 = -0.022 + 0.132 + -0.003 - 0.000 + 0.013 |
+| 1234 | 1 | 255 | 98 | true | 9 | - (-) | - | - | [260, 265, 270, 275, 280, 285, 290, 295, 300] | - |
+| 2026 | 0 | 211 | 87 | false | 2 | pledged (221) | personal | - | [216, 221] | 0.231 = 0.007 + 0.122 + 0.045 - 0.000 + 0.007 |
+
+### Meetings (sol: present / voices, yes, no; V = vote, R = raise or quiet meeting)
+- 42 (19 meetings): 120R:13/47 y16 n10 125V:11/47 y17 n11 130V:10/52 y19 n16 135V:14/52 y21 n14 140V:15/57 y14 n25 145V:14/62 y9 n41H 150V:14/62 y7 n49H 155R:10/62 y9 n47H 160R:14/72 y14 n48 165R:14/72 y20 n26 170R:18/77 y25 n23 175R:15/77 y25 n26 180R:14/77 y24 n30 185V:16/82 y29 n40 190V:23/82 y22 n47H 195V:18/87 y13 n55H 200R:19/87 y17 n55H 205R:19/92 y32 n43 210R:17/92 y44 n21
+- 7 (41 meetings): 100R:9/22 y11 n0 105V:8/22 y15 n0 110V:6/22 y13 n0 115V:7/25 y13 n0 120V:10/27 y9 n0 125V:10/27 y8 n1 130V:9/32 y10 n4 135V:8/32 y12 n2 140V:8/32 y12 n2 145V:8/37 y12 n2 150V:9/37 y10 n2 155V:10/37 y7 n5 160V:12/37 y7 n3 165R:15/37 y7 n4 170R:13/42 y10 n3 175R:14/47 y12 n3 180R:17/47 y11 n3 185R:11/47 y11 n3 190R:12/47 y11 n3 195V:18/47 y11 n2 200V:18/47 y12 n2 205V:17/47 y12 n3 210V:10/47 y14 n2 215V:12/47 y13 n2 220V:11/47 y13 n2 225V:10/47 y12 n4 230V:13/47 y12 n5 235V:20/47 y12 n5 240V:18/47 y10 n4 245V:21/52 y10 n5 250V:20/52 y11 n4 255R:21/52 y10 n4 260R:21/52 y9 n2 265R:22/52 y10 n2 270R:22/52 y10 n2 275R:18/52 y10 n2 280R:19/52 y10 n2 285V:17/52 y10 n2 290V:15/52 y13 n2 295V:13/52 y12 n2 300V:11/52 y13 n2
+- 99 (0 meetings): 
+- 1234 (28 meetings): 165R:17/82 y35 n5 170V:23/82 y37 n7 175V:16/87 y34 n9 180V:18/92 y38 n6 185V:17/97 y42 n4 190V:18/102 y46 n5 195V:19/107 y54 n4 200V:29/107 y53 n3 205V:34/107 y52 n3 210V:39/107 y52 n3 215V:44/107 y54 n2 220V:26/107 y50 n2 225V:18/107 y51 n4 230R:16/110 y51 n8 235R:20/112 y56 n6 240R:21/112 y58 n6 245R:15/112 y58 n5 250R:21/112 y61 n5 255R:39/112 y66 n4 260V:41/122 y67 n5 265V:17/122 y69 n6 270V:23/132 y70 n5 275V:16/132 y70 n4 280V:18/132 y70 n5 285V:25/137 y71 n5 290V:21/142 y68 n7 295V:33/142 y69 n7 300V:36/142 y73 n5
+- 2026 (18 meetings): 211R:19/100 y64 n9 216V:21/100 y61 n11 221V:15/107 y68 n9 226R:24/107 y67 n12 231R:22/107 y69 n10 236R:21/107 y69 n6 241R:14/107 y66 n5 246R:14/112 y62 n12 251R:15/112 y62 n12 256R:17/112 y63 n15 261R:21/112 y61 n19 266R:18/112 y60 n19 271R:20/112 y61 n20 276R:19/117 y64 n20 281R:20/117 y65 n19 286R:19/127 y74 n20 291R:19/132 y68 n27 296R:21/131 y39 n56H
+
+### Votes: lockstep and factions
+| seed | sol | voices | yes | no | one side >= 0.95 | divided (both >= 0.25) | amb yes / no | caution yes / no | trait_ok | stance sign differs from lean | personal sd |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 42 | 125 | 47 | 17 | 11 | false | false | 0.539 / 0.362 | 0.324 / 0.603 | true | 0.043 | 0.213 |
+| 42 | 130 | 52 | 19 | 16 | false | true (first) | 0.529 / 0.348 | 0.342 / 0.612 | true | 0.038 | 0.223 |
+| 42 | 135 | 52 | 21 | 14 | false | true | 0.520 / 0.341 | 0.356 / 0.632 | true | 0.038 | 0.223 |
+| 42 | 140 | 57 | 14 | 25 | false | false | 0.554 / 0.359 | 0.302 / 0.603 | true | 0.053 | 0.219 |
+| 42 | 145 | 62 | 9 | 41 | false | false | 0.582 / 0.385 | 0.264 / 0.568 | true | 0.016 | 0.212 |
+| 42 | 150 | 62 | 7 | 49 | false | false | 0.592 / 0.398 | 0.244 / 0.544 | true | 0.016 | 0.212 |
+| 42 | 185 | 82 | 29 | 40 | false | true (first) | 0.523 / 0.361 | 0.338 / 0.597 | true | 0.073 | 0.225 |
+| 42 | 190 | 82 | 22 | 47 | false | true | 0.547 / 0.369 | 0.306 / 0.584 | true | 0.049 | 0.225 |
+| 42 | 195 | 87 | 13 | 55 | false | false | 0.571 / 0.381 | 0.268 / 0.565 | true | 0.023 | 0.223 |
+| 7 | 105 | 22 | 15 | 0 | false | false | 0.486 / -1.000 | 0.388 / -1.000 | false | 0.091 | 0.177 |
+| 7 | 110 | 22 | 13 | 0 | false | false | 0.493 / -1.000 | 0.380 / -1.000 | false | 0.045 | 0.177 |
+| 7 | 115 | 25 | 13 | 0 | false | false | 0.496 / -1.000 | 0.378 / -1.000 | false | 0.080 | 0.182 |
+| 7 | 120 | 27 | 9 | 0 | false | false | 0.518 / -1.000 | 0.360 / -1.000 | false | 0.000 | 0.190 |
+| 7 | 125 | 27 | 8 | 1 | false | false | 0.528 / 0.323 | 0.337 / 0.681 | true | 0.000 | 0.190 |
+| 7 | 130 | 32 | 10 | 4 | false | false | 0.509 / 0.343 | 0.344 / 0.625 | true | 0.062 | 0.190 |
+| 7 | 135 | 32 | 12 | 2 | false | false | 0.499 / 0.305 | 0.364 / 0.668 | true | 0.031 | 0.190 |
+| 7 | 140 | 32 | 12 | 2 | false | false | 0.499 / 0.305 | 0.364 / 0.668 | true | 0.031 | 0.190 |
+| 7 | 145 | 37 | 12 | 2 | false | false | 0.503 / 0.305 | 0.363 / 0.668 | true | 0.027 | 0.183 |
+| 7 | 150 | 37 | 10 | 2 | false | false | 0.513 / 0.305 | 0.353 / 0.668 | true | 0.027 | 0.183 |
+| 7 | 155 | 37 | 7 | 5 | false | false | 0.533 / 0.352 | 0.330 / 0.614 | true | 0.081 | 0.183 |
+| 7 | 160 | 37 | 7 | 3 | false | false | 0.529 / 0.348 | 0.316 / 0.628 | true | 0.081 | 0.183 |
+| 7 | 195 | 47 | 11 | 2 | false | false | 0.523 / 0.305 | 0.322 / 0.668 | true | 0.043 | 0.178 |
+| 7 | 200 | 47 | 12 | 2 | false | false | 0.521 / 0.305 | 0.329 / 0.668 | true | 0.043 | 0.178 |
+| 7 | 205 | 47 | 12 | 3 | false | false | 0.517 / 0.326 | 0.338 / 0.655 | true | 0.021 | 0.178 |
+| 7 | 210 | 47 | 14 | 2 | false | false | 0.509 / 0.305 | 0.344 / 0.668 | true | 0.021 | 0.178 |
+| 7 | 215 | 47 | 13 | 2 | false | false | 0.515 / 0.305 | 0.340 / 0.668 | true | 0.043 | 0.178 |
+| 7 | 220 | 47 | 13 | 2 | false | false | 0.515 / 0.305 | 0.340 / 0.668 | true | 0.021 | 0.178 |
+| 7 | 225 | 47 | 12 | 4 | false | false | 0.521 / 0.330 | 0.329 / 0.635 | true | 0.021 | 0.178 |
+| 7 | 230 | 47 | 12 | 5 | false | false | 0.521 / 0.338 | 0.329 / 0.634 | true | 0.021 | 0.178 |
+| 7 | 235 | 47 | 12 | 5 | false | false | 0.521 / 0.338 | 0.329 / 0.634 | true | 0.021 | 0.178 |
+| 7 | 240 | 47 | 10 | 4 | false | false | 0.531 / 0.336 | 0.315 / 0.644 | true | 0.021 | 0.178 |
+| 7 | 245 | 52 | 10 | 5 | false | false | 0.531 / 0.338 | 0.315 / 0.638 | true | 0.038 | 0.175 |
+| 7 | 250 | 52 | 11 | 4 | false | false | 0.525 / 0.336 | 0.323 / 0.644 | true | 0.019 | 0.175 |
+| 7 | 285 | 52 | 10 | 2 | false | false | 0.536 / 0.305 | 0.316 / 0.668 | true | 0.000 | 0.175 |
+| 7 | 290 | 52 | 13 | 2 | false | false | 0.513 / 0.305 | 0.341 / 0.668 | true | 0.038 | 0.175 |
+| 7 | 295 | 52 | 12 | 2 | false | false | 0.514 / 0.305 | 0.332 / 0.668 | true | 0.038 | 0.175 |
+| 7 | 300 | 52 | 13 | 2 | false | false | 0.506 / 0.305 | 0.344 / 0.668 | true | 0.019 | 0.175 |
+| 1234 | 170 | 82 | 37 | 7 | false | false | 0.491 / 0.318 | 0.402 / 0.659 | true | 0.049 | 0.191 |
+| 1234 | 175 | 87 | 34 | 9 | false | false | 0.498 / 0.319 | 0.389 / 0.649 | true | 0.057 | 0.186 |
+| 1234 | 180 | 92 | 38 | 6 | false | false | 0.497 / 0.316 | 0.384 / 0.657 | true | 0.011 | 0.187 |
+| 1234 | 185 | 97 | 42 | 4 | false | false | 0.500 / 0.311 | 0.372 / 0.686 | true | 0.000 | 0.193 |
+| 1234 | 190 | 102 | 46 | 5 | false | false | 0.508 / 0.306 | 0.360 / 0.670 | true | 0.010 | 0.206 |
+| 1234 | 195 | 107 | 54 | 4 | false | false | 0.507 / 0.311 | 0.359 / 0.686 | true | 0.037 | 0.214 |
+| 1234 | 200 | 107 | 53 | 3 | false | false | 0.509 / 0.308 | 0.355 / 0.689 | true | 0.019 | 0.214 |
+| 1234 | 205 | 107 | 52 | 3 | false | false | 0.511 / 0.308 | 0.353 / 0.689 | true | 0.028 | 0.214 |
+| 1234 | 210 | 107 | 52 | 3 | false | false | 0.511 / 0.308 | 0.353 / 0.689 | true | 0.000 | 0.214 |
+| 1234 | 215 | 107 | 54 | 2 | false | false | 0.508 / 0.289 | 0.358 / 0.688 | true | 0.000 | 0.214 |
+| 1234 | 220 | 107 | 50 | 2 | false | false | 0.514 / 0.289 | 0.348 / 0.688 | true | 0.047 | 0.214 |
+| 1234 | 225 | 107 | 51 | 4 | false | false | 0.512 / 0.314 | 0.351 / 0.685 | true | 0.056 | 0.214 |
+| 1234 | 260 | 122 | 67 | 5 | false | false | 0.499 / 0.279 | 0.369 / 0.676 | true | 0.066 | 0.220 |
+| 1234 | 265 | 122 | 69 | 6 | false | false | 0.498 / 0.298 | 0.371 / 0.680 | true | 0.049 | 0.220 |
+| 1234 | 270 | 132 | 70 | 5 | false | false | 0.498 / 0.289 | 0.369 / 0.677 | true | 0.038 | 0.216 |
+| 1234 | 275 | 132 | 70 | 4 | false | false | 0.497 / 0.281 | 0.369 / 0.678 | true | 0.038 | 0.216 |
+| 1234 | 280 | 132 | 70 | 5 | false | false | 0.498 / 0.293 | 0.369 / 0.681 | true | 0.038 | 0.216 |
+| 1234 | 285 | 137 | 71 | 5 | false | false | 0.497 / 0.293 | 0.371 / 0.681 | true | 0.036 | 0.217 |
+| 1234 | 290 | 142 | 68 | 7 | false | false | 0.502 / 0.290 | 0.362 / 0.671 | true | 0.042 | 0.214 |
+| 1234 | 295 | 142 | 69 | 7 | false | false | 0.500 / 0.290 | 0.364 / 0.671 | true | 0.042 | 0.214 |
+| 1234 | 300 | 142 | 73 | 5 | false | false | 0.497 / 0.277 | 0.369 / 0.664 | true | 0.021 | 0.214 |
+| 2026 | 216 | 100 | 61 | 11 | false | false | 0.499 / 0.293 | 0.366 / 0.668 | true | 0.060 | 0.225 |
+| 2026 | 221 | 107 | 68 | 9 | false | false | 0.508 / 0.290 | 0.357 / 0.670 | true | 0.047 | 0.234 |
+votes pooled 60, lockstep votes 0 (0%); LOCKSTEP (more than half): clear
+divided votes pooled 4, trait-consistent 4 (100%); first-divided-vote-per-proposal 2, trait-consistent 2
+stance sign differs from lean (share of voices), median over votes 0.038; personal-term sd median over votes 0.190 (spec estimate 0.15)
+pledges 1, size term above half the mean lean at each: [true]; SIZE-DOMINANT: FLAGGED
+
+### Gatherings (largest voice gathering at one relationship tick per sol)
+| seed | sols >= 60: count median / p90 / max | share of voices median / p90 / max | Council sols: count median / max | eligible meeting sols | unheld | unheld share | meeting size median / max | first raise after entry (sols) |
+|---|---|---|---|---|---|---|---|---|
+| 42 | 13 / 20 / 30 | 0.178 / 0.297 / 0.562 | 13 / 23 | 19 | 0 | 0.00 | 14 / 23 | 5 |
+| 7 | 9 / 18 / 22 | 0.278 / 0.383 / 0.429 | 11 / 22 | 41 | 0 | 0.00 | 13 / 22 | 5 |
+| 99 | 12 / 21 / 37 | 0.155 / 0.263 / 0.571 | - / - | 0 | 0 | - | - / - | no entry |
+| 1234 | 15 / 27 / 44 | 0.185 / 0.308 / 0.429 | 18 / 44 | 28 | 0 | 0.00 | 21 / 44 | 5 |
+| 2026 | 11 / 19 / 24 | 0.169 / 0.294 / 0.600 | 16 / 24 | 18 | 0 | 0.00 | 19 / 24 | 5 |
+NOROOM (unheld share above 0.50 on any seed): clear
+First-raise delay trigger: first raise under 6 sols after entry on 4 seeds (trigger at 3): TRIGGERED
+
+### Lines
+| seed | Council sols | lines by key | council lines | per 5 Council sols (all / without circles) | dropped by cap | rel + council share of log (flag 0.15) | council share |
+|---|---|---|---|---|---|---|---|
+| 42 | 98 | { "divided": 2.0, "proposal": 1.0, "proposal_again": 1.0, "set_aside_hard": 2.0 } | 6 | 0.306 / 0.306 | 0 | 0.100 | 0.005 |
+| 7 | 205 | { "proposal": 1.0, "proposal_again": 2.0, "set_aside_long": 2.0 } | 5 | 0.122 / 0.122 | 0 | 0.139 | 0.011 |
+| 99 | 0 | { "circles": 1.0 } | 1 | -1 / -1 | 0 | 0.103 | 0.001 |
+| 1234 | 140 | { "circles": 1.0, "proposal": 1.0, "proposal_again": 1.0, "set_aside_long": 1.0 } | 4 | 0.143 / 0.107 | 0 | 0.125 | 0.004 |
+| 2026 | 94 | { "after_pledge": 1.0, "aftermath_still": 1.0, "circles": 1.0, "circles_again": 1.0, "pledge": 1.0, "proposal": 1.0 } | 6 | 0.319 / 0.213 | 0 | 0.112 | 0.005 |
+
+### Cost (on_sol microseconds; the probe times the real hooks; runs in parallel are noisy, see the cost runs)
+| seed | max pop | on_sol pop 60..80: n median / p95 / max | pop > 120: n median / p95 / max | peak (>= 0.9 max pop): n median / p95 / max | module share of mean step: pop 60..80 / pop > 120 / all |
+|---|---|---|---|---|---|
+| 42 | 167 | 39: 1150 / 2223 / 2601 | 89: 2950 / 4066 / 6323 | 29: 3202 / 3990 / 6323 | 0.0087 / 0.0039 / 0.0061 |
+| 7 | 72 | 8: 2968 / 3320 / 3320 | 0: - / - / - | 5: 2967 / 3297 / 3297 | 0.0142 / - / 0.0135 |
+| 99 | 157 | 35: 870 / 1665 / 2038 | 104: 2647 / 3946 / 6956 | 53: 2767 / 4900 / 6956 | 0.0038 / 0.0034 / 0.0039 |
+| 1234 | 142 | 24: 996 / 1242 / 1878 | 81: 3749 / 6329 / 7215 | 71: 3817 / 6806 / 7215 | 0.0039 / 0.0110 / 0.0093 |
+| 2026 | 157 | 33: 938 / 1222 / 1273 | 58: 2724.500 / 4003 / 4553 | 28: 2741 / 3332 / 3458 | 0.0038 / 0.0097 / 0.0077 |
+
+### Gate replays (first Council entry sol; '-' = never by sol 300; baseline = shipped values; exact for the first entry)
+| variant | 42 | 7 | 99 | 1234 | 2026 |
+|---|---|---|---|---|---|
+| live first_council_sol | 115 | 95 | - | 160 | 206 |
+| baseline replay (must equal live) | 115 | 95 | - | 160 | 206 |
+| trust_share_min 0.4 | 109 | 95 | - | 155 | 206 |
+| trust_share_min 0.5 | 115 | 95 | - | 160 | 206 |
+| trust_share_min 0.6 | - | 95 | - | 186 | 225 |
+| settled_sols 20 | 115 | 95 | - | 160 | 206 |
+| settled_sols 30 | 115 | 95 | - | 160 | 206 |
+| settled_sols 45 | 115 | 103 | - | 160 | 206 |
+| trust_ok_min 14 | 107 | 93 | - | 158 | 204 |
+| trust_ok_min 16 | 115 | 95 | - | 160 | 206 |
+| trust_ok_min 18 | - | 97 | - | 163 | 208 |
+| web clause off (settled, chosen, voices) | 109 | 95 | - | 155 | 206 |
+| chosen clause off (settled, web, voices) | 97 | 88 | - | 160 | 206 |
+| chosen_share_min 0.3, friends_min 1, kin_generations 0 | 97 | 88 | - | 160 | 206 |
+| chosen_share_min 0.4, friends_min 1, kin_generations 0 | 97 | 92 | - | 160 | 206 |
+| chosen_share_min 0.5, friends_min 1, kin_generations 0 | 106 | 95 | - | 160 | 206 |
+| chosen_share_min 0.6, friends_min 1, kin_generations 0 | - | 104 | - | 183 | 225 |
+| chosen_share_min 0.3, friends_min 1, kin_generations 1 | 97 | 88 | - | 160 | 206 |
+| chosen_share_min 0.4, friends_min 1, kin_generations 1 | 97 | 92 | - | 160 | 206 |
+| chosen_share_min 0.5, friends_min 1, kin_generations 1 | 115 | 95 | - | 160 | 206 |
+| chosen_share_min 0.6, friends_min 1, kin_generations 1 | - | 104 | - | 184 | 225 |
+| chosen_share_min 0.3, friends_min 1, kin_generations 2 | 97 | 88 | - | 160 | 206 |
+| chosen_share_min 0.4, friends_min 1, kin_generations 2 | 97 | 92 | - | 160 | 206 |
+| chosen_share_min 0.5, friends_min 1, kin_generations 2 | 115 | 95 | - | 160 | 206 |
+| chosen_share_min 0.6, friends_min 1, kin_generations 2 | - | 104 | - | 184 | 225 |
+| chosen_share_min 0.3, friends_min 2, kin_generations 0 | - | 103 | - | 160 | 206 |
+| chosen_share_min 0.4, friends_min 2, kin_generations 0 | - | 105 | - | 183 | 214 |
+| chosen_share_min 0.5, friends_min 2, kin_generations 0 | - | 112 | - | 188 | 243 |
+| chosen_share_min 0.6, friends_min 2, kin_generations 0 | - | 159 | - | 200 | - |
+| chosen_share_min 0.3, friends_min 2, kin_generations 1 | - | 104 | - | 160 | 206 |
+| chosen_share_min 0.4, friends_min 2, kin_generations 1 | - | 111 | - | 183 | 214 |
+| chosen_share_min 0.5, friends_min 2, kin_generations 1 | - | 112 | - | 190 | 243 |
+| chosen_share_min 0.6, friends_min 2, kin_generations 1 | - | 162 | - | 200 | - |
+| chosen_share_min 0.3, friends_min 2, kin_generations 2 | - | 104 | - | 160 | 206 |
+| chosen_share_min 0.4, friends_min 2, kin_generations 2 | - | 112 | - | 183 | 218 |
+| chosen_share_min 0.5, friends_min 2, kin_generations 2 | - | 158 | - | 190 | 246 |
+| chosen_share_min 0.6, friends_min 2, kin_generations 2 | - | 163 | - | 218 | - |
+
+### Targets
+C1 entered by sol 300 on >= 3 seeds: 4 seeds (["115", "95", "-", "160", "206"]) -> PASS
+C2 (structural, T12): PASS
+C3 (<= 4 Council changes) -> PASS
+C4 pledge on >= 1 seed(s): seeds [2026] -> PASS
+C5 divided or set-aside line on >= 2 seeds: seeds [42, 7, 1234] -> PASS
+C6 trait-consistent at >= 80% of divided votes: 4 of 4 (100%); first-divided only 2 of 2 -> PASS
+C7 Council lines <= 1.0 per 5 Council sols on every seed: all council_* PASS; without circles PASS
+Flags: FLOOR web clear; FLOOR chosen clear; CEILING clear; SIZE-DOMINANT FLAGGED; LOCKSTEP clear; NOROOM clear

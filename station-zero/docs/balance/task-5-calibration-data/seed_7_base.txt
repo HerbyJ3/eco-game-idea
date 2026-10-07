@@ -1,6 +1,6 @@
 Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
 
-# council probe: seed=7 sols=300 tag=base params={  } data_hash=274c8040aaceba4e digest=4644c2e44dd97170 wall 91.9 s
+# council probe: seed=7 sols=300 tag=base params={  } data_hash=274c8040aaceba4e digest=4644c2e44dd97170 wall 90.2 s
 pop_end 72 max_pop 72 births 65 deaths { "air": 0, "thirst": 0, "hunger": 0, "suffocated_outside": 0, "other": 0 }
 history [{ "sol": 0, "age": "landing", "how": "landing", "pop": 7 }, { "sol": 58, "age": "settlement", "how": "settled", "pop": 22 }, { "sol": 95, "age": "council", "how": "council", "pop": 32 }]
 projected ["L", "S"] at sols [0, 58] (changes 1); Task 3 first settle 58 changes 1
@@ -63,4 +63,5 @@ lines { "by_key": { "quiet": 1, "proposal": 1, "divided": 1, "set_aside_long": 2
   line sol 195 council_proposal_again: Radra-40 raised the dome again at the meeting in the habitat.
   line sol 255 council_set_aside_long: The talk of a dome has gone round and round. The council lets it rest for now.
   line sol 285 council_proposal_again: Luro-57 raised the dome again at the meeting in the habitat.
-cost { "bands": { "b70": { "steps": 3879, "step_us": 4481873, "mod_us": 69130 }, "b120": { "steps": 0, "step_us": 0, "mod_us": 0 }, "all": { "steps": 147959, "step_us": 89681284, "mod_us": 1271585 } }, "max_pop": 72, "on_sol_us": { "all": { "n": 300, "min": 228.0, "p10": 288.0, "p25": 510.0, "median": 1076.5, "mean": 1468.38666666667, "p75": 1949.0, "p90": 3189.0, "p95": 3972.0, "max": 6286.0 }, "pop60_80": { "n": 8, "min": 2797.0, "p10": 2797.0, "p25": 3071.0, "median": 3323.0, "mean": 3535.75, "p75": 4535.0, "p90": 4687.0, "p95": 4687.0, "max": 4687.0 }, "pop_gt120": { "n": 0 }, "peak90": { "n": 5, "min": 2993.0, "p10": 2993.0, "p25": 3071.0, "median": 3179.0, "mean": 3693.0, "p75": 4535.0, "p90": 4687.0, "p95": 4687.0, "max": 4687.0 } } }
+cost { "bands": { "b70": { "steps": 3879, "step_us": 4269176, "mod_us": 65987 }, "b120": { "steps": 0, "step_us": 0, "mod_us": 0 }, "all": { "steps": 147959, "step_us": 88029767, "mod_us": 1217893 } }, "max_pop": 72, "on_sol_us": { "all": { "n": 300, "min": 220.0, "p10": 284.0, "p25": 529.0, "median": 1050.5, "mean": 1408.75333333333, "p75": 1870.0, "p90": 3038.0, "p95": 3310.0, "max": 7498.0 }, "pop60_80": { "n": 8, "min": 2857.0, "p10": 2857.0, "p25": 2971.0, "median": 3279.5, "mean": 3643.5, "p75": 4610.0, "p90": 4960.0, "p95": 4960.0, "max": 4960.0 }, "pop_gt120": { "n": 0 }, "peak90": { "n": 5, "min": 2861.0, "p10": 2861.0, "p25": 2971.0, "median": 3161.0, "mean": 3586.6, "p75": 4330.0, "p90": 4610.0, "p95": 4610.0, "max": 4610.0 } } }
+
