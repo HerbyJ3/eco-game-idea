@@ -13,6 +13,8 @@ Tunables live in `data/council.json` (new) and new balance keys in `data/relatio
 ## Owner decisions (Herby, 2026-10-07)
 Resolved: **O1 = (a)** settled 30 sols + friend web + chosen-friend share + 12 voices. **O2 = (a)** a pledge, nothing built in Task 5. **O3 = (a)** Council ships hash-neutral; the lonely run is plan step 3 under the stricter adoption rule, one owner-approved reset if adopted. **O4 = (a)** no new art. **O5 = (a)** dome only, on topic-keyed machinery; the water rule is a later matter.
 
+Further owner rulings (2026-10-07, on revision 3): **'family' for the chosen-friend clause reaches two generations** (`chosen.kin_generations` 2; housemate leak stated). **Lonely-run clause 2 counts only eligible seeds**: seeds with no friendless late newborns on the shipped run are left out; the pull must be better on at least two thirds of the eligible seeds, and at least 6 seeds must be eligible (otherwise the result goes to the owner). This replaces the literal 10 of 15 in section 10.
+
 ## Open for the owner (options as posed)
 Five questions. Each lists the recommendation first, its cost, the facts behind it, and what the three reviewers said. The spec is written to option (a) of each; any other answer is a revision.
 
