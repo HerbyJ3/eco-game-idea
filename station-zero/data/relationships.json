@@ -40,6 +40,13 @@
     "met_friend_share_flag": 0.35,
     "first_line_min_sol": 25,
     "first_line_max_sol": 55,
-    "found_friend_tail_per5_max": 3.0
+    "found_friend_tail_per5_max": 3.0,
+    "log_share_flag": 0.15,
+    "r9_seeds": [42, 7, 99, 1234, 2026, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
+    "r9_gain_min": 0.03,
+    "r9_seeds_better_min": 10,
+    "repeat_rise_max": 0.5,
+    "repeat_window_sols": 20,
+    "repeat_seeds_min": 10
   }
 }

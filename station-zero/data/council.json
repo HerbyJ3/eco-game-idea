@@ -1,0 +1,154 @@
+{
+ "age": {
+  "name": "Council"
+ },
+ "topics": [
+  "dome"
+ ],
+ "text": {
+  "enter": "Jezero has begun to meet as one. Its people know one another now, and evenings end with everyone in one room, talking at once, and now and then agreeing.",
+  "enter_again": "The colony meets as one again. Old friends have found each other, and old arguments are taken up where they were left.",
+  "split": "The meetings have gone quiet. Friends keep to their own circles, and no one speaks for the whole colony.",
+  "quiet": "The council meets, but no one has spoken for anything yet.",
+  "quiet_hard": "The council meets, but the talk is all of {clause}.",
+  "circles": "People keep to their own circles. No one yet speaks for the whole colony.",
+  "circles_again": "The evenings are still quiet. Friends keep to their own circles, and no one gathers the whole colony.",
+  "circles_few": "Jezero is still more a household than a colony. There are too few grown hands for a council.",
+  "place": {
+   "habitat": "in the habitat",
+   "green_room": "in the green room",
+   "workshop": "in the workshop",
+   "reactor": "by the reactor",
+   "archive": "in the archive",
+   "comms": "at comms",
+   "other": "in the colony"
+  },
+  "clause": {
+   "ice": "the ice",
+   "air": "the air",
+   "food": "the food"
+  }
+ },
+ "dome": {
+  "text": {
+   "proposal": "{a} spoke of a dome at the meeting {place}: a roof of sky, and streets without suits.",
+   "proposal_again": "{a} raised the dome again at the meeting {place}.",
+   "divided": "The council is divided over the dome. {a} speaks for building it, {ra}; {b} says not yet, {rb}.",
+   "set_aside": "The council has set the dome aside for now. {b} spoke for waiting, and many agreed.",
+   "set_aside_hard": "The council has set the dome aside. While {clause} runs short, no one has the heart for it.",
+   "set_aside_long": "The talk of a dome has gone round and round. The council lets it rest for now.",
+   "pledge": "The council has agreed to build a dome. {a} spoke for it first, and tonight, {place}, Jezero promised to build it together, {why}.",
+   "pledge_divided": "The council has agreed to build a dome. {a} spoke for it first, and tonight, {place}, Jezero promised to build it together, {why}, though not everyone is glad of it.",
+   "pledge_why_personal": "because its bolder hearts would not wait",
+   "aftermath_round": "{b}, who said not yet, has come round to the dome.",
+   "aftermath_still": "{b} still says not yet, but will build with the rest.",
+   "after_pledge": "The council still meets most evenings. With the dome agreed, the talk is of smaller things.",
+   "reason": {
+    "yes": {
+     "size": "since the modules are full",
+     "means": "since there is stone in store",
+     "child": "for the children to come",
+     "personal": "{adj} as ever",
+     "friends": "as their friends do"
+    },
+    "no": {
+     "means": "while stone is scarce",
+     "hard": "while {clause} runs short",
+     "personal": "{adj} as ever",
+     "friends": "as their friends do"
+    }
+   }
+  },
+  "lean": {
+   "ambition": 1.0,
+   "caution": 1.0,
+   "size": 0.15,
+   "means": 0.1,
+   "hard": 0.4,
+   "child": 0.15,
+   "base": 0.0,
+   "trait_centre": 0.5,
+   "means_centre": 0.5
+  },
+  "cond": {
+   "size_from": 40,
+   "size_span": 80,
+   "child_sols": 20
+  }
+ },
+ "voice": {
+  "min_age_sols": 40
+ },
+ "trust": {
+  "window_sols": 20
+ },
+ "entry": {
+  "settled_sols": 30,
+  "trust_share_min": 0.5,
+  "chosen_share_min": 0.5,
+  "chosen_friends_min": 1,
+  "trust_ok_min": 16,
+  "recent_ok": 3,
+  "voices_min": 12
+ },
+ "chosen": {
+  "kin_generations": 2
+ },
+ "exit": {
+  "trust_share_below": 0.3,
+  "split_min": 16,
+  "recent_below": 3
+ },
+ "min_dwell_sols": 20,
+ "session": {
+  "interval_sols": 5,
+  "min_voices": 5,
+  "min_voices_share": 0.1,
+  "gathering_max_age_sols": 5
+ },
+ "cond": {
+  "hard_window_sols": 10
+ },
+ "sway": {
+  "share": 0.5,
+  "close_weight": 2.0
+ },
+ "support": {
+  "yes_above": 0.1,
+  "no_below": -0.1
+ },
+ "decide": {
+  "carry_share": 0.6,
+  "carry_sessions": 2,
+  "reject_share": 0.5,
+  "reject_sessions": 2,
+  "divided_share": 0.25,
+  "max_open_votes": 12
+ },
+ "proposal": {
+  "reraise_sols": 30
+ },
+ "lines": {
+  "hard_share_min": 0.5,
+  "circles_after_sols": 20,
+  "circles_again_sols": 100,
+  "circles_max": 2,
+  "aftermath_sols": 4,
+  "after_pledge_sols": 30
+ },
+ "balance": {
+  "council_min_seeds": 3,
+  "pledge_min_seeds": 1,
+  "argue_min_seeds": 2,
+  "max_council_changes": 4,
+  "faction_trait_share_min": 0.8,
+  "lines_per5_max": 1.0,
+  "on_sol_ms_max": 3.0,
+  "step_share_max": 0.02,
+  "lockstep_share": 0.95,
+  "noroom_share_max": 0.5,
+  "discrim_from_sol": 60,
+  "first_raise_flag_sols": 6,
+  "first_raise_flag_seeds": 3
+ }
+}

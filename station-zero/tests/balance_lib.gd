@@ -36,9 +36,49 @@ static func parse_value(text: String) -> Variant:
 
 static func data_hash() -> String:
 	var parts: Array[String] = []
-	for f in ["calendar", "signs", "persona", "sim", "colony", "buildings", "beings", "resources", "suits", "ages", "relationships"]:
+	for f in ["calendar", "signs", "persona", "sim", "colony", "buildings", "beings", "resources", "suits", "ages", "relationships", "council"]:
 		parts.append(JSON.stringify(SimData.load_json(f + ".json"), "", true))
 	return "\n".join(parts).sha256_text()
+
+
+## Council helpers (spec council.md 9.1). The `age` column is a projection: L for landing, S for any other age.
+static func age_column(w: SimWorld) -> String:
+	return "L" if str(w.ages.age) == Ages.LANDING else "S"
+
+
+## The trailing `cn` column: P after the pledge (any age), else C in Council, else -.
+static func cn_column(w: SimWorld) -> String:
+	var pledged: bool = w.stats.has("council") and w.stats.council.pledge_sol != null
+	if w.council != null and not w.council.pledged.is_empty():
+		pledged = true
+	if pledged:
+		return "P"
+	return "C" if str(w.ages.age) == "council" else "-"
+
+
+## The age_history entries that survive the Landing / not-Landing projection (consecutive equal letters collapse; the
+## first of a run is kept). Shared by T10, T12 and tools/age_probe.gd.
+static func projected_history(history: Array) -> Array:
+	var out: Array = []
+	var prev := ""
+	for e in history:
+		var letter := "L" if str(e.age) == Ages.LANDING else "S"
+		if letter != prev:
+			out.append(e)
+			prev = letter
+	return out
+
+
+## An Array of "L" / "S", one per surviving entry of projected_history().
+static func project_ages(history: Array) -> Array:
+	var out: Array = []
+	for e in projected_history(history):
+		out.append("L" if str(e.age) == Ages.LANDING else "S")
+	return out
+
+
+static func projected_changes(history: Array) -> int:
+	return maxi(0, project_ages(history).size() - 1)
 
 
 static func _pct(a: float, b: float) -> float:
@@ -62,9 +102,9 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 			seed_in, sols, pstr, str(w.fixed_step), data_hash().substr(0, 16)])
 	lines.append("# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window")
 	var body: Array[String] = []
-	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s %s" % [
+	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s %s %s" % [
 			"sol", "pop", "min", "birth", "dead a/t/h/o/x", "oxygen", "food", "ice", "regol",
-			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2", "age", "web"]
+			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2", "age", "web", "cn"]
 	body.append(head)
 	var prev := {"shorts": 0, "trips": 0}
 	var rows: Array[Dictionary] = []
@@ -98,7 +138,7 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 		var row := {"sol": s, "avg_e": avg_e, "asleep": asleep, "pop": w.colony.pop(),
 				"min_pop": win.min_pop, "min_ice": win.min_ice}
 		rows.append(row)
-		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s %s %.2f" % [
+		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s %s %.2f %s" % [
 				s, w.colony.pop(), _fmt_min(win.min_pop).replace(".0", ""), st.births,
 				"%d/%d/%d/%d/%d" % [d.air, d.thirst, d.hunger, d.suffocated_outside, d.other],
 				w.colony.oxygen, w.colony.food, w.colony.ice, w.colony.regolith,
@@ -106,7 +146,7 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 				"/".join(counts), w.resources.reachable_ice_count(), int(st.mining_trips) - int(prev.trips),
 				avg_e, asleep, float(win.hours_waiting_regolith) + float(win.hours_site_no_crew),
 				_fmt_min(win.min_ice), _fmt_min(win.min_oxygen),
-				"S" if w.ages.age == Ages.SETTLEMENT else "L", float(st.relationships.web_share)])
+				age_column(w), float(st.relationships.web_share), cn_column(w)])
 		prev.shorts = st.shorts
 		prev.trips = st.mining_trips
 		w.reset_window()
@@ -209,6 +249,7 @@ static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int, notok: Dic
 	out.append({"n": 9, "verdict": "N/A", "detail": "checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)"})
 	out.append(_t10(w, sols, notok))
 	out.append(_t11(w))
+	out.append(_t12(w))
 	return out
 
 
@@ -224,11 +265,13 @@ static func _t10(w: SimWorld, sols: int, notok: Dictionary) -> Dictionary:
 	var lo := int(cfg.balance.settle_sol_min)
 	var hi := int(cfg.balance.settle_sol_max)
 	var dwell := int(cfg.min_dwell_sols)
-	var hist: Array = st.age_history
+	var live: Array = st.age_history
+	var hist: Array = projected_history(live)  # spec council.md 12: Council changes only relabel Settlement
 	var first = st.first_settlement_sol
 	var judged1 := first != null or sols >= hi
 	var ok1 := first != null and int(first) >= lo and int(first) <= hi
-	var ok2 := int(st.age_changes) <= int(cfg.balance.max_age_changes)
+	var changes_n := projected_changes(live)
+	var ok2 := changes_n <= int(cfg.balance.max_age_changes)
 	var ok3 := true
 	var min_gap := -1
 	for i in range(1, hist.size()):
@@ -236,14 +279,14 @@ static func _t10(w: SimWorld, sols: int, notok: Dictionary) -> Dictionary:
 		min_gap = gap if min_gap < 0 else mini(min_gap, gap)
 		if gap < dwell:
 			ok3 = false
-	var ok4 := hist.size() == int(st.age_changes) + 1
-	for e in hist:
+	var ok4 := live.size() == int(st.age_changes) + 1
+	for e in live:
 		if not e.has("how") or str(e.get("text", "")) == "":
 			ok4 = false
 	var changes: Array[String] = []
 	var falls: Array[String] = []
-	for i in range(1, hist.size()):
-		var e: Dictionary = hist[i]
+	for i in range(1, live.size()):
+		var e: Dictionary = live[i]
 		changes.append("sol %d %s%s" % [int(e.sol), str(e.how), (" (cause %s)" % str(e.cause)) if e.cause != null else ""])
 		if str(e.how) == "fell_back":
 			falls.append("sol %d %s" % [int(e.sol), str(e.cause)])
@@ -251,10 +294,11 @@ static func _t10(w: SimWorld, sols: int, notok: Dictionary) -> Dictionary:
 	for g in Ages.GROUPS:
 		groups.append("%s %d" % [g, int(notok.get(g, 0))])
 	var detail := "first settlement sol %s (%d..%d), age_changes %d (<=%d), min gap between consecutive history entries %s (>=%d), history %d entries (changes+1 = %d); " % [
-			str(first), lo, hi, int(st.age_changes), int(cfg.balance.max_age_changes),
-			"-" if min_gap < 0 else str(min_gap), dwell, hist.size(), int(st.age_changes) + 1]
-	detail += "report: sols_in_age landing %d settlement %d, age at end %s, changes [%s], fall back causes [%s], not-ok sols %d (by group, a sol can fail several: %s)" % [
-			int(st.sols_in_age.get("landing", 0)), int(st.sols_in_age.get("settlement", 0)), str(w.ages.age),
+			str(first), lo, hi, changes_n, int(cfg.balance.max_age_changes),
+			"-" if min_gap < 0 else str(min_gap), dwell, live.size(), int(st.age_changes) + 1]
+	detail += "report: sols_in_age landing %d settlement %d council %d, age at end %s, changes [%s], fall back causes [%s], not-ok sols %d (by group, a sol can fail several: %s)" % [
+			int(st.sols_in_age.get("landing", 0)), int(st.sols_in_age.get("settlement", 0)),
+			int(st.sols_in_age.get("council", 0)), str(w.ages.age),
 			"; ".join(PackedStringArray(changes)), "; ".join(PackedStringArray(falls)) if not falls.is_empty() else "none",
 			int(notok.get("sols", 0)), ", ".join(PackedStringArray(groups))]
 	if not judged1 and ok2 and ok3 and ok4:
@@ -301,3 +345,68 @@ static func _t11(w: SimWorld) -> Dictionary:
 			str(rs.first_friendship_sol), "ok" if ok4 else "BAD", dropped_txt, dropped_friend, "ok" if ok5 else "BAD",
 			float(rs.web_share), float(rs.second_share), float(rs.lonely_share), fm, share, pop]
 	return _v(11, ok1 and ok2 and ok3 and ok4 and ok5, detail)
+
+
+## Target 12, the Council (spec council.md section 12), per seed from `stats` and the log. Judged: (1) trust_by_sol,
+## chosen_by_sol and pop_by_sol have one length; (2) C2: every Council entry is at least settled_sols after the Settlement
+## entry before it, and every Council change is at least min_dwell_sols after the previous age_history entry; (3) C3: at
+## most balance.max_council_changes Council changes (entries plus splits); (4) every proposal has an outcome or is the open
+## one, and a pledged one took at least 2 x session.interval_sols; (5) no sol boundary carries two Council-kind lines.
+## Reported: first Council sol, meetings, proposals and outcomes, pledge sol and reason, lines, lines dropped, and the
+## council_min_seeds / pledge_min_seeds counts the cross-seed targets C1 and C4 need.
+static func _t12(w: SimWorld) -> Dictionary:
+	var st: Dictionary = w.stats
+	var cs: Dictionary = st.council
+	var cfg: Dictionary = SimData.council()
+	var ok1: bool = cs.trust_by_sol.size() == cs.chosen_by_sol.size() and cs.trust_by_sol.size() == st.pop_by_sol.size()
+	var hist: Array = st.age_history
+	var ok2 := true
+	var changes := 0
+	var last_settle := -1
+	for i in hist.size():
+		var e: Dictionary = hist[i]
+		var is_council_change := str(e.age) == "council" or str(e.how) == "council_split"
+		if str(e.age) == "council":
+			if last_settle < 0 or int(e.sol) - last_settle < int(cfg.entry.settled_sols):
+				ok2 = false
+		if is_council_change:
+			changes += 1
+			if i > 0 and int(e.sol) - int(hist[i - 1].sol) < int(cfg.min_dwell_sols):
+				ok2 = false
+		if str(e.age) == "settlement":
+			last_settle = int(e.sol)
+	var ok3 := changes <= int(cfg.balance.max_council_changes)
+	var ok4 := true
+	var props: Array = cs.proposals
+	var pledged_reason := "-"
+	for i in props.size():
+		var p: Dictionary = props[i]
+		if p.outcome == null:
+			if i != props.size() - 1:
+				ok4 = false
+		elif str(p.outcome) == "pledged":
+			pledged_reason = str(p.reason)
+			if int(p.outcome_sol) - int(p.raised_sol) < 2 * int(cfg.session.interval_sols):
+				ok4 = false
+	var ok5 := true
+	var seen := {}
+	for e in w.log:
+		if str(e.kind).begins_with("council_"):
+			var sol := int(e.get("sol", -1))
+			if sol < 0:
+				sol = int(w.clock.sol_index(float(e.t))) if e.has("t") else -1
+			if seen.has(sol):
+				ok5 = false
+			seen[sol] = true
+	var outcomes: Array[String] = []
+	for p in props:
+		outcomes.append("%s@%d %s" % [str(p.topic), int(p.raised_sol), str(p.outcome)])
+	var detail := "(1) list lengths %d/%d/%d %s; (2) C2 %s; (3) council changes %d (<=%d) %s; (4) proposals %d %s; (5) one Council line per boundary %s; " % [
+			cs.trust_by_sol.size(), cs.chosen_by_sol.size(), st.pop_by_sol.size(), "ok" if ok1 else "BAD",
+			"ok" if ok2 else "BAD", changes, int(cfg.balance.max_council_changes), "ok" if ok3 else "BAD",
+			props.size(), "ok" if ok4 else "BAD", "ok" if ok5 else "BAD"]
+	detail += "report: first Council sol %s, meetings %d, proposals [%s], pledge sol %s reason %s, lines %s, dropped %d; council_min_seeds %d pledge_min_seeds %d" % [
+			str(cs.first_council_sol), int(cs.sessions), "; ".join(PackedStringArray(outcomes)), str(cs.pledge_sol),
+			pledged_reason, JSON.stringify(cs.lines), int(cs.lines_dropped),
+			int(cfg.balance.council_min_seeds), int(cfg.balance.pledge_min_seeds)]
+	return _v(12, ok1 and ok2 and ok3 and ok4 and ok5, detail)

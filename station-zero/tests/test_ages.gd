@@ -1369,7 +1369,7 @@ func test_t16_landing_line_founder_and_blank(t) -> void:
 	t.eq(w.stats.age, "landing", "stats.age")
 	t.eq(int(w.stats.age_changes), 0, "age_changes 0")
 	t.eq(w.stats.first_settlement_sol, null, "first_settlement_sol null")
-	t.eq(w.stats.sols_in_age, {"landing": 0, "settlement": 0}, "sols_in_age zeros")
+	t.eq(w.stats.sols_in_age, {"landing": 0, "settlement": 0, "council": 0}, "sols_in_age zeros")
 	t.eq(w.stats.age_history.size(), 1, "founder world: one history entry")
 	if w.stats.age_history.size() == 1:
 		var h: Dictionary = w.stats.age_history[0]
@@ -1440,7 +1440,7 @@ func test_t16_staged_settle_fall_back_settle_again(t) -> void:
 		t.eq(int(h[3].family_mars_born), 6, "history family_mars_born")
 	t.eq(int(w.stats.first_settlement_sol), 44, "first_settlement_sol stays at the first value")
 	var sia: Dictionary = w.stats.sols_in_age
-	t.eq(int(sia.landing) + int(sia.settlement), last, "sols_in_age sums to the boundaries seen")
+	t.eq(int(sia.landing) + int(sia.settlement) + int(sia.council), last, "sols_in_age sums to the boundaries seen")
 	# landing credited at boundaries 1..44 and 65..100 (the age in force during the sol that ended): 44 + 36
 	t.eq(int(sia.landing), 44 + 36, "landing: boundaries 1..44 and 65..100")
 	t.eq(int(sia.settlement), 20, "settlement: boundaries 45..64")

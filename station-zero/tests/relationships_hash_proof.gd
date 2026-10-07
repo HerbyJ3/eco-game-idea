@@ -61,13 +61,15 @@ static func strip_last(body: Array, name: String) -> Dictionary:
 
 ## Check 1: {body, web_absent}.
 static func drop_web(body: Array) -> Dictionary:
-	var r := strip_last(body, "web")
+	var c := strip_last(body, "cn")  # Task 5 (spec council.md 9.1): the trailing `cn` column goes first when present
+	var r := strip_last(c.body, "web")
 	return {"body": r.body, "web_absent": not r.stripped}
 
 
 ## Check 2: {body, web_absent, age_absent}. `web` is stripped when present, then `age` when it is then the last field.
 static func drop_web_and_age(body: Array) -> Dictionary:
-	var w := strip_last(body, "web")
+	var c := strip_last(body, "cn")
+	var w := strip_last(c.body, "web")
 	var a := strip_last(w.body, "age")
 	return {"body": a.body, "web_absent": not w.stripped, "age_absent": not a.stripped}
 

@@ -1434,6 +1434,8 @@ func test_t13_purity_and_determinism(t) -> void:
 	t.eq(sa.stocks, sc.stocks, "equal stocks")
 	t.eq(sa.draws, sc.draws, "equal next 1,000 rng draws")
 	for k in sc.stats:
+		if k == "council":
+			continue  # stats.council exists only with the Council module; test 16 of test_council.gd compares it
 		t.eq(sa.stats.get(k), sc.stats[k], "old stats key %s is equal" % k)
 	t.eq(sa.stats.keys().size(), sc.stats.keys().size(), "same set of old stats keys")
 	_end(t)

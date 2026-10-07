@@ -213,7 +213,7 @@ func _hist_text(hist: Array) -> String:
 	for h in hist:
 		if int(h.sol) == 0:
 			continue
-		var tag := "S" if h.age == Ages.SETTLEMENT else "L"
+		var tag := "L" if h.age == Ages.LANDING else "S"
 		parts.append("%s@%d%s" % [tag, int(h.sol), "" if h.cause == null else "(" + str(h.cause) + ")"])
 	return "-" if parts.is_empty() else " ".join(PackedStringArray(parts))
 
@@ -238,7 +238,7 @@ func _seed_run(seed_in: int, sols: int, out_dir: String) -> void:
 	var cfg: Dictionary = SimData.ages()
 
 	# ---- self-replay check
-	var live: Array = res.live_history
+	var live: Array = load("res://tests/balance_lib.gd").projected_history(res.live_history)  # spec council.md 9.1: the replay knows only Landing and Settlement
 	var problems: Array[String] = []
 	if live.size() != rep.hist.size():
 		problems.append("history length live %d vs replay %d" % [live.size(), rep.hist.size()])
@@ -480,7 +480,7 @@ func _seed_run(seed_in: int, sols: int, out_dir: String) -> void:
 				fcl.append(c)
 		var ageh := _age_at(rep.hist, n)
 		out.append("%4d %3s %4d %4d %5d %7.1f %6.2f %8.2f %7.1f %4d %5s %6.1f %6.1f  %s" % [
-				n, "S" if ageh == Ages.SETTLEMENT else "L", int(r.pop), int(r.fam), int(r.homes), float(r.ice), float(r.ice_days),
+				n, "L" if ageh == Ages.LANDING else "S", int(r.pop), int(r.fam), int(r.homes), float(r.ice), float(r.ice_days),
 				float(r.ice_days_min), float(r.ice_min), int(rep.ok40[n]), "ok" if rep.ok.get(n, false) else "-",
 				100.0 * float(r.distressed) / maxf(1, int(r.pop)), 100.0 * float(r.rested) / maxf(1, int(r.pop)), ",".join(PackedStringArray(fcl))])
 	for l in out:

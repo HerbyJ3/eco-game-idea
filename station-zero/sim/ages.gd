@@ -213,3 +213,10 @@ func _record(world: SimWorld, how: String, cause: Variant, text: String) -> void
 	world.stats.age_history.append({"age": age, "how": how, "cause": cause, "text": text,
 			"pop": world.colony.pop(), "family_mars_born": family_mars_born(world)[0],
 			"t": world.t, "sol": world.sol(), "clock_sol": world.clock.sol_index(world.t)})
+
+
+func enter_age(world: SimWorld, age_id: String, how: String, text: String) -> void:
+	age = age_id
+	world.stats.age_changes += 1
+	_record(world, how, null, text)
+	world._log("age_began", text, {"age": age, "how": how})

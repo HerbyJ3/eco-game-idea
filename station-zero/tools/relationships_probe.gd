@@ -617,7 +617,7 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 		cf.store_line("sol,age,pop,births,deaths,pairs,friend_pairs,close_pairs,web,second,lonely,friends_mean,lines,grief,lines_cum,capped_cum,dropped_cum,stale_cum,pending,formed_cum,close_cum,log_size")
 		for r in recs:
 			cf.store_line("%d,%s,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%.4f,%.4f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d" % [
-					r.sol, "S" if r.age == Ages.SETTLEMENT else "L", r.pop, r.births, r.deaths, r.pairs, r.friend_pairs, r.close_pairs,
+					r.sol, "L" if r.age == Ages.LANDING else "S", r.pop, r.births, r.deaths, r.pairs, r.friend_pairs, r.close_pairs,
 					r.web, r.second, r.lonely, r.friends_mean, r.lines, r.grief, r.lines_cum, r.capped_cum, r.dropped_cum,
 					r.stale_cum, r.pending, r.formed_cum, r.close_cum, r.log_size])
 		cf.close()
@@ -1125,7 +1125,7 @@ static func _hist(h: Array) -> String:
 	for x in h:
 		if int(x.sol) == 0:
 			continue
-		parts.append("%s@%d%s" % ["S" if x.age == "settlement" else "L", int(x.sol), "" if str(x.cause) == "" else "(" + str(x.cause) + ")"])
+		parts.append("%s@%d%s" % ["L" if x.age == "landing" else "S", int(x.sol), "" if str(x.cause) == "" else "(" + str(x.cause) + ")"])
 	return " ".join(PackedStringArray(parts))
 
 

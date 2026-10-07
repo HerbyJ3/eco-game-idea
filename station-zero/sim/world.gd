@@ -18,6 +18,8 @@ var ages_enabled := true
 ## `relationships_enabled` false skips both hooks (test seam).
 var relationships: Relationships
 var relationships_enabled := true
+var council: Council
+var council_enabled := true
 var resources: Resources
 ## Phase 5 scouting. On for founder worlds; blank test worlds start with it off so that tests that
 ## count rng draws are not disturbed (spec step 5 notes).
@@ -81,6 +83,7 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	resources = Resources.new(buildings, rng)
 	ages = Ages.new()
 	relationships = Relationships.new()
+	council = Council.new()
 	_log_cap = int(SimData.colony().log_cap)
 	_init_stats()
 	if not options.get("blank", false):
@@ -92,9 +95,11 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 		stats.pop_by_sol.append(colony.pop())
 		ages.begin(self, true)
 		relationships.begin(self, true)
+		council.begin(self, true)
 	else:
 		ages.begin(self, false)
 		relationships.begin(self, false)
+		council.begin(self, false)
 
 
 func _init_stats() -> void:
@@ -116,9 +121,10 @@ func _init_stats() -> void:
 		"pop_by_sol": [], "min_pop": null,
 		"min_oxygen": null, "min_food": null, "min_ice": null, "min_ice_after30": null,
 		"max_ice_over_target": 0.0, "max_regolith_over_target": 0.0,
-		"age": Ages.LANDING, "age_changes": 0, "sols_in_age": {Ages.LANDING: 0, Ages.SETTLEMENT: 0},
+		"age": Ages.LANDING, "age_changes": 0, "sols_in_age": {Ages.LANDING: 0, Ages.SETTLEMENT: 0, "council": 0},
 		"first_settlement_sol": null, "age_history": [],
 		"relationships": Relationships.new_stats(),
+		"council": Council.new_stats(),
 	}
 	reset_window()
 
@@ -304,6 +310,8 @@ func step() -> void:
 	# Phase 11b: relationship tick, once per relationships.tick_h (spec relationships.md section 4).
 	if relationships_enabled and relationships != null:
 		relationships.on_step(self, fixed_step)
+	if council_enabled and council != null:
+		council.on_step(self)
 	if _sol_started:
 		stats.pop_by_sol.append(colony.pop())
 		_stat_add("sol_samples", 1)
@@ -314,6 +322,8 @@ func step() -> void:
 			ages.on_sol(self)
 		if relationships_enabled and relationships != null:
 			relationships.on_sol(self)
+		if council_enabled and council != null:
+			council.on_sol(self)
 
 
 ## Removes up to `amount` ice from a field and returns what was taken. A field that runs dry leaves

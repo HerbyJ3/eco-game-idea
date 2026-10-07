@@ -64,3 +64,7 @@ static func ages() -> Dictionary:
 
 static func relationships() -> Dictionary:
 	return load_json("relationships.json")
+
+
+static func council() -> Dictionary:
+	return load_json("council.json")
