@@ -10,7 +10,10 @@ Locked decisions respected:
 
 Tunables live in `data/council.json` (new) and new balance keys in `data/relationships.json`. No tunable in the new module `sim/council.gd`. This spec describes behaviour and numbers only, no code. **Every number marked E is an estimate until the calibration probe (section 12) measures it.**
 
-## Open for the owner
+## Owner decisions (Herby, 2026-10-07)
+Resolved: **O1 = (a)** settled 30 sols + friend web + chosen-friend share + 12 voices. **O2 = (a)** a pledge, nothing built in Task 5. **O3 = (a)** Council ships hash-neutral; the lonely run is plan step 3 under the stricter adoption rule, one owner-approved reset if adopted. **O4 = (a)** no new art. **O5 = (a)** dome only, on topic-keyed machinery; the water rule is a later matter.
+
+## Open for the owner (options as posed)
 Five questions. Each lists the recommendation first, its cost, the facts behind it, and what the three reviewers said. The spec is written to option (a) of each; any other answer is a revision.
 
 **O1. The Council gate: what has to be true before the colony is called a Council?** (plan Q1; ages.md 18 item 5, still open)
