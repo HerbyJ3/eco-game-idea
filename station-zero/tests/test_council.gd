@@ -220,6 +220,8 @@ func _settle(w, n: int, how: String = "settled") -> void:
 func _council(w, n: int) -> void:
 	_sol_set(w, n)
 	w.ages.enter_age(w, "council", "council", "Staged council.")
+	if _cs(w).first_council_sol == null:
+		_cs(w).first_council_sol = n
 	w.council.last_session_sol = n
 	w.council.best = {}
 	w.council.quiet_logged = false
@@ -896,8 +898,7 @@ func test_t03h_the_second_entry_is_again_and_waits_thirty_sols_after_a_split(t) 
 		return
 	var w = _gate_world("none")
 	_council(w, 40)
-	var low := _prefill(20, 0.0, 0.9)
-	low = []
+	var low: Array = []
 	for i in 19:
 		low.append(0.05)
 	t.check(not _try(w, 60, low, low) and str(w.stats.age) == "settlement", "staging: the Council splits at sol 60")
@@ -1010,7 +1011,7 @@ func test_t04a_no_split_before_the_twenty_sol_dwell(t) -> void:
 		return
 	var low := _prefill(20, 0.05, 0.05)
 	var w = _split_world()
-	t.check(not _try(w, 59, low, low) and str(w.stats.age) == "council", "19 sols after the entry: no split")
+	t.check(_try(w, 59, low, low) and str(w.stats.age) == "council", "19 sols after the entry: no split")
 	var w2 = _split_world()
 	t.check(not _try(w2, 60, low, low), "20 sols after the entry: the split happens (the colony is no longer Council)")
 	_end(t)
@@ -1072,7 +1073,7 @@ func test_t04d_a_low_chosen_share_alone_never_splits(t) -> void:
 	var zero: Array = []
 	for i in 19:
 		zero.append(0.0)
-	t.check(not _try(w, 60, _prefill(20, 0.9), zero) and str(w.stats.age) == "council", "all chosen readings 0.0 with a healthy web: no split")
+	t.check(_try(w, 60, _prefill(20, 0.9), zero) and str(w.stats.age) == "council", "all chosen readings 0.0 with a healthy web: no split")
 	_end(t)
 
 
@@ -2053,7 +2054,8 @@ func test_t10d_the_hard_set_aside_names_the_clause(t) -> void:
 ## A divided council: 3 yes (ids 1 to 3), 3 no (4 to 6) and 4 undecided; runs the raise (45) and the first vote (50).
 func _divided_world(edits: Dictionary = {}) -> Dictionary:
 	var v := _vw(3, 3, 4, edits)
-	_raise(v.w, v.yes)
+	v["room"] = v.yes + v.neu.slice(0, 2)
+	_raise(v.w, v.room)
 	return v
 
 
@@ -2063,10 +2065,10 @@ func test_t10e_twelve_open_votes_let_the_dome_rest(t) -> void:
 	var v := _divided_world()
 	var w = v.w
 	for i in 11:
-		_meet(w, 50 + 5 * i, v.yes)
+		_meet(w, 50 + 5 * i, v.room)
 	t.check(w.council.open != null and int(w.council.open.votes) == 11, "after 11 votes the talk goes on")
 	t.eq(_cs(w).proposals[0].outcome, null, "no outcome yet")
-	_meet(w, 105, v.yes)
+	_meet(w, 105, v.room)
 	t.check(w.council.open == null, "the 12th vote closes it")
 	t.eq(str(_last_line(w).kind), "council_set_aside_long", "with the rest line")
 	t.eq(str(_last_line(w).text), _dt("set_aside_long"), "its text")
@@ -2089,7 +2091,7 @@ func test_t10f_divided_names_both_speakers_with_their_reasons(t) -> void:
 	_friend(w, v.yes[1], v.yes[2])
 	_friend(w, v.no[0], v.no[1])
 	_friend(w, v.no[1], v.no[2])
-	_meet(w, 50, v.yes)
+	_meet(w, 50, v.room)
 	t.eq(_kinds(w), ["council_proposal", "council_divided"], "the divided line at the first vote")
 	var e: Dictionary = _last_line(w)
 	t.eq(int(e.being_id), int(v.yes[1]), "the yes speaker has the most friends inside the yes camp")
@@ -2097,13 +2099,13 @@ func test_t10f_divided_names_both_speakers_with_their_reasons(t) -> void:
 	var want := _fmt(_dt("divided"), {"a": "N%d" % v.yes[1], "b": "N%d" % v.no[1],
 			"ra": _yes_reason("personal", "driven"), "rb": _no_reason("personal", "nurturing")})
 	t.eq(str(e.text), want, "text: personal reasons with the top adjective of each camp (ties in persona.dims order)")
-	_meet(w, 55, v.yes)
+	_meet(w, 55, v.room)
 	t.eq(_kinds(w), ["council_proposal", "council_divided"], "offered once")
 	_end(t)
 
 
 func _divided_names(w, v: Dictionary) -> Array:
-	_meet(w, 50, v.yes)
+	_meet(w, 50, v.room)
 	var e := _last_line(w)
 	if str(e.get("kind", "")) != "council_divided":
 		return [-1, -1]
@@ -2134,7 +2136,7 @@ func test_t10h_the_no_reason_is_the_hard_clause_when_hardship_dominates(t) -> vo
 	var v := _divided_world({"dome.lean.base": 0.3})
 	var w = v.w
 	w.council.hard_win = _hard_entries(9, 0)
-	_meet(w, 50, v.yes)
+	_meet(w, 50, v.room)
 	var e: Dictionary = _last_line(w)
 	t.eq(str(e.kind), "council_divided", "staging: a divided line at the first vote")
 	t.eq(int(e.other_id), int(v.no[0]), "the no speaker")
@@ -2154,10 +2156,10 @@ func test_t10i_the_yes_reason_is_size_when_size_is_the_largest_term(t) -> void:
 	_calm(w)
 	_settle(w, 10)
 	_council(w, 40)
-	_raise(w, neu.slice(0, 6))
+	_raise(w, neu.slice(0, 12))
 	t.eq(_kinds(w), ["council_proposal"], "staging: raised by the voice with the child (the highest stance)")
 	t.eq(int(_last_line(w).being_id), int(neu[0]), "staging: the proposer")
-	_meet(w, 50, neu.slice(0, 6))
+	_meet(w, 50, neu.slice(0, 12))
 	var e: Dictionary = _last_line(w)
 	t.eq(str(e.kind), "council_divided", "89 yes and 31 no of 120: divided")
 	t.eq(int(e.being_id), int(neu[0]), "the yes speaker")
@@ -2377,7 +2379,7 @@ func test_t11f_aftermath_after_four_sols_still_or_come_round(t) -> void:
 	# come round
 	var v2 := _aftermath_world()
 	var w2 = v2.w
-	_set_traits(w2, v2.no[0], YES)
+	_set_traits(w2, v2.no[0], {"drive": 0.9, "curiosity": 0.9, "restless": 0.9, "steady": 0.5, "care": 0.5})
 	_bnd(w2, 59)
 	t.eq(str(_last_line(w2).text), _fmt(_dt("aftermath_round"), {"b": "N%d" % v2.no[0]}), "a doubter whose stance is now yes has come round")
 	# evaluated at the first boundary at or after the due sol
@@ -2612,7 +2614,7 @@ func test_t14b_no_boundary_logs_two_council_lines(t) -> void:
 	var v := _divided_world()
 	var w = v.w
 	for i in 12:
-		_meet(w, 50 + 5 * i, v.yes)
+		_meet(w, 50 + 5 * i, v.room)
 	var seen := {}
 	var dup := false
 	for e in _clines(w):
@@ -2930,7 +2932,7 @@ func _broken_rules(d: Dictionary, ages: Dictionary, bkinds: Array) -> Array:
 		f.append("interval_sols")
 	if not int(d.session.gathering_max_age_sols) >= 1:
 		f.append("gathering_max_age_sols")
-	if not float(d.dome.lean.trait_centre) > 0.0:
+	if d.has("dome") and not float(d.dome.lean.trait_centre) > 0.0:
 		f.append("trait_centre")
 	if not int(d.chosen.kin_generations) >= 0:
 		f.append("kin_generations")
