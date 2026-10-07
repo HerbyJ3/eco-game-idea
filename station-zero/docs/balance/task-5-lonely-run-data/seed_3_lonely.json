@@ -1,0 +1,383 @@
+{
+  "age_end": "landing",
+  "age_history": [
+    {
+      "age": "landing",
+      "cause": "",
+      "how": "landing",
+      "sol": 0
+    },
+    {
+      "age": "settlement",
+      "cause": "",
+      "how": "settled",
+      "sol": 103
+    },
+    {
+      "age": "landing",
+      "cause": "ice",
+      "how": "fell_back",
+      "sol": 296
+    }
+  ],
+  "births": 139,
+  "births_tail": 74,
+  "blocks_5sol": 56,
+  "bond_age": {
+    "n": 53,
+    "restless_bottom": 0.205199999999999994,
+    "restless_bottom_age": 52.352941176470587,
+    "restless_top": 0.429929411764705838,
+    "restless_top_age": 18.0,
+    "third": 17
+  },
+  "bond_age_grown": {
+    "n": 45,
+    "restless_bottom": 0.199826666666666625,
+    "restless_bottom_age": 37.3333333333333357,
+    "restless_top": 0.404119999999999924,
+    "restless_top_age": 22.8000000000000007,
+    "third": 15
+  },
+  "close_formed": 9,
+  "crew_drifted": 19,
+  "d1": {
+    "ever_together_pairs": 8340,
+    "friend_pairs": 53,
+    "friend_pairs_ever_together": 53,
+    "share": 0.00635491606714628284,
+    "share_both": 0.00635491606714628284
+  },
+  "d3_lonely_dead": false,
+  "data_hash": "951361eb8ab36404",
+  "deaths": {
+    "air": 0,
+    "hunger": 0,
+    "other": 0,
+    "suffocated_outside": 0,
+    "thirst": 14
+  },
+  "deaths_unexplained": 0,
+  "digest": "10c94bd43f689b20",
+  "drifted": 0,
+  "f4": {
+    "log_share_over_0_15": false,
+    "newcomer_later_than_68": false,
+    "newcomer_later_than_80": false,
+    "newcomer_never": false,
+    "r13_over_2_5": false
+  },
+  "f4_1_longest_no_line_run_before_newcomer": 21,
+  "ff_base_n": 89,
+  "ff_base_per5": 1.58928571428571419,
+  "ff_per_birth_tail": 0.905405405405405372,
+  "ff_tail_n": 67,
+  "ff_tail_per5": 2.23333333333333339,
+  "first_birth_sol": 40,
+  "first_capped_line_sol": 21,
+  "first_friendship_sol": 64,
+  "first_line_by_kind": {
+    "rel_close": 266,
+    "rel_close_crew": 44,
+    "rel_drifted": 21,
+    "rel_found_friend": 80,
+    "rel_friends": 64,
+    "rel_grief": 221
+  },
+  "first_mars_born_friendship_sol": 64,
+  "first_newcomer_line_sol": 64,
+  "first_rel_line_sol": 21,
+  "first_settlement_sol": 103,
+  "friendships_formed": 393,
+  "friendships_renewed": 5,
+  "gate": {
+    "at_entry": {
+      "chosen": 0.574468085106383031,
+      "sol": 151,
+      "trust": 0.574468085106383031,
+      "voices": 47
+    },
+    "at_open_without_chosen": {
+      "chosen": 0.574468085106383031,
+      "sol": 151,
+      "trust": 0.574468085106383031,
+      "voices": 47
+    },
+    "chosen_binding_sols": 0,
+    "chosen_binds": false,
+    "earliest_entry_sol": 151,
+    "family_turned_max": 12,
+    "first_open_without_chosen_sol": 151,
+    "min_chosen_from_60": 0.0,
+    "min_trust_from_60": 0.188524590163934413,
+    "readings": {
+      "100": {
+        "chosen": 0.272727272727272707,
+        "trust": 0.5,
+        "voices": 22
+      },
+      "150": {
+        "chosen": 0.595744680851063801,
+        "trust": 0.595744680851063801,
+        "voices": 47
+      },
+      "200": {
+        "chosen": 0.610389610389610371,
+        "trust": 0.545454545454545414,
+        "voices": 77
+      },
+      "30": {
+        "chosen": 0.0,
+        "trust": 1.0,
+        "voices": 7
+      },
+      "300": {
+        "chosen": 0.377049180327868827,
+        "trust": 0.188524590163934413,
+        "voices": 122
+      },
+      "60": {
+        "chosen": 0.0,
+        "trust": 1.0,
+        "voices": 7
+      }
+    }
+  },
+  "kinless": {
+    "births": 139,
+    "kin": 139,
+    "kin_median_sols": 26.0,
+    "kin_resolved": 118,
+    "kin_unresolved": 21,
+    "kinless": 0,
+    "kinless_median_sols": -1.0,
+    "kinless_resolved": 0,
+    "kinless_share": 0.0,
+    "kinless_unresolved": 0
+  },
+  "lines": {
+    "close": 1,
+    "close_crew": 1,
+    "drifted": 3,
+    "found_friend": 89,
+    "friends": 18,
+    "grief": 7
+  },
+  "lines_20_300": 112,
+  "lines_capped": 0,
+  "lines_dropped": 0,
+  "lines_stale": 0,
+  "log": {
+    "by_kind": {
+      "age_began": 3,
+      "born": 139,
+      "building_done": 42,
+      "died": 14,
+      "exhausted": 452,
+      "founders_landed": 1,
+      "ground_broken": 43,
+      "ice_dry": 13,
+      "ice_found": 13,
+      "need_regolith": 26,
+      "rel_close": 1,
+      "rel_close_crew": 1,
+      "rel_drifted": 3,
+      "rel_found_friend": 89,
+      "rel_friends": 18,
+      "rel_grief": 7,
+      "waiting_for_builders": 122,
+      "water_dry": 10
+    },
+    "log_size_end": 500,
+    "oldest_sol_end": 186,
+    "rel_capped_kinds": 112,
+    "rel_entries": 119,
+    "rel_share": 0.119358074222668004,
+    "total_entries": 997
+  },
+  "lonely_window_mean": 0.39480781045627944,
+  "lonely_window_n": 50,
+  "max_lines_per_sol": 3,
+  "mean_lines_per_5sols_20_300": 2.0,
+  "mean_lines_per_sol": 0.400000000000000022,
+  "n_alive": 132,
+  "newborn_after_100": {
+    "loneliest_third_mean": 0.0,
+    "loneliest_third_n": 31,
+    "mean_friends": 0.736842105263157854,
+    "n": 95,
+    "zero_friends": 50
+  },
+  "params": {
+
+  },
+  "personality": {
+    "cold_mean": 0.45454545454545453,
+    "cold_warmth": 0.340545454545454485,
+    "n": 132,
+    "third": 44,
+    "warm_mean": 1.22727272727272729,
+    "warm_warmth": 0.531393939393939307
+  },
+  "pop_end": 132,
+  "pull": "lonely",
+  "readings": {
+    "100": {
+      "friend_pairs": 37,
+      "friends_mean": 1.76190476190476186,
+      "friends_pop_share": 0.0429732868757259009,
+      "lonely": 0.0952380952380952328,
+      "parts3": 4,
+      "pop": 42,
+      "second": 0.0952380952380952328,
+      "web": 0.595238095238095233
+    },
+    "150": {
+      "friend_pairs": 93,
+      "friends_mean": 2.58333333333333348,
+      "friends_pop_share": 0.036384976525821601,
+      "lonely": 0.111111111111111105,
+      "parts3": 1,
+      "pop": 72,
+      "second": 0.0277777777777777762,
+      "web": 0.77777777777777779
+    },
+    "200": {
+      "friend_pairs": 100,
+      "friends_mean": 1.86915887850467288,
+      "friends_pop_share": 0.0176335743255157835,
+      "lonely": 0.224299065420560745,
+      "parts3": 5,
+      "pop": 107,
+      "second": 0.0467289719626168207,
+      "web": 0.523364485981308358
+    },
+    "30": {
+      "friend_pairs": 18,
+      "friends_mean": 5.14285714285714324,
+      "friends_pop_share": 0.857142857142857206,
+      "lonely": 0.0,
+      "parts3": 1,
+      "pop": 7,
+      "second": 0.0,
+      "web": 1.0
+    },
+    "300": {
+      "friend_pairs": 53,
+      "friends_mean": 0.803030303030302983,
+      "friends_pop_share": 0.00613000231320841998,
+      "lonely": 0.530303030303030276,
+      "parts3": 5,
+      "pop": 132,
+      "second": 0.0303030303030303039,
+      "web": 0.174242424242424254
+    },
+    "60": {
+      "friend_pairs": 25,
+      "friends_mean": 2.27272727272727293,
+      "friends_pop_share": 0.108225108225108238,
+      "lonely": 0.0,
+      "parts3": 1,
+      "pop": 22,
+      "second": 0.0,
+      "web": 1.0
+    }
+  },
+  "repeat": {
+    "distinct_met_median": 80.5,
+    "group_hours_per_sol_median": 78.5999999999999943,
+    "mean_of_newborns": 12.0102040816326525,
+    "n": 98,
+    "top_share_median": 0.0485188444937426147,
+    "tracked": 104,
+    "value": 12.0
+  },
+  "seed": 3,
+  "sols": 300,
+  "targets": {
+    "R10_selectivity_ratio_stop": [
+      true,
+      "ratio 2.70 = warm 1.23 / cold 0.45 (min 2.0)"
+    ],
+    "R11_coldest_third_mean_stop": [
+      true,
+      "coldest-third mean 0.45 (max 10.0)"
+    ],
+    "R12_first_newcomer_line_lower_bound": [
+      true,
+      "first newcomer line sol 64 (judged: at or after 25; reported: by 55, OVER), first birth 40"
+    ],
+    "R13_found_friend_late_tail_ceiling": [
+      true,
+      "tail (150..299) 2.23 per 5 sols (67 lines; max 3.0); reported: mean (20..299) 1.59 (89 lines), ratio 1.41, births in 150..299 74, found_friend lines per birth 0.91"
+    ],
+    "R14_no_dropped_friend_events": [
+      true,
+      "lines_dropped 0 (total; lines_dropped_by_type not built)"
+    ],
+    "R1_kin_newborn_median_wait": [
+      true,
+      "kin newborns median birth-to-first-friend 26.0 sols (max 30), resolved 118, unresolved 21 (left out); colony-first gap reported only: first birth 40, first_friendship_sol 64, gap 24"
+    ],
+    "R2_first_line_lt_30": [
+      true,
+      "first relationship line sol 21 (first non-grief 21)"
+    ],
+    "R3_lonely_window_mean_le_max": [
+      false,
+      "mean of last 50 readings 0.395 (max 0.35)"
+    ],
+    "R4_friends_mean_300_in_band": [
+      false,
+      "friends_mean 0.80 (band 1.0 to 15.0)"
+    ],
+    "R5_dropped_lt_5pct": [
+      true,
+      "dropped 0 of 112 capped-kind events (logged 112 + dropped 0) = 0.00%"
+    ],
+    "R6_lines_ge_1_per_5_sols_20_300": [
+      true,
+      "2.00 lines per 5 sols (112 lines in sols 20 to 299); zero-line 5-sol blocks 10 of 56"
+    ],
+    "R7_warmest_third_more_friends": [
+      true,
+      "warm 1.23 vs cold 0.45"
+    ]
+  },
+  "together": {
+    "friend_mean": 1.75014046621147501,
+    "friend_median": 1.68085106382978733,
+    "friend_pairs": 53,
+    "nonfriend_median_all": 0.789115646258503389,
+    "nonfriend_median_co_present": 0.808695652173913038,
+    "nonfriend_pairs_all": 8593,
+    "nonfriend_pairs_co_present": 8287
+  },
+  "wall_s": 143.060000000000002,
+  "work_check": {
+    "bottom_half": {
+      "cold_mean": 0.363636363636363646,
+      "cold_warmth": 0.349939393939393939,
+      "n": 66,
+      "third": 22,
+      "warm_mean": 0.636363636363636354,
+      "warm_warmth": 0.545136363636363752
+    },
+    "bottom_share_mean": 0.0185662934229055276,
+    "top_half": {
+      "cold_mean": 0.545454545454545414,
+      "cold_warmth": 0.33115151515151503,
+      "n": 66,
+      "third": 22,
+      "warm_mean": 1.77272727272727271,
+      "warm_warmth": 0.514166666666666772
+    },
+    "top_share_mean": 0.0342733829153504255
+  },
+  "zero_5sol_blocks": 10,
+  "zero_friend": {
+    "n": 95,
+    "share": 0.526315789473684181,
+    "zero": 50
+  }
+}

@@ -1,0 +1,29 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# station zero balance run: seed=42 sols=300 overrides=[relationships.effects.lonely_pull=0.15] fixed_step=0.05 data_hash=951361eb8ab36404
+# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window
+ sol  pop  min birth dead a/t/h/o/x           oxygen    food     ice   regol   dmnd   supp short bldg R/H/W/G/A/C  reach trips  avgE asleep%  waitH minIce  minO2 age web
+  30   19    7    12 0/0/0/0/0                 550.0   420.0    73.6    19.1   20.0   28.0     0 2/4/1/1/0/0           2    39  54.5   10.6  438.9   45.8  261.5 L 1.00
+  60   27   19    20 0/0/0/0/0                 700.0   540.0    97.9    56.3   30.0   42.0     0 3/6/1/2/0/0           2    81  54.3   10.7  550.3   64.1  547.1 L 0.81
+  90   52   27    45 0/0/0/0/0                 692.6   540.0    94.1    83.6   42.0   56.0     0 4/10/1/2/0/0          2   129  55.3   10.6  462.0   84.8  691.3 S 0.63
+ 120   62   52    55 0/0/0/0/0                 850.0   660.0    57.1    20.2   54.0   56.0     0 4/12/1/3/0/0          2   141  54.5   10.6  573.9   51.5  690.0 S 0.40
+ 150   72   62    65 0/0/0/0/0                 850.0   660.0   139.5   124.8   58.0   70.0     0 5/14/1/3/0/0          2   200  53.8   10.5  513.8    8.9  845.9 S 0.43
+ 180   82   72    75 0/0/0/0/0                1000.0   780.0    97.4    89.5   68.0   70.0     0 5/16/1/4/0/0          2   183  54.7   10.6  534.1    0.0  846.4 S 0.34
+ 210   92   82    88 0/3/0/0/0                1000.0   780.0    63.5    13.8   76.0   84.0     0 6/18/1/4/0/0          2   217  54.5   10.5  509.3    0.0  996.0 L 0.22
+ 240  102   92   104 0/9/0/0/0                1000.0   780.0   169.6    21.9   82.0   98.0     0 7/20/1/4/0/0          2   265  55.5   10.6  498.2    0.0  985.0 L 0.19
+ 270  112  102   114 0/9/0/0/0                1150.0   900.0   167.8    23.0   92.0   98.0     0 7/22/1/5/0/0          2   276  55.8   10.6  530.4    0.0  968.6 L 0.35
+ 300  122  110   131 0/16/0/0/0               1150.0   900.0   116.7   129.8   96.0  112.0     0 8/24/1/5/0/0          2   253  56.8   10.6  539.2    0.0 1145.9 L 0.42
+
+targets for seed 42 (300 sols):
+  T1 PASS run min pop 7 (needs >= 5), final pop 122
+  T2 PASS deaths 16 (air 0 thirst 16 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 131, first_birth_sol 13, at_capacity 0, cooldown_violations 0, pop@30=19, pop@100=52, pop@300=122
+  T4 PASS min O2 261.5, food 203.1; ice ran dry (pressure): min ice 0.0, ice>30 0.0, thirst deaths 16; max ice/target 0.60, regolith/target 0.38
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 5 (<=15)
+  T6 PASS limited 5149.8 h = 69.61% (>=2% provisional; 4 of 5 seeds), site busy 44.1%; waiting_regolith 2870.0 h, site_no_crew 2279.8 h
+  T7 PASS turn_backs_air 0, exhausted 846, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 1784
+  T8 PASS row avg energy 53.8..56.8 (40..90), row asleep 10.5..10.7% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+  T10 PASS first settlement sol 67 (40..150), age_changes 2 (<=4), min gap between consecutive history entries 67 (>=20), history 3 entries (changes+1 = 3); report: sols_in_age landing 160 settlement 140, age at end landing, changes [sol 67 settled; sol 207 fell_back (cause ice)], fall back causes [sol 207 ice], not-ok sols 73 (by group, a sol can fail several: ice 56, food 1, oxygen 1, power 0, death 8, unrest 16)
+  T11 PASS (1) list lengths 301/301/301/301 ok; (2) lonely mean of last 50 readings 0.332 (max 0.35) ok; (3) friends_mean 1.36 (1.0..15.0) ok; (4) first_friendship_sol 45 ok; (5) lines_dropped (total) 0 ok; report: web 0.42 second 0.07 lonely 0.30 friends_mean 1.36 friends share of colony 0.011 (pop 122)
+RESULT PASS (target 9 determinism: table sha256 865621f107f56ba8)
