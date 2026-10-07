@@ -9,6 +9,7 @@ extends SceneTree
 ##   godot --headless --path station-zero --script res://tools/relationships_probe.gd -- --seed N --sols 300 --pull shipped|friend|both [--out DIR] [--param path=value ...]
 ##       one seed, one pull setting: prints the report, writes DIR/seed_N_<pull>.csv (per sol) and DIR/seed_N_<pull>.json (summary)
 ##       shipped = both pulls 0.0; friend = balance.probe_friend_pull only; both = probe_friend_pull and probe_lonely_pull
+##       lonely = effects.lonely_pull only (balance.probe_lonely_pull, friend_pull stays 0.0): the Task 5 candidate (council.md section 10)
 ##   ... -- --hash --seed N --sols 300 --pull P
 ##       replay: runs tests/balance_lib.gd run() (the balance table) with the same overrides; prints the table sha256 and the
 ##       same end-state digest the probe printed, which proves the observer did not change the run
@@ -27,9 +28,24 @@ extends SceneTree
 
 const BL := "res://tests/balance_lib.gd"
 const SEEDS: Array[int] = [42, 7, 99, 1234, 2026]
-const PULLS: Array[String] = ["shipped", "friend", "both"]
+const PULLS: Array[String] = ["shipped", "friend", "both", "lonely"]
 const READ_SOLS: Array[int] = [30, 60, 100, 150, 200, 300]
 const CAPPED: Array[String] = ["friends", "found_friend", "close", "close_crew", "drifted"]
+## Council gate numbers of docs/specs/council.md 5.1 to 5.3 (estimates E; data/council.json does not exist yet). Read-only use:
+## the probe recomputes the voice readings and the gate clauses, it does not need the Council module.
+const VOICE_MIN_AGE_SOLS := 40.0
+const KIN_GENERATIONS := 2
+const WIN_SOLS := 20
+const TRUST_SHARE_MIN := 0.5
+const TRUST_OK_MIN := 16
+const RECENT_OK := 3
+const CHOSEN_SHARE_MIN := 0.5
+const CHOSEN_FRIENDS_MIN := 1
+const SETTLED_SOLS := 30
+const VOICES_MIN := 12
+## Repeat-company measure (council.md section 10, clause 3)
+const LATE_FROM_SOL := 100
+const REPEAT_WINDOW_SOLS := 20
 
 
 func _init() -> void:
@@ -91,6 +107,8 @@ static func pull_params(pull: String) -> Dictionary:
 	match pull:
 		"friend":
 			return {"relationships.effects.friend_pull": float(bal.probe_friend_pull)}
+		"lonely":
+			return {"relationships.effects.lonely_pull": float(bal.probe_lonely_pull)}
 		"both":
 			return {"relationships.effects.friend_pull": float(bal.probe_friend_pull),
 					"relationships.effects.lonely_pull": float(bal.probe_lonely_pull)}
@@ -229,6 +247,14 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 	var parts_at := {}
 	var births_kinless := 0
 	var births_kin := 0
+	# repeat-company observers (council.md section 10 clause 3): late newborns, first REPEAT_WINDOW_SOLS sols of life
+	var rc := {}          # id -> {born, cur_sol, cur: {other: ticks}, days: {sol: max ticks}, tot: {other: ticks}, present: {sol: true}}
+	# voice readings and the Council gate clauses (5.2, 5.3), recomputed from relationships.pairs once a sol
+	var parent_of := {}
+	var trust_win: Array = []
+	var chosen_win: Array = []
+	var vrec: Array = []
+	var settle_s := -1
 	while w.sol() < sols:
 		w.step()
 		# --- log entries logged in this step
@@ -267,7 +293,32 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 					awake[b.id] = int(awake.get(b.id, 0)) + 1
 					if b.state == "mining" or (b.state == "work" and b.job != null and b.job == w.buildings.site):
 						workn[b.id] = int(workn.get(b.id, 0)) + 1
-			_count_groups(_groups(w), together)
+			var tick_groups := _groups(w)
+			_count_groups(tick_groups, together)
+			var sol_now := w.sol()
+			for id in seen:
+				var sr0: Dictionary = seen[id]
+				if sr0.founder or int(sr0.born_sol) <= LATE_FROM_SOL or sol_now >= int(sr0.born_sol) + REPEAT_WINDOW_SOLS:
+					continue
+				if not rc.has(id):
+					rc[id] = {"born": int(sr0.born_sol), "cur_sol": -1, "cur": {}, "days": {}, "tot": {}, "present": {}}
+			for b in w.beings:
+				if rc.has(b.id) and sol_now < int(rc[b.id].born) + REPEAT_WINDOW_SOLS:
+					rc[b.id].present[sol_now] = true
+			for g in tick_groups:
+				for a in g:
+					if not rc.has(a) or sol_now >= int(rc[a].born) + REPEAT_WINDOW_SOLS:
+						continue
+					var r1: Dictionary = rc[a]
+					if int(r1.cur_sol) != sol_now:
+						if int(r1.cur_sol) >= 0:
+							r1.days[int(r1.cur_sol)] = int(_max(r1.cur.values())) if not r1.cur.is_empty() else 0
+						r1.cur_sol = sol_now
+						r1.cur = {}
+					for o in g:
+						if o != a:
+							r1.cur[o] = int(r1.cur.get(o, 0)) + 1
+							r1.tot[o] = int(r1.tot.get(o, 0)) + 1
 		# --- sol boundary record
 		if w._sol_started:
 			var s := w.sol()
@@ -289,6 +340,21 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 				var sr: Dictionary = seen[id]
 				if sr.resolved < 0 and not sr.founder and int(grown_n.get(id, 0)) > 0:
 					sr.resolved = s - int(sr.born_sol)
+			var vr := _voice_reading(w, rel, parent_of)
+			trust_win.append(vr.trust)
+			chosen_win.append(vr.chosen)
+			if trust_win.size() > WIN_SOLS:
+				trust_win.pop_front()
+				chosen_win.pop_front()
+			if str(w.ages.age) == Ages.SETTLEMENT:
+				settle_s = int(w.stats.age_history[w.stats.age_history.size() - 1].sol)
+			vr["sol"] = s
+			vr["age"] = str(w.ages.age)
+			vr["c1"] = str(w.ages.age) == Ages.SETTLEMENT and settle_s >= 0 and s - settle_s >= SETTLED_SOLS
+			vr["c2"] = _window_ok(trust_win, TRUST_SHARE_MIN, TRUST_OK_MIN)
+			vr["c3"] = _window_ok(chosen_win, CHOSEN_SHARE_MIN, TRUST_OK_MIN)
+			vr["c4"] = int(vr.voices) >= VOICES_MIN
+			vrec.append(vr)
 			if s in READ_SOLS:
 				parts_at[s] = _web_parts(rel)
 			var d: Dictionary = w.stats.deaths
@@ -533,6 +599,7 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 	sum["log"] = {"total_entries": log_total, "rel_entries": rel_n, "rel_share": float(rel_n) / maxf(1.0, float(log_total)),
 			"rel_capped_kinds": rel_cap_n, "by_kind": kind_n, "log_size_end": w.log.size(),
 			"oldest_sol_end": int(w.log[0].sol) if not w.log.is_empty() else -1}
+	_lonely_measures(sum, w, rc, seen, vrec, recs, sols, tick_h)
 	sum["wall_s"] = (Time.get_ticks_msec() - t0) / 1000.0
 	sum["targets"] = _targets(sum)
 
@@ -556,6 +623,176 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 		cf.close()
 	for e in saved:
 		e[0][e[1]] = e[2]
+
+
+## 16 of the last 20 readings at least `share`, the window full, and the last RECENT_OK all at least `share` (council.md 5.3 clauses 2, 3).
+static func _window_ok(win: Array, share: float, ok_min: int) -> bool:
+	if win.size() < WIN_SOLS:
+		return false
+	var ok := 0
+	for v in win:
+		if float(v) >= share - 1e-9:
+			ok += 1
+	if ok < ok_min:
+		return false
+	for i in range(win.size() - RECENT_OK, win.size()):
+		if float(win[i]) < share - 1e-9:
+			return false
+	return true
+
+
+## The voice readings of council.md 5.1 and 5.2, from the live web (read only). parent_of is the probe's own lineage record
+## (never pruned). Returns {voices, trust, chosen, family_turned}.
+func _voice_reading(w: SimWorld, rel: Relationships, parent_of: Dictionary) -> Dictionary:
+	var sol_h: float = w.clock.sol_h
+	var voice := {}
+	for b in w.beings:
+		if not parent_of.has(b.id):
+			parent_of[b.id] = int(b.parent_id)
+	for b in w.beings:
+		if b.earth_born or w.t - b.born_t >= VOICE_MIN_AGE_SOLS * sol_h - SimWorld.STEP_EPS:
+			var lin := {b.id: true}
+			var cur: int = b.id
+			for g in KIN_GENERATIONS:
+				var par: int = int(parent_of.get(cur, 0))
+				if par == 0:
+					break
+				lin[par] = true
+				cur = par
+			voice[b.id] = lin
+	var n := voice.size()
+	if n == 0:
+		return {"voices": 0, "trust": 0.0, "chosen": 0.0, "family_turned": 0}
+	var uf := {}
+	for id in voice:
+		uf[id] = id
+	var chosen_n := {}
+	var turned := 0
+	for key in rel.pairs:
+		var p: Dictionary = rel.pairs[key]
+		if not p.friends or not voice.has(p.lo) or not voice.has(p.hi):
+			continue
+		var ra := _find(uf, int(p.lo))
+		var rb := _find(uf, int(p.hi))
+		if ra != rb:
+			uf[maxi(ra, rb)] = mini(ra, rb)
+		if not p.kin and not p.crew:
+			var fam := false
+			for x in voice[p.lo]:
+				if voice[p.hi].has(x):
+					fam = true
+					break
+			if fam:
+				turned += 1
+			else:
+				chosen_n[p.lo] = int(chosen_n.get(p.lo, 0)) + 1
+				chosen_n[p.hi] = int(chosen_n.get(p.hi, 0)) + 1
+	var sizes := {}
+	for id in voice:
+		var r := _find(uf, int(id))
+		sizes[r] = int(sizes.get(r, 0)) + 1
+	var big := 0
+	for r in sizes:
+		big = maxi(big, int(sizes[r]))
+	var with_chosen := 0
+	for id in voice:
+		if int(chosen_n.get(id, 0)) >= CHOSEN_FRIENDS_MIN:
+			with_chosen += 1
+	return {"voices": n, "trust": float(big) / n, "chosen": float(with_chosen) / n, "family_turned": turned}
+
+
+## Adds the Task 5 lonely-run measures to the summary: zero-friend late newborns, repeat company, breadth, gate readings, F4 items.
+func _lonely_measures(sum: Dictionary, w: SimWorld, rc: Dictionary, seen: Dictionary, vrec: Array, recs: Array, sols: int, tick_h: float) -> void:
+	# zero-friend late newborns (K1 definition: friend_count 0, kin included; born after sol 100; alive at the end)
+	var nb: Dictionary = sum.newborn_after_100
+	sum["zero_friend"] = {"n": int(nb.n), "zero": int(nb.zero_friends),
+			"share": (float(nb.zero_friends) / float(nb.n)) if int(nb.n) > 0 else -1.0}
+	# repeat company and breadth
+	var medians: Array = []
+	var distinct: Array = []
+	var top_share: Array = []
+	var hours_total: Array = []
+	for id in rc:
+		var r: Dictionary = rc[id]
+		if int(r.cur_sol) >= 0 and not r.days.has(int(r.cur_sol)):
+			r.days[int(r.cur_sol)] = int(_max(r.cur.values())) if not r.cur.is_empty() else 0
+		var born := int(r.born)
+		if born + REPEAT_WINDOW_SOLS > sols:
+			continue
+		var full := true
+		for d in REPEAT_WINDOW_SOLS:
+			if not r.present.has(born + d):
+				full = false
+				break
+		if not full:
+			continue
+		var daily: Array = []
+		for d in REPEAT_WINDOW_SOLS:
+			daily.append(float(int(r.days.get(born + d, 0))) * tick_h)
+		medians.append(_median(daily))
+		distinct.append(r.tot.size())
+		var tot := 0
+		var top := 0
+		for o in r.tot:
+			tot += int(r.tot[o])
+			top = maxi(top, int(r.tot[o]))
+		hours_total.append(float(tot) * tick_h / REPEAT_WINDOW_SOLS)
+		top_share.append(float(top) / float(tot) if tot > 0 else 0.0)
+	sum["repeat"] = {"n": medians.size(), "value": _median(medians),
+			"mean_of_newborns": _mean(medians), "distinct_met_median": _median(distinct),
+			"top_share_median": _median(top_share), "group_hours_per_sol_median": _median(hours_total),
+			"tracked": rc.size()}
+	# gate readings (voices, trust, chosen) and the clauses
+	var first_all := -1
+	var first_nochosen := -1
+	var bind_sols := 0
+	var min_trust := 2.0
+	var min_chosen := 2.0
+	var turned_max := 0
+	for v in vrec:
+		turned_max = maxi(turned_max, int(v.family_turned))
+		if int(v.sol) >= 60:
+			min_trust = minf(min_trust, float(v.trust))
+			min_chosen = minf(min_chosen, float(v.chosen))
+		if v.c1 and v.c2 and v.c4:
+			if first_nochosen < 0:
+				first_nochosen = int(v.sol)
+			if not v.c3:
+				bind_sols += 1
+		if v.c1 and v.c2 and v.c3 and v.c4 and first_all < 0:
+			first_all = int(v.sol)
+	var at_all: Dictionary = {}
+	var at_nc: Dictionary = {}
+	for v in vrec:
+		if int(v.sol) == first_all:
+			at_all = {"sol": v.sol, "voices": v.voices, "trust": v.trust, "chosen": v.chosen}
+		if int(v.sol) == first_nochosen:
+			at_nc = {"sol": v.sol, "voices": v.voices, "trust": v.trust, "chosen": v.chosen}
+	var readings_at := {}
+	for v in vrec:
+		if int(v.sol) in READ_SOLS:
+			readings_at[str(int(v.sol))] = {"voices": v.voices, "trust": v.trust, "chosen": v.chosen}
+	sum["gate"] = {"earliest_entry_sol": first_all, "at_entry": at_all, "first_open_without_chosen_sol": first_nochosen,
+			"at_open_without_chosen": at_nc, "chosen_binding_sols": bind_sols,
+			"chosen_binds": first_all != first_nochosen, "min_trust_from_60": min_trust if min_trust <= 1.0 else -1.0,
+			"min_chosen_from_60": min_chosen if min_chosen <= 1.0 else -1.0, "family_turned_max": turned_max, "readings": readings_at}
+	# F4-1: longest run of sols with no capped-kind line before the first newcomer line
+	var fn = sum.first_newcomer_line_sol
+	var run := 0
+	var longest := 0
+	for r in recs:
+		if fn != null and int(r.sol) >= int(fn):
+			break
+		if int(r.lines) == 0:
+			run += 1
+			longest = maxi(longest, run)
+		else:
+			run = 0
+	sum["f4_1_longest_no_line_run_before_newcomer"] = longest
+	sum["f4"] = {"r13_over_2_5": float(sum.ff_tail_per5) > 2.5, "log_share_over_0_15": float(sum.log.rel_share) > 0.15,
+			"newcomer_later_than_80": fn != null and int(fn) > 80, "newcomer_later_than_68": fn != null and int(fn) > 68,
+			"newcomer_never": fn == null}
+	sum["deaths_unexplained"] = int(w.stats.deaths_unexplained)
 
 
 ## Union-find over the friend pairs of the living: number of web parts of size 3 or more.
