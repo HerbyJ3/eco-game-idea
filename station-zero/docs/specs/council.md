@@ -1,4 +1,4 @@
-# Spec: council and diplomacy (Task 5): gatherings, proposals, support, the decision to build a dome (revision 2)
+# Spec: council and diplomacy (Task 5): gatherings, proposals, support, the decision to build a dome (revision 3)
 
 Source of truth: HANDOFF.md sections 1, 2, 4, 7, 8, 9, 10. Plan and open questions Q1 to Q10, lonely-run placement: `docs/tasks/task-5-plan.md`. Format, `age_history` and the Task 5 gate: `docs/specs/ages.md` (sections 2, 3, 6, 7, 8.2, 12, 18 item 5). Social inputs: `docs/specs/relationships.md` (sections 7, 8, 11, 17 "Run 2 findings" and "Round 4 reviews", 18, 19; known issues K1 to K3). Measurements read: `docs/balance/task-4-calibration.md` (trust readings per seed, item 2; kin newborn waits, item 8), `docs/balance/task-4-log.md` (30-sol tables, Task 4 table hashes). Sim facts read: `sim/world.gd` (phase order of `step()`, sol block, `_init_stats`), `sim/ages.gd` (`decide`, `on_sol`, `_record`), `sim/relationships.gd` (`pairs` with the `kin` and `crew` flags, `present`, `ticks`, `friend_count`, `_reading`, `pull`, `begin`, `_births`), `sim/being.gd` (`parent_id`, `born_t`, `_restless_travel`, `is_inside`), `sim/persona.gd` (trait formula), `sim/buildings.gd`, `sim/powers.gd` (only the Good fortune multiplier exists), `tests/balance_lib.gd` (the `age` column prints `S` only for `settlement`, line 109), `data/*.json` (`relationships.seed`, `relationships.lines`, `persona`, `buildings`).
 
@@ -62,12 +62,14 @@ HANDOFF 7 describes the Council as "gatherings, arguments, factions by personali
 | voice | a living being that is `earth_born`, or whose age `t - born_t` is at least `voice.min_age_sols` x `sol_h` |
 | voice web | the graph of voices joined by `friends` pairs whose two ends are both voices (kin and crew pairs count) |
 | trust | the share of voices in the largest connected part of the voice web; 0.0 when there are no voices |
-| chosen friend | a voice friend through a pair with `kin` false and `crew` false |
+| lineage | the module's own record `parent_of` (being id to `parent_id`), written for every living being at creation and at every sol boundary and never pruned. It is needed because `SimWorld._kill` erases dead beings, so a live `parent_id` chain breaks at the first dead parent |
+| family pair | two beings whose lineage sets meet. A being's lineage set is itself plus its ancestors up to `chosen.kin_generations` (2, E) steps up the lineage: parent and grandparent. So parent and child, grandparent and grandchild, siblings, half-siblings, aunt or uncle and nephew or niece, and first cousins are family. Founders have `parent_id` 0, so a founder's set is only itself (revision 3) |
+| chosen friend | a voice friend through a pair with `kin` false, `crew` false, and the two ends not a family pair (revision 3: lineage, not only the `kin` flag) |
 | chosen share | the share of voices with at least `entry.chosen_friends_min` chosen friends; 0.0 when there are no voices |
 | Council term | the stretch from a Council entry to the next age change |
 | Settlement term | the stretch from the latest `age_history` entry with age `settlement` to the next age change |
 | gathering | at a relationship tick, the voices awake inside one building (read from `relationships.present`) |
-| best gathering | the largest gathering since the last meeting: `{building_id, count, ids, t}` |
+| best gathering | the largest gathering since the last meeting and no older than `session.gathering_max_age_sols`: `{building_id, count, ids, t}` (`t` is the tick time it was read) |
 | meeting (session) | held at a sol boundary in Council when the interval has passed and the best gathering is big enough; its place is the best gathering's building |
 | topic | a matter the Council can take up; Task 5 ships one, `dome` |
 | lean | a voice's own position on a topic from personality, colony conditions and its own stake, in [-1, 1] |
@@ -82,6 +84,8 @@ HANDOFF 7 describes the Council as "gatherings, arguments, factions by personali
 ## 3. State (all new, inside `Council`, owned by `SimWorld` as `world.council`)
 | Field | Meaning |
 | --- | --- |
+| `cfg` | a deep copy of `SimData.council()` taken in `begin`; the module reads only this copy. Tests may overwrite keys of a world's copy after creation (the staging seam of tests 16 and 22) without touching the shared cache |
+| `parent_of` | the lineage record (section 2): being id to `parent_id`, never pruned (about 200 entries in a 300-sol run) |
 | `trust_win`, `chosen_win` | the last `trust.window_sols` trust and chosen-share readings, newest last |
 | `stance` | map from voice id to stance (dome); entries for beings that are no longer voices or are dead are dropped at each sol |
 | `hard_win` | the last `cond.hard_window_sols` entries `{hard, ice, air, food}` (booleans), newest last |
@@ -97,13 +101,16 @@ HANDOFF 7 describes the Council as "gatherings, arguments, factions by personali
 | `aftermath` | null, or `{due_sol, doubter_id}` after a pledge |
 | `after_pledge_logged` | true once the after-pledge line has been logged in the run |
 | `line_sol` | the sol boundary at which a Council line was last logged (the cap of 7.4) |
-`Being` gains no field. `stats` gains `stats.council` (section 8) and one key in `stats.sols_in_age` (`council`). `Ages` gains one method, `enter_age(world, age_id, how, text)`. It sets `age`, increments `stats.age_changes`, appends the `age_history` entry through the existing `_record` and logs `age_began`. It does **not** touch `last_change_sol`, `window` or the snapshots (section 5.5). `SimWorld` gains `council`, `council_enabled` (default true; false skips both hooks; a test seam), the hook calls and the creation call. `Council` exposes read-only queries for tests and the probe: `stance_of(id)`, `lean_of(id)`, `lean_terms_of(id)` (personal, size, means, hard, child), `is_voice(world, id)`.
+`Being` gains no field. `stats` gains `stats.council` (section 8) and one key in `stats.sols_in_age` (`council`). `Ages` gains one method, `enter_age(world, age_id, how, text)`. It sets `age`, increments `stats.age_changes`, appends the `age_history` entry through the existing `_record` and logs `age_began`. It does **not** touch `last_change_sol`, `window` or the snapshots (section 5.5). `SimWorld` gains `council`, `council_enabled` (default true; false skips both hooks; a test seam), the hook calls and the creation call. `Council` exposes read-only queries for tests and the probe: `stance_of(id)`, `lean_of(id)`, `lean_terms_of(id)` (personal, size, means, hard, child), `is_voice(world, id)`, `is_family(a, b)`. `SimData` gains the accessor `council()`.
 
 ## 4. Where it runs
-- **Creation**: in `SimWorld._init`, after `relationships.begin(...)` on both branches: `council.begin(self, founders_world)`. A founder world appends **one initial reading pair**: trust 1.0, and chosen share 0.0 (seven crew friends, none chosen). The reason is that the founder branch also appends the initial `pop_by_sol` entry. A blank world appends nothing. So `trust_by_sol` and `chosen_by_sol` have the same length as `pop_by_sol` from creation on (the same rule as relationships.md section 4).
-- **Gathering read (phase 11b, after the relationship tick)**: in `step()`, right after `relationships.on_step(...)`: `council.on_step(self)`. It acts only when `relationships.ticks` differs from `seen_ticks` (a tick just ran, so `present` is fresh) and the age is `council`. Then it updates `best` (section 5.7). Otherwise it returns at once.
-- **Sol reading and decisions**: inside the `if _sol_started:` block, after `relationships.on_sol(self)`: `council.on_sol(self)`. Ages has already sampled and decided, and relationships has refreshed the web, so the Council reads the age in force and the current friendships.
-- The Council is skipped entirely (both hooks) when `world.relationships` is null or `relationships_enabled` is false: it has no web to read. It then appends 0.0 readings so the list lengths still match.
+- **Creation**: in `SimWorld._init`, after `relationships.begin(...)` on both branches: `council.begin(self, founders_world)`. It copies `cfg` and records the lineage of the beings present. A founder world appends **one initial reading pair**: trust 1.0, and chosen share 0.0 (seven crew friends, none chosen). The reason is that the founder branch also appends the initial `pop_by_sol` entry. A blank world appends nothing. So `trust_by_sol` and `chosen_by_sol` have the same length as `pop_by_sol` from creation on (the same rule as relationships.md section 4).
+- **Gathering read (phase 11b, after the relationship tick)**: in `step()`, right after the relationships hook: `if council_enabled and council != null: council.on_step(self)`. It acts only when `world.relationships` is non-null, `relationships_enabled` is true, `relationships.ticks` differs from `seen_ticks` (a tick just ran, so `present` is fresh) and the age is `council`. Then it updates `best` (section 5.7). Otherwise it returns at once.
+- **Sol reading and decisions**: inside the `if _sol_started:` block, after the relationships hook: `if council_enabled and council != null: council.on_sol(self)`. Ages has already sampled and decided (when `ages_enabled`), and relationships has refreshed the web, so the Council reads the age in force and the current friendships.
+- **Who appends when something is off (revision 3).** The world calls `council.on_sol` whenever `council_enabled` is true, whatever the state of relationships. Inside, the module decides:
+  - **Relationships null or `relationships_enabled` false** (no web to read): `on_sol` records lineage, appends a 0.0 trust and a 0.0 chosen reading to `stats.council` and to the windows, sets `voices` to the live count, empties `stance`, and does nothing else (no hardship entry, no entry, split, meeting, aftermath or line). The list lengths therefore still match `pop_by_sol`.
+  - **`council_enabled` false** (test seam): neither hook is called, nothing is appended, and the length rule is not claimed for that world. T12 always runs with the module on. A world that turns the seam off after creation keeps its single initial reading.
+  - **`ages_enabled` false**: the Council runs normally. The age stays `landing`, so it never enters.
 - No RNG draw, no wall clock (except a probe-only timing field), no read of the log, no write to colony, buildings, beings, resources, powers, relationships or the RNG.
 
 ## 5. Rules
@@ -111,11 +118,23 @@ HANDOFF 7 describes the Council as "gatherings, arguments, factions by personali
 A being is a voice if it is `earth_born` or `t - born_t >= voice.min_age_sols x sol_h - STEP_EPS` (40 sols, E). The reason for 40 is that the measured median wait from birth to a first grown friendship is 25 to 29 sols (task-4-calibration item 8), so by 40 sols most Mars-born have had the chance to join the web. A newborn has no say in the dome and does not count against trust. Voices are recomputed at every sol boundary; nothing is stored on the being.
 
 ### 5.2 The trust readings (once a sol, every age)
-1. Build the voice web: walk the `friends` pairs of `relationships.pairs` in ascending pair key and keep those whose two ends are both living voices. Union them over ascending ids (the same union-find rule as relationships.md section 7: a root is the smallest id). During the same walk, count for each voice its chosen friends (pairs with `kin` false and `crew` false).
+0. **Lineage** (revision 3). Record `parent_of[b.id] = b.parent_id` for every living being not yet recorded. Then build, for each voice, its lineage set (itself plus up to `chosen.kin_generations` ancestors, following `parent_of` and stopping at 0 or an unrecorded id). A parent is always recorded before its child's first boundary: the parent was alive at the previous boundary, or at creation.
+1. Build the voice web in one walk of `relationships.pairs`, in the dictionary's own order (revision 3: no sort of the pair keys). Keep the `friends` pairs whose two ends are both living voices. For each kept pair:
+   - union the two ends with the union-find rule of relationships.md section 7 (a root is the smaller id). This result does not depend on the walk order;
+   - append each end to the other's friend list, with the pair's `close` flag;
+   - if `kin` is false, `crew` is false and the two lineage sets do not meet, count a chosen friend for each end.
+
+   Then sort each voice's friend list by ascending friend id. Sway (5.6) and the speaker counts (5.8) read only these sorted lists, so their float sums do not depend on the order in which pairs were inserted.
 2. `trust = size of the part with the most voices / voices`. `chosen = voices with at least entry.chosen_friends_min (1, E) chosen friends / voices`. Both are 0.0 when there are no voices. Also count `voices`.
 3. Append each reading to `stats.council.trust_by_sol` / `chosen_by_sol` and to `trust_win` / `chosen_win` (drop the oldest past `trust.window_sols`, 20). Store the latest readings and `voices`.
 
 **Why two readings (revision 2, emergence M2, checked against data).** Revision 1 used the web share alone, which is mostly a record of how the colony was seeded. `relationships.seed.crew` is 0.35 and `seed.kin_base` is 0.30 plus 0.25 x warmth. Both are at or above the friend line `lines.friend` 0.30, and a pair only stops being friends below 0.15. So all 21 founder pairs start as friends, and every newborn starts as a friend of its parent. Every parent chain ends at a founder, so on the boundaries where the gate can first open, the voice web is joined by seeded bonds alone. The measured overall web is 0.81 to 0.92 at sol 60 (task-4-calibration item 2), which fits this. By contrast, the first grown friendship comes at sols 34 to 68 (shipped), so at sols 83 to 97 the chosen share is the reading that can still discriminate. The web reading stays because it alone sees a colony that has split into islands. The chosen reading alone would pass a colony of many small friend pairs.
+
+**What counts as chosen (revision 3, code review blocking item 1).** Revision 2 read "chosen" as `kin` false and `crew` false. In the code, `kin` is set only on the parent-child pair seeded at birth (`relationships.gd` line 239), and `crew` only on founder pairs (line 113). So siblings, grandparents, cousins and aunts were "chosen" friends. They share a home habitat as children and grow bonds by sharing hours, so on a growing colony the chosen share would rise with the number of families: the clause becomes a timer, which is the failure it was added to prevent. Two fixes were weighed:
+- **(i) Define chosen by lineage** (adopted). Exclude pairs whose lineage sets meet within `chosen.kin_generations` (2) steps. This matches the plain meaning of "neither kin nor crew" in owner decision O1, and its cost is small (section 11). Two generations, not the whole tree, because every Mars-born descends from one of seven founders. Over 300 sols, a whole-tree rule would make almost every Mars-born pair inside a founder's line "family". Chosen friendship would then mean "friends across the seven founder lines", a stricter and different story.
+- **(ii) State the leak and make FLOOR a stop rule.** This alone was rejected, because the family leak can be removed at the source.
+
+  One leak remains, and it is stated rather than hidden: **housemates**. In this sim every bond grows from shared hours (relationships.md 5), so two unrelated Mars-born children raised in one habitat become friends because they are near each other, not because they chose to be. Removing that would need a "raised together" record that does not exist (no home-habitat history), and it would be a second definition change with no data behind it. So the remaining risk is guarded by a **stop rule**: if the probe raises FLOOR on the chosen reading (12, item 3), calibration of the Council's decision keys stops. The lead then takes the measured split of chosen pairs (probe item 3: share with both ends Mars-born) to the owner before any key is tuned, because the gate would be a timer and O1 is the owner's decision.
 
 Why not `web_by_sol`: its denominator includes every friendless newborn, so it falls (0.35 to 0.97 at sol 300) because the colony grows, not because trust is lost.
 
@@ -126,11 +145,13 @@ Why not `web_by_sol`: its denominator includes every friendless newborn, so it f
 3. **Chosen friends**: the same rule on `chosen_win` with `entry.chosen_share_min` (0.5, E): 16 of 20, including the last 3.
 4. **Enough voices**: `voices >= entry.voices_min` (12, E). Checked against the Task 4 tables, the earliest possible entries (settled sol + 30: sols 97, 88, 84, 95, 83) have 7 founders plus the Mars-born born by sols 57, 48, 44, 55, 43. Interpolated from the 30-sol tables, that is about 26, 18, 19, 24, 18 voices (E; no deaths before sol 150 on any seed). The clause does not bind at first entry on any seed. It is kept as a floor for a colony thinned by deaths: a meeting of seven founders and three children is a household, not a council.
 
-On entry: `world.ages.enter_age(world, "council", how, text)`, with `how` = `council` the first time in the run and `council_again` after that (section 7). `best`, `last_session_sol` and `quiet_logged` are reset. Clause 1 needs 30 sols after the latest change, and ages' own changes are at least 20 sols apart, so an entry never falls on the same boundary as another age change.
+On entry: `world.ages.enter_age(world, "council", how, text)`, with `how` = `council` the first time in the run and `council_again` after that (section 7). `best`, `last_session_sol` and `quiet_logged` are reset.
+
+**Why an entry never shares a boundary with an ages change (revision 3, reworded).** The reason is order, not the gap. `ages.on_sol` runs before `council.on_sol` in the sol block. If ages changed the age at this boundary, then either the age is now `landing` (no entry is possible) or ages has just entered Settlement, so `S = n` and clause 1 fails. The sanity rule `entry.settled_sols >= ages.min_dwell_sols` (test 17) is needed for a different reason: it makes C2's "every Council change is at least `min_dwell_sols` after the previous entry" hold for entries.
 
 ### 5.4 The Council comes apart (split back to Settlement)
 `decide_split` returns true when the age is `council` and ALL of these hold:
-1. `n - C >= min_dwell_sols` (20), where `C` is the `sol` of the Council entry (the latest `age_history` entry);
+1. `n - C >= min_dwell_sols` (20; sanity rule: at least `ages.min_dwell_sols`), where `C` is the `sol` of the Council entry (the latest `age_history` entry);
 2. at least `exit.split_min` (16) of the 20 readings in `trust_win` are below `exit.trust_share_below` (0.3, E);
 3. the last `exit.recent_below` (3) readings are all below it.
 
@@ -151,16 +172,16 @@ Traits come from `persona.traits` (each in [0, 1]). For voice i:
   - `means = clamp(colony.regolith / colony.regolith_target(), 0, 1)`: "we have the stone".
   - `size = clamp((pop - dome.cond.size_from) / dome.cond.size_span, 0, 1)` (40 and 80, E): "we are outgrowing the modules".
   - `hard` = the hard share (section 2). This boundary's entry is appended to `hard_win` first. A hard sol is one that fails clause 1a (`oxygen >= o2_min_fraction x o2_cap`), 1b (food likewise) or 5 (`ice >= ice_min_sols x pop x ice_per_being x sol_h - CMP_EPS`), with the keys and formulas of ages.md 4.2. The entry records which of the three failed.
-- **Lean terms (revision 2, emergence M1).** Conditions weigh by temperament; one stake is the voice's own. All weights are in `dome.lean`.
-  - `personal_i = lean.ambition x (ambition_i - 0.5) - lean.caution x (caution_i - 0.5)` (1.0, 1.0)
-  - `size_i = lean.size x size x (ambition_i / 0.5)` (0.15, E): crowding stirs the ambitious.
-  - `means_i = lean.means x (means - 0.5) x (ambition_i / 0.5)` (0.1, E)
-  - `hard_i = lean.hard x hard x (caution_i / 0.5)` (0.4, E): hardship weighs on the cautious.
+- **Lean terms (revision 2, emergence M1).** Conditions weigh by temperament; one stake is the voice's own. All weights are in `dome.lean`. `c` is `dome.lean.trait_centre` (0.5; revision 3 makes it a key instead of a hidden constant). It is both the zero point of the personal term and the divisor of the temperament factor. `m` is `dome.lean.means_centre` (0.5).
+  - `personal_i = lean.ambition x (ambition_i - c) - lean.caution x (caution_i - c)` (1.0, 1.0)
+  - `size_i = lean.size x size x (ambition_i / c)` (0.15, E): crowding stirs the ambitious.
+  - `means_i = lean.means x (means - m) x (ambition_i / c)` (0.1, E)
+  - `hard_i = lean.hard x hard x (caution_i / c)` (0.4, E): hardship weighs on the cautious.
   - `child_i = lean.child` (0.15, E) if a living being with `parent_id == i` was born within `dome.cond.child_sols` (20, E) sols of this boundary, else 0: new parents want room for their children.
   - `lean_i = clamp(personal_i + size_i + means_i - hard_i + child_i + lean.base, -1, 1)`, with `lean.base` 0.0.
 - **Sway (synchronous).** Let `s` be the stances of the previous boundary (a voice without one uses its lean). For each voice i with at least one voice friend:
   `stance_i = (1 - sway.share) x lean_i + sway.share x (sum of w_j x s_j) / (sum of w_j)`
-  The sums run over i's voice friends j, with `w_j = sway.close_weight` if the pair is `close` and 1 otherwise. A voice with no voice friend has `stance_i = lean_i`. All new stances are computed from the old ones, then written, so the order of beings does not matter. Friend lists are walked in ascending id (sorted pair keys give this), so float sums are reproducible.
+  The sums run over i's voice friends j, with `w_j = sway.close_weight` if the pair is `close` and 1 otherwise. A voice with no voice friend has `stance_i = lean_i`. All new stances are computed from the old ones, then written, so the order of beings does not matter. Friend lists are the per-voice lists of 5.2, sorted by ascending id, so float sums are reproducible and do not depend on pair insertion order (test 7).
 - `yes` = stance > `support.yes_above` (0.1, E); `no` = stance < `support.no_below` (-0.1, E); between them a voice is undecided.
 
 **Why this shape (revision 2).** Revision 1 added the colony terms flat. I checked the trait spread from `persona.json` arithmetic (offset 0.3, scale 1.5, five Mars placements with weights 0.35 to 0.10). This is not a measurement; the probe reports the real spread (item 5). Ambition centres near 0.42 and caution near 0.44, so the personal term centres near 0. Its spread is about 0.15 (one standard deviation), narrower than revision 1's "plus or minus 0.2 per term", because ambition averages three traits. Against that spread, revision 1's size term (+0.3) was 2 standard deviations and its hardship term (-0.8) about 5. The colony would have voted as one: about 98 percent yes in a good season and nearly 100 percent no in a crisis. Personality would have decided nothing, and C5 and C6 would have passed only by luck. Emergence's M1 is confirmed.
@@ -170,20 +191,30 @@ Revision 2 makes three changes:
 2. **Temperament weighting.** Conditions act through it, so hardship splits the colony more, not less. The cautious say no harder, while the driven few still argue for the dome.
 3. **One personal stake.** It has its own clock: a parent's child is born and grows past 20 sols.
 
-Expected (E, before sway, which narrows the spread):
-- Good season in a large colony: about 60 to 70 percent yes and 5 percent no. A pledge is possible but not unanimous.
-- Middle years: about 25 to 40 percent yes and 15 to 25 percent no. The colony is divided.
-- Full crisis: about 75 percent or more no, with a driven few still yes. The dome is set aside, and the set-aside names what runs short.
+**Expected, recomputed in revision 3 (code review blocking item 3).** Revision 2's "Expected" list did not follow from its own numbers. The table below works the formula through. It uses mean ambition 0.42 and caution 0.44, so the personal term centres at -0.02 and the temperament factors are 0.84 and 0.88. It assumes a normal spread of lean with sd 0.15 and ignores the small correlation between the terms. This is arithmetic, not a measurement, and it is before sway.
+| Colony state | Mean lean | Yes | No |
+| --- | --- | --- | --- |
+| Pop 120 or more (size 1), stone in store (means 1), calm | +0.15 | about 63% | about 5% |
+| Pop 82 (size 0.53), means 0.5, calm | +0.05 | about 36% | about 16% |
+| Seed 7 at its peak (pop 72, size 0.4), means 1, calm | +0.07 | about 43% | about 13% |
+| Pop 60, means 0.5, hard share 0.2 | -0.06 | about 14% | about 39% |
+| Pop 120, means 0.5, full crisis (hard 1.0) | -0.25 | about 1% | about 83% |
+
+Sway narrows the spread around the mean. Shares therefore move *away* from these values: toward 100 percent yes when the mean lean is above `yes_above` (0.1), and toward few yes when it is below. So the carry share of 0.6 is reachable only where the mean lean is clearly above 0.1. On these numbers, that means a colony of about 120 or more with stone in store and no hardship.
+- **What this implies per seed (E).** Seed 7 never reaches pop 120 (72 at sol 300), so it should never pledge. Seeds 42 and 99 reach pop 120, but are hard after sol 150 (ice near 0), and seed 42's means is near 0.01 at sol 180. Seed 1234 (means above 1, pop 120 by about sol 120 to 210) is the likeliest pledge, and 2026 is uncertain. C4 (a pledge on at least 1 seed) therefore rests on about one seed. Middle years lean no rather than divided. The divided line (C5) needs a colony near the yes line, which happens in the growth years between pop 80 and 120.
+- **Why the formula is not rewritten now.** The trait means behind every row are arithmetic from `persona.json`, not measured (probe item 5 measures them). A third unmeasured formula would be no better grounded than this one. The rewrite trigger (SIZE-DOMINANT or LOCKSTEP) stands.
+- **Known risk, with one lever agreed before the probe.** If C4 fails on the first calibrated run, the only key the lead moves for it is `dome.lean.base`: +0.05, then +0.10, one paired run each (section 9). A step is kept only if LOCKSTEP and SIZE-DOMINANT stay clear and C5 and C6 still hold. If C4 still fails at +0.10, no other key is moved for it. The result goes to the owner as "on these seeds the colony never agrees", with this table. `lean.base` is the lever because it moves every voice by the same amount. Who leans which way, the personality order and C6, is untouched. `support.yes_above` would also move the undecided band and the texts, and raising `lean.size` would invite SIZE-DOMINANT. Cost of the lever: it also tips the middle years toward yes (at +0.05 the pop-60 row goes to about 23 percent yes).
 
 Emergence's rule stands: if the probe raises SIZE-DOMINANT or LOCKSTEP (section 12), the formula is rewritten, not retuned. Personality decides who leans which way at the same moment (R10's lesson from Task 4). Sway makes camps follow friendships, which is "factions by personality" in this sim. Friends are mostly like-tempered pairs (relationships.md 5.3, affinity), so a friend circle tends to share a lean, and sway turns that into a camp. One curious bridge between two circles pulls both toward the middle.
 
 ### 5.7 Gatherings and meetings
-- **Gathering read** (5.5's hook, Council age only, once per relationship tick): for each building in `present` in ascending id, count the living voices in its list. If the count is strictly greater than `best.count`, set `best = {building_id, count, ids (those voice ids, ascending), t}`. Strictly greater means the earliest tick wins a tie, and the lower building id wins within a tick. A dark (offline) room counts, as in Task 4.
+- **Gathering read** (the phase 11b hook of section 4, Council age only, once per relationship tick): for each building in `present` in ascending id, count the living voices in its list. If the count is strictly greater than `best.count` (an empty `best` counts as 0), set `best = {building_id, count, ids (those voice ids, ascending), t}`, where `t` is `world.t` at this tick. Strictly greater means the earliest tick wins a tie, and the lower building id wins within a tick. A dark (offline) room counts, as in Task 4.
+- **Stale gatherings (revision 3).** At each sol boundary in Council, before the meeting check, `best` is cleared if `world.t - best.t > session.gathering_max_age_sols x sol_h` (5 sols, E; sanity rule: at least 1). Without this, a colony whose rooms rarely fill would hold its meeting on the strength of one crowded evening weeks earlier, and name a room the colony no longer meets in.
 - **Meeting** (at the sol boundary, Council age only, after 5.6): a meeting is held when both of these hold:
-  - `n - last_session_sol >= session.interval_sols` (5, E);
+  - `n - last_session_sol >= session.interval_sols` (5, E; sanity rule: at least 1);
   - `best.count >= max(session.min_voices, ceil(session.min_voices_share x voices))` (5 and 0.1, E; revision 2, clarity S1). A meeting of five in a colony of a hundred voices is a dinner, not a council.
 
-  Then `stats.council.sessions += 1`, a `session_log` entry is appended (section 8), the topic step runs (5.8), `last_session_sol = n` and `best` is cleared. If the interval has passed but no gathering was large enough, the meeting waits. `best` keeps growing until one is, so a colony whose people never share a room never meets. Rooms have no capacity in `buildings.json`, and gathering sizes have never been measured. The probe measures them, and the NOROOM flag (section 12) is read before the share is kept.
+  Then `stats.council.sessions += 1`, a `session_log` entry is appended (section 8), the topic step runs (5.8), `last_session_sol = n` and `best` is cleared. If the interval has passed but no gathering was large enough, the meeting waits. `best` keeps growing, within the age limit above, until one is, so a colony whose people never share a room never meets. Rooms have no capacity in `buildings.json`, and gathering sizes have never been measured. The probe measures them, and the NOROOM flag (section 12) is read before the share is kept.
 - Meetings are silent in the log, except for the lines of 5.8 and 7. About 40 meetings a run would bury the lines that matter. The place appears in the proposal and pledge lines.
 
 ### 5.8 Topics: raise, argue, decide
@@ -208,7 +239,7 @@ At a meeting, in this order:
    The raising meeting is not a vote. If no one in the room wants it, nothing is raised and the next meeting tries again. The first time in a Council term that a meeting raises nothing while nothing is open and nothing is pledged, the quiet line is logged (section 7). This is the once-per-term answer to "why has nothing happened yet".
 2. **Vote** (a proposal open from an earlier meeting): `votes += 1`. Count yes and no among all living voices: the whole colony decides, not only those in the room. `yes_share = yes / voices` and `no_share = no / voices`, compared by cross-multiplying counts as in ages.md 4.2 (`CMP_EPS`).
    - `carry_run = carry_run + 1` if `yes_share >= decide.carry_share` (0.6, E), else 0. `reject_run` works the same way with `no_share >= decide.reject_share` (0.5, E).
-   - **Speakers.** The yes speaker is the yes voice with the most voice friends inside the yes camp (ties: higher stance, then lower id). The no speaker is the same inside the no camp (ties: lower stance, then lower id). Each speaker's **reason** comes from their own lean terms (7.3).
+   - **Speakers.** The yes speaker is the yes voice with the most voice friends inside the yes camp, counted from the sorted friend lists of 5.2 (ties: higher stance, then lower id). The no speaker is the same inside the no camp (ties: lower stance, then lower id). A camp with no voices has no speaker. No line needs a speaker from an empty camp: divided needs both shares at 0.25 or more, and the plain set-aside needs a no share of at least 0.5. Each speaker's **reason** comes from their own lean terms (7.3).
    - **Divided**: if not yet `divided` and both shares are `>= decide.divided_share` (0.25, E), set `divided`, record `no_speaker_id`, and offer the divided line (7.4 may drop it if an outcome line takes the boundary; `divided` stays set either way).
    - Then the first of these that holds:
      - **Pledge**: `carry_run >= decide.carry_sessions` (2). `pledged[topic] = n`; `stats.council.pledge_sol = n`; log the pledge line (variant `pledge_divided` if `divided`), naming the proposer, the place of this meeting and the reason (7.3). Append a chapter (section 8) and close with outcome `pledged`. Set `aftermath = {due_sol: n + lines.aftermath_sols, doubter_id}`, where `doubter_id` is chosen in this order:
@@ -218,7 +249,7 @@ At a meeting, in this order:
      - **Set aside**: `reject_run >= decide.reject_sessions` (2). Close with outcome `set_aside` and record `set_aside[topic] = {sol: n, hard: hard >= lines.hard_share_min}`. The line depends on the hard share:
        - if the hard share is at least `lines.hard_share_min` (0.5), log `set_aside_hard`, naming the hard clause. This is the same clock the lean uses (revision 2, clarity M4; revision 1 used "this sol is hard");
        - else log `set_aside`, naming the no speaker.
-     - **Left open too long**: `votes >= decide.max_open_votes` (12, E; about 60 sols). Log `set_aside_long` and record `set_aside[topic] = {sol: n, hard: false}`. Close with outcome `set_aside`.
+     - **Left open too long**: `votes >= decide.max_open_votes` (12, E; about 60 sols; sanity rule: at least `max(carry_sessions, reject_sessions) + 1`, so a pledge or a set-aside can always come before the talk is let rest). Log `set_aside_long` and record `set_aside[topic] = {sol: n, hard: false}`. Close with outcome `set_aside`.
      - Otherwise the argument goes on.
 3. **Lapse.** When the colony leaves Council (split or fall-back) with a proposal open, it lapses: outcome `lapsed`, no line (the age line says enough). `set_aside` is unchanged, so the topic can be raised at the first meeting of the next Council term ("again" text).
 
@@ -226,12 +257,13 @@ The earliest pledge is therefore at the third meeting of a term: raise, then two
 
 ### 5.9 The pledge and after (owner O2 (a))
 The pledge is permanent in Task 5: it survives a fall-back to Landing and a split. After it the dome is never raised again; the Council still reads trust, sways stances and holds meetings.
-- **Aftermath** (revision 2, feel 1b, adopted modified). At the first sol boundary at or after `aftermath.due_sol` (pledge + 4 sols, E), the doubter's current stance decides the line:
+- **Aftermath** (revision 2, feel 1b, adopted modified). The aftermath is evaluated **once**, at the first sol boundary at or after `aftermath.due_sol` (pledge + 4 sols, E). `aftermath` is then cleared whatever happens: there is no retry (revision 3 makes 5.9 and 7.4 agree). The doubter's current stance decides the line:
   - if the doubter is still a living voice and the age is `council`: `aftermath_round` if their stance is now above `support.yes_above`, else `aftermath_still`;
-  - otherwise nothing.
+  - otherwise nothing (the doubter is dead or no longer a voice, or the colony has left Council);
+  - if the cap of 7.4 drops it, it is counted in `lines_dropped` and not offered again.
 
-  The line reports the doubter's actual stance, so it never claims work the sim does not do.
-- **After the pledge** (revision 2, clarity S3). Once in the run, at the first meeting at least `lines.after_pledge_sols` (30, E) after the pledge, the after-pledge line says the Council goes on meeting with no new matter. It is honest because the meetings do continue, and it answers clarity's expected play-test question "what happened to the dome after the pledge".
+  The line reports the doubter's actual stance, so it never claims work the sim does not do. The doubter fallback (5.8, pledge step) means a pledge with no no speaker still has a doubter whenever any voice says no at the pledging vote. With no `no` voice at all, there is no aftermath, which is also honest.
+- **After the pledge** (revision 2, clarity S3). Once in the run, at the first meeting at least `lines.after_pledge_sols` (30, E; sanity rule: at least `lines.aftermath_sols`, so the after-pledge line never comes before the doubter is followed up) after the pledge, the after-pledge line says the Council goes on meeting with no new matter. It is honest because the meetings do continue, and it answers clarity's expected play-test question "what happened to the dome after the pledge".
 
 Nothing in the sim is built or changed. `stats.council.pledge_sol` and the chapter carry the pledge forward for the task that builds the dome.
 
@@ -239,12 +271,13 @@ Nothing in the sim is built or changed. `stats.council.pledge_sol` and the chapt
 - **Pop 0 or no voices.** Readings of 0.0 are appended, and there is no entry, split, meeting or line. Stances are empty. The age is frozen by ages (ages.md 8.3).
 - **Voices below `entry.voices_min` while in Council.** There is no special rule: the web still decides a split, and votes are shares of whoever is a voice. The meeting size uses the current voices.
 - **A named person dies later.** If the proposer or a speaker dies, lines already logged stay and the proposal stays open. If the doubter dies before the aftermath, there is no aftermath line.
-- **A voice in `best.ids` dies before the meeting.** It is skipped when choosing the proposer.
+- **A voice in `best.ids` dies before the meeting.** It is skipped when choosing the proposer. The meeting is still held, because its size was read when the room was full. If no one in `best.ids` is still a living voice, nothing is raised and the quiet rule of 5.8 applies (test 9).
 - **The proposer is not in the pledging room.** The pledge line names the proposer and the place of the pledging meeting, which may differ from the raising room. The text says "spoke for it first", which stays true.
 - **A child stake from a dead child.** It does not count, because the stake needs a living being whose `parent_id` is the voice. Founders' `parent_id` is 0, and no being has id 0.
-- **Clashing boundaries.** A Council entry and an ages change on the same boundary are impossible (5.3, clause 1). If an ages fall-back from Council and a split fall on the same boundary, ages runs first, so the Council sees Landing and does nothing.
+- **Clashing boundaries.** `ages.on_sol` runs before `council.on_sol` in the sol block, and that order is what settles every clash (revision 3, reworded). A Council entry and an ages change on the same boundary are impossible: after an ages change the age is Landing, or Settlement with `S = n` (5.3). If an ages fall-back from Council and a split would fall on the same boundary, ages has already set Landing. The Council sees an age that is not `council`, so it does not split, it lapses any open proposal (5.8, step 3) and it holds no meeting.
+- **Lineage across deaths.** `parent_of` keeps the ids of the dead, so siblings stay family after their parent dies. A being born and dead within one sol is never recorded. It cannot be anyone's parent, so nothing is lost.
 - **Settlement re-entered after a split.** Clause 1 restarts the 30 sols from the split entry. `circles_count` resets with each Settlement term.
-- **Relationships disabled.** The Council is inert and appends 0.0 readings (section 4).
+- **Relationships disabled or null.** The Council records lineage, appends 0.0 readings, and does nothing else (section 4). **Council disabled**: nothing is called and nothing is appended (section 4).
 - **Log eviction** (500, kind-blind) changes no Council value. The chapter survives in `stats.council.chapters`.
 - **Missing phrases.** A building kind with no place phrase uses `text.place.other`; the key-path test fails until one is added. A trait with no adjective cannot occur: `persona.adjectives` covers all six dimensions.
 
@@ -296,9 +329,10 @@ Entries carry `being_id` (`{a}`, or the doubter for aftermath), `other_id` (`{b}
 
 ### 7.3 Reasons (revision 2: feel 6, clarity S2 and M3, emergence S2, merged)
 A **speaker's reason** is chosen from the speaker's own lean terms (5.6) at this boundary, pointing the way of their camp:
-- **Friends.** If the speaker's lean and stance have opposite signs, or the lean is inside the undecided band, the reason is `friends`. Their friends moved them, and this is the one place the player sees sway.
-- **Yes speaker otherwise.** The largest of `size_i`, `means_i` (if positive), `child_i` and `personal_i` (if positive). Ties go in that order.
-- **No speaker otherwise.** The largest of `hard_i`, `-means_i` (if means is negative) and `-personal_i` (if personal is negative). Ties go in that order.
+- **Friends.** If the speaker's lean is inside the undecided band (`no_below <= lean <= yes_above`), or on the other side of zero from their stance, the reason is `friends`. Their friends moved them, and this is the one place the player sees sway.
+- **Yes speaker otherwise.** The candidates are `size_i`, `means_i`, `child_i` and `personal_i`. Only strictly positive values count. The largest wins, with ties in that order.
+- **No speaker otherwise.** The candidates are `hard_i`, `-means_i` and `-personal_i`. Only strictly positive values count. The largest wins, with ties in that order.
+- **Fallback (revision 3).** If no candidate is strictly positive, the reason is `personal`. With `lean.base` at 0.0 this cannot happen for a speaker whose lean is outside the undecided band, because some term must carry the lean past it. It can happen once the base lever of 5.6 is moved, and "{adj} as ever" stays true of the speaker.
 
 | Reason | Yes key (`dome.text.reason.yes.*`) | No key (`dome.text.reason.no.*`) |
 | --- | --- | --- |
@@ -311,7 +345,11 @@ A **speaker's reason** is chosen from the speaker's own lean terms (5.6) at this
 
 `{adj}` is `persona.adjectives` of the speaker's highest trait among drive, curiosity and restless (yes) or steady and care (no). Ties follow the `persona.dims` order. These are existing data words: driven, inquisitive, restless, steady, nurturing. Example: "Lena speaks for building it, restless as ever; Omar says not yet, while the ice runs short."
 
-The **pledge reason** `{why}` is the term with the largest mean contribution over the yes voices at the pledging vote, among `size_i`, `means_i` (if positive), `child_i` and `personal_i` (if positive), with ties in that order. It uses the yes keys, except that the personal reason uses `dome.text.pledge_why_personal` ("because its bolder hearts would not wait"). The chosen term is stored in the `proposals` entry (`reason`).
+The **pledge reason** `{why}` works on means over the yes voices at the pledging vote (there is at least one, since the carry share is above 0.5). For each of `size_i`, `means_i`, `child_i` and `personal_i`, take its mean over the yes voices. The largest strictly positive mean wins, with ties in that order. If none is strictly positive, the reason is `personal` (revision 3 fallback). `friends` is never a pledge reason. `{why}` uses the yes keys, except that the personal reason uses `dome.text.pledge_why_personal` ("because its bolder hearts would not wait"). The chosen term is stored in the `proposals` entry (`reason`).
+
+**`{clause}` (revision 3).** `{clause}` is always the colony's hard clause of section 2: the clause failing on the most sols in `hard_win`, with ties in the order ice, air, food. It is read only where some clause has failed in the window: `set_aside_hard` and `quiet_hard` need a hard share of at least 0.5, and the no reason `hard` needs `hard_i > 0`. If it is ever read with no failing clause, the phrase is `text.clause.ice`. That default is defensive and cannot occur under the rules above.
+
+**`{adj}` ties.** Ties follow `persona.dims` order, as below. A trait vector of all-equal values therefore names the first of the camp's dims in that order.
 
 ### 7.4 One Council line per sol boundary (clarity S6)
 At most one Council-kind line is logged per sol boundary. Age lines are not counted, and they never coincide with a meeting: an entry resets the interval, and a split or fall-back ends the Council. When two would fall on one boundary, the higher wins, in this priority:
@@ -337,7 +375,7 @@ These lines answer relationships.md section 11: "a hidden counter must not act a
 A seed that never enters Council therefore hears twice why, in the colony's voice, without a number.
 
 ### 7.6 HUD
-- **Age word.** The clock line's age word is `council.age.name` ("Council") when `stats.age` is `council`. Landing and Settlement keep their names from `ages.json`, and no Council key is added to `ages.json`, so ages test 18 stands.
+- **Age word.** The clock line's age word is `council.age.name` ("Council") when `stats.age` is `council`. Landing and Settlement keep their names from `ages.json`, and no Council key is added to `ages.json`, so ages test 18 stands. This needs a view edit (revision 3, listed in 9.1). Today `view/main.gd` (clock line, around line 210) looks the age id up in `SimData.ages()` only, so it would print no word in Council. It must fall back to `SimData.council().age.name` for `council`.
 - **Chapters strip (revision 2: pinned pledge; clarity M1, feel 7).** The strip merges `age_history` and `stats.council.chapters` and orders them by `t` (on a tie the age entry comes first). It shows the latest `ages.hud.chapters_shown` (3) entries, each as `sol N  <first sentence>`. If a pledge chapter exists and is not among those 3, the strip shows the latest 2 plus the pledge, still in time order. The pledge is never pushed off by later age changes, and the strip stays at 3 lines, so there is no 720p change. A dome state word in the strip (clarity S4) is not adopted (section 17).
 - **What the HUD never shows.** No support share, trust, chosen share, vote count, camp size, stance, "sols until", meeting count or bar anywhere. No new panel, button or pop-up. No speed change on any Council event (owner decision of ages.md 18 item 4).
 - **Out of Task 5.** A being inspect panel, click-to-focus, a highlight on the meeting building (owner O4 (b)), and a meeting shown on screen (section 15).
@@ -363,7 +401,7 @@ Not in stats: stances, leans, `best`, the windows.
 - Also built with Task 5's first sim change (relationships.md 10.2, RN-7): `stats.relationships.lines_dropped_by_type`.
 
 ## 9. Randomness and hashes, per mechanic
-No mechanic draws from `SimRng` or any other random source. Every order is fixed: ascending ids, ascending pair keys, ascending building ids, topic order, meeting order.
+No mechanic draws from `SimRng` or any other random source. Every order that can change a result is fixed: ascending ids (friend lists are sorted per voice), ascending building ids, topic order, meeting order. The pair walk itself is unsorted, and nothing it computes depends on its order (5.2).
 | Mechanic | Draws | Writes outside the module | Effect on earlier hashes |
 | --- | --- | --- | --- |
 | Voices, trust and chosen readings (5.1, 5.2) | none | `stats.council` | none |
@@ -380,6 +418,23 @@ No mechanic draws from `SimRng` or any other random source. Every order is fixed
 2. A new trailing column `cn` after `web`: `-` before any Council entry or outside Council without a pledge, `C` in Council without a pledge, and `P` after the pledge (any age).
 
 Removing the last field reproduces the Task 4 table hashes (`docs/balance/task-4-log.md`: 42 a96b8a9562fd75d0, 7 a4968e2fcc48ec36, 99 2210719cf48d8612, 1234 19437e397d1dff88, 2026 6e7fe68477161196). From there, the existing `tests/relationships_hash_proof.gd` chain gives the Task 3 and Task 1 hashes.
+
+### 9.1 Edits to existing code (revision 3: the complete list, code review blocking item 7)
+Every edit below is needed because existing code compares the age to `settlement`, expects the `web` column last, or expects exactly two `sols_in_age` keys. Each is behaviour-neutral for the sim and is listed in the task log with its reason. No other existing file is edited.
+| File | Edit | Why |
+| --- | --- | --- |
+| `sim/world.gd` | `council`, `council_enabled`, the creation call and the two hooks (section 4); `stats.council` and the `council` key of `sols_in_age` in `_init_stats` | the module |
+| `sim/ages.gd` | `enter_age(world, age_id, how, text)` (section 3) | entry and split |
+| `sim/sim_data.gd` | `council()` accessor | data |
+| `sim/relationships.gd` | `stats.relationships.lines_dropped_by_type` (section 8; RN-7) | Task 4 carry-over |
+| `tests/balance_lib.gd` | projected `age` column at line 109 (`S` for any age other than `landing`); new trailing `cn` column; `data_hash` adds `council`; T10 reads the projected history (section 12); the T10 report line (around line 256) adds `council` to the `sols_in_age` report; T12 | columns and targets |
+| `tests/relationships_hash_proof.gd` | strips `cn` first (refusing if `cn` is not the last field), then runs its existing `web`, then `age`, checks. Today it requires `web` as the last column and would report `web` ABSENT | the Task 4 proof must still pass |
+| `tests/test_ages.gd` line 1372 | the expected `sols_in_age` at creation becomes `{"landing": 0, "settlement": 0, "council": 0}`. Line 1443, "sols_in_age sums to the boundaries seen", adds `council` to the sum | the new key |
+| `tools/age_probe.gd` | lines 216 and 483 print `S` for any age other than `landing`. The comparison of its replayed history against live `stats.age_history` (around line 281) is fed the live history through the same T10 projection helper. Its replay knows only Landing and Settlement, so the unprojected live history would never match | probe still valid |
+| `tools/relationships_probe.gd` | lines 553 and 891 print `S` for any age other than `landing` | probe columns stay Task 4's |
+| `view/main.gd` | the age word falls back to `SimData.council().age.name` (7.6); `_chapters_text` merges `stats.council.chapters` and pins the pledge (7.6) | HUD |
+
+The T10 projection helper is a static function in `tests/balance_lib.gd`, so the probe and T10 share one implementation (test 18).
 
 **Automated proof**: `tests/council_hash_proof.gd`. It is not a unit test; it is modelled on `relationships_hash_proof.gd`, with static helpers.
 - Per seed it strips `cn` (and refuses if the last header field is not `cn`) and compares the result with the Task 4 hash.
@@ -398,7 +453,7 @@ If the owner adopts the lonely pull (O3), the reference hashes become the reset 
 - probe addition F4-1: the longest run of sols with no capped-kind relationship line before the first newcomer line;
 - probe addition F4-3: `balance.log_share_flag` 0.15, a flag only;
 - R13's 2.5 warning read and R12's reopen trigger read on every run (F4-2, F4-4);
-- the **breadth-or-repetition report** (E4-1): for newborns after sol 100, the median hours a sol shared with their most-shared being, shipped against pull;
+- the **breadth-or-repetition report** (E4-1): for newborns after sol 100, the median hours a sol shared with their most-shared being, shipped against pull. Revision 3 defines it exactly (the "repeat-company measure" below). It is new probe code in `tools/relationships_probe.gd`, read-only;
 - the **voice readings** (revision 2, emergence S4): trust and chosen share per sol, computed by the probe from `relationships.pairs` with the formulas of 5.2. They are read-only and need no Council module.
 
 **Seeds.** The five standard seeds are used for T1 to T11 and every R target. R9 is also judged over **15 seeds** (E4-4; lead decision): the five plus 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 (`relationships.balance.r9_seeds`). Both shipped and pull runs are made on all 15: about 30 runs of 300 sols (E: about 2 hours on this host). A forked design (both runs from one saved world) is not possible today, because `SimWorld` has no save, load or clone.
@@ -406,9 +461,15 @@ If the owner adopts the lonely pull (O3), the reference hashes become the reset 
 **Adoption rule, stated before the run (revision 2 adds clauses 2 and 3, emergence S4).** The lead recommends adoption to the owner only if ALL of these hold:
 1. **R9 mean.** The 15-seed mean zero-friend share of post-sol-100 newborns under the pull (probe item 8 (c)) is at most the shipped 15-seed mean minus `balance.r9_gain_min` (0.03, E). A smaller gain is inside the noise of diverged trajectories.
 2. **R9 breadth of seeds.** The zero-friend share under the pull is lower than shipped on at least `balance.r9_seeds_better_min` (10, E) of the 15 seeds. By chance alone this happens about 15 percent of the time. With clause 1 it stops one or two lucky seeds from carrying the mean. The standard error of the paired difference is reported, not judged.
-3. **No repetition.** The 15-seed mean of the breadth-or-repetition measure (median hours a sol with the most-shared being) under the pull is at most shipped plus `balance.repeat_rise_max` (0.5 h, E). A pull that cures loneliness by gluing each newborn to one person is not adopted.
+   - **Seeds that cannot show a gain (revision 3).** A seed with no post-sol-100 newborn on either run has no share. A seed whose two shares are equal, including 0 against 0, is a tie. Both count as **not better**. The count stays out of 15, as owner decision O3 (a) states it ("at least 10 of 15 seeds better").
+   - **Read before the verdict.** Every seed whose shipped share is 0, or that has no late newborn, can never be better. The probe lists them from the shipped runs. If there are more than 5, clause 2 cannot pass on any pull, and the lead tells the owner before the pull runs are judged (section 17 records this as a possible owner question).
+3. **No repetition.** The 15-seed mean of the repeat-company measure under the pull is at most shipped plus `balance.repeat_rise_max` (0.5 h, E). A pull that cures loneliness by gluing each newborn to one person is not adopted.
+   - **Repeat-company measure (revision 3).** It is computed by the probe from `relationships.present` and the work groups, at every relationship tick, using the same groups that grow bonds (rooms, site crews and field crews, as in `relationships.on_step`). So company at work counts.
+   - **Who is measured.** A newborn counts if it was born after sol 100 and lived at least `balance.repeat_window_sols` (20, E) sols before sol 300, so it was born by about sol 280.
+   - **Per newborn.** For each of its first 20 sols of life, find the most hours it shared, awake and in one group, with any single other being. The newborn's value is the median of those 20 daily maxima, in hours a sol.
+   - **Per seed and overall.** A seed's value is the median over its newborns. Clause 3 compares the means over the seeds that have a value on both runs. If fewer than `balance.repeat_seeds_min` (10, E) seeds qualify, clause 3 fails: adoption needs evidence, not its absence.
 4. **R4, R10, R11.** R4 (`friends_mean` 1 to 15), R10 (selectivity at least 2.0) and R11 (coldest third at most 10) hold on all 15 seeds.
-5. **T1 to T11.** They pass on the five standard seeds. Task 3 crossings will move; they are reported, old and new side by side, not judged against 67, 58, 54, 65, 53.
+5. **T1 to T11.** They pass on the five standard seeds. Task 3 crossings will move. The exact sols are reported, old and new side by side, and are not judged against 67, 58, 54, 65, 53. **This does not contradict T10 (1) (revision 3):** T10 (1) judges the first Settlement sol against the *range* `ages.balance.settle_sol_min..settle_sol_max`, and that range check stays judged under the pull. Only the exact shipped sols are not judged. T10 is read on the projected history (section 12), so the Council's own changes never count against it.
 6. **Deaths.** No unexplained death (`deaths_unexplained` 0) and no new death cause.
 
 **Reported, not a clause (emergence S4, "the pull must not make the gate a timer").** On both runs the probe reports trust and chosen share at the earliest-entry sol of each seed, and whether the chosen clause of 5.3 would bind anywhere. If under the pull it binds on no seed, the lead tells the owner with the recommendation, because the gate would be a timer on that baseline. It is not an adoption clause, because the Council's thresholds are calibrated after this decision, on whichever baseline ships.
@@ -428,12 +489,13 @@ Report: `docs/balance/task-5-lonely-run.md`.
 
 ## 11. Cost budget (E; measured by the probe and the step profile)
 - **`on_sol`** (once a sol, about every 493 steps). Work:
-  - the pair walk (stored pairs: median 2,876 and max 4,389 at pop above 120, relationships.md 13), with the chosen count in the same walk;
-  - the voice union-find;
+  - one unsorted pair walk (stored pairs: median 2,876 and max 4,389 at pop above 120, relationships.md 13). The union-find, the friend lists and the chosen count with its lineage check all happen in this walk. Revision 3 drops the ascending-key walk. Sorting 4,389 keys each sol is about 4,389 x 12, or 53,000 comparisons: in GDScript roughly 1 to 2 ms (E), as much as everything else together. It bought nothing: union-find with the smaller-root rule does not depend on order, and the float sums only need each voice's friend list sorted;
+  - sorting each voice's friend list (up to 160 lists of about 1 to 15 entries: tens of microseconds);
+  - lineage sets (one pass over beings, at most `kin_generations` lookups each) and the lineage check per friend pair (comparing two sets of at most 3 ids);
   - a child-stake map (one pass over beings by `parent_id`);
   - sway over voice friends, and the counts.
 
-  Estimate 1 to 3 ms at pop 160. Reasons are computed only for the speakers and the yes voices at a vote. **Budget: median at most `balance.on_sol_ms_max` (3.0 ms), max under `sim.advance_budget_ms` (8.0 ms).** Amortized, this is under 0.01 ms a step.
+  Estimate 1 to 2 ms at pop 160 (E; revision 2 said 1 to 3 ms with the sort). A packed mirror of friend pairs was considered and not built, because the Council may not write relationships state, and a mirror would be a second copy to keep in step. Reasons are computed only for the speakers and the yes voices at a vote. **Budget: median at most `balance.on_sol_ms_max` (3.0 ms), max under `sim.advance_budget_ms` (8.0 ms).** Amortized, this is under 0.01 ms a step.
 - **`on_step`.** It acts only on tick steps (every 20th) in Council, and is O(awake beings inside). Estimate 20 to 50 microseconds. **Budget: the module's share of the mean step cost at pop above 120 at most `balance.step_share_max` (0.02).**
 - **Worst boundary step.** About 14 ms: ages (about 0.4 ms), the relationships reading (about 2.3 ms), the Council (up to 3 ms), a relationship tick if one coincides (about 6 ms) and the step (about 2.5 ms). That is under the 33 ms single-frame trigger of relationships.md 13, and `advance()` stops after it as it already does. If the probe measures a boundary step over 16.7 ms that is attributable to the Council, the remedy order is:
   1. share the union-find with relationships' reading (behaviour-identical);
@@ -443,10 +505,10 @@ Report: `docs/balance/task-5-lonely-run.md`.
 
 ## 12. Calibration probe and balance targets
 **Probe** `tools/council_probe.gd`: read-only; runs the real module on seeds 42, 7, 99, 1234, 2026 for 300 sols, on the baseline O3 leaves. Per seed it writes `docs/balance/task-5-calibration.md`:
-1. **Per sol.** Pop, voices, trust, chosen share (at `chosen_friends_min` 1 and 2), age, hard share and hard clause, means, size, mean lean and mean of each lean term, mean stance, yes and no shares, the largest number of voices together at one tick that sol (computed by the probe in every age), and whether a meeting was held.
+1. **Per sol.** Pop, voices, trust, chosen share (at `chosen_friends_min` 1 and 2, and at `chosen.kin_generations` 0, meaning flags only as in revision 2, 1 and 2), age, hard share and hard clause, means, size, mean lean and mean of each lean term, mean stance, yes and no shares, the largest number of voices together at one tick that sol (computed by the probe in every age), and whether a meeting was held.
 2. **Crossings.** Council entries, splits and fall-backs with their sols. For each entry, which clause passed last (settled sols, web, chosen, voices). Reported: the projected ages sequence equals Task 3's (or the reset baseline's).
-3. **Trust discrimination.** Per seed, the minimum and maximum of each reading over sols 60 to 300.
-   - **Flag FLOOR** if, after its 30 settled sols, no seed's web or chosen reading ever falls below its entry threshold. The gate would then be a timer in disguise.
+3. **Trust discrimination.** Per seed, the minimum and maximum of each reading from sol `balance.discrim_from_sol` (60) to the end of the run. Also the share of chosen friend pairs whose two ends are both Mars-born and unrelated (the housemate leak of 5.2, as an upper bound), and the number of friend pairs that the lineage rule turned from chosen into family.
+   - **Flag FLOOR** if, after its 30 settled sols, no seed's web or chosen reading ever falls below its entry threshold. The gate would then be a timer in disguise. **Revision 3: FLOOR on the chosen reading is a stop rule, not a report** (5.2). Calibration of the decision keys stops, and the lead takes the readings to the owner before tuning anything. FLOOR on the web reading alone stays a report, because the chosen clause is what was added to stop the timer.
    - **Flag CEILING** (clarity S1) if, on every seed that enters, the web reading never falls below 0.5 after the entry. The split can then never fire, and the dead band is decorative.
 4. **Proposals.** Raise sols, proposers, votes to outcome, outcomes, divided lines, reasons chosen, and the yes and no shares at each vote. At each outcome, the mean lean split into its five terms.
    - **Flag SIZE-DOMINANT** if, at every pledge across the seeds, the mean size term exceeds half the mean lean.
@@ -454,12 +516,12 @@ Report: `docs/balance/task-5-lonely-run.md`.
 
    Either flag means the formula of 5.6 is rewritten, not retuned (emergence).
 5. **Factions and spread.** At each divided vote: the mean ambition and caution of the yes camp against the no camp; the share of voices whose stance sign differs from their lean sign (how much sway moved people); and the standard deviation of the personal term among voices. The last checks the 0.15 estimate of 5.6.
-6. **Gatherings.** The distribution of the daily largest voice gathering, as a count and as a share of voices. Also the Council sols where the interval had passed but no meeting was held. **Flag NOROOM** if that share exceeds 0.5 on any seed: the scaled minimum of 5.7 then binds too hard. **Raise timing** (feel 4): sols from Council entry to the first raise. If that is under 6 sols on at least 3 seeds, the lead considers a first-raise delay (not built now).
+6. **Gatherings.** The distribution of the daily largest voice gathering, as a count and as a share of voices. Also the Council sols where the interval had passed but no meeting was held. **Flag NOROOM** if that share exceeds 0.5 on any seed: the scaled minimum of 5.7 then binds too hard. **Raise timing** (feel 4): sols from Council entry to the first raise. If that is under `balance.first_raise_flag_sols` (6) on at least `balance.first_raise_flag_seeds` (3) seeds, the lead considers a first-raise delay (not built now). Revision 3 makes both numbers keys.
 7. **Lines.** Council lines per 5 Council sols, lines dropped by the cap, and Council and relationship lines as a share of the log (`balance.log_share_flag`).
 8. **Cost.** `on_sol` median, p95 and max in microseconds at pop around 70 and above 120, and the share of the mean step.
 9. **Replays** from stored readings (the gate only; no live run needed):
    - `entry.trust_share_min` {0.4, 0.5, 0.6};
-   - `entry.chosen_share_min` {0.3, 0.4, 0.5, 0.6} at `chosen_friends_min` {1, 2}, from the item 1 series;
+   - `entry.chosen_share_min` {0.3, 0.4, 0.5, 0.6} at `chosen_friends_min` {1, 2} and `chosen.kin_generations` {0, 1, 2}, from the item 1 series;
    - `entry.settled_sols` {20, 30, 45};
    - `entry.trust_ok_min` {14, 16, 18}.
 
@@ -471,12 +533,12 @@ Report: `docs/balance/task-5-lonely-run.md`.
 | C1 | Council entered by sol 300 on at least 3 of the 5 seeds | `balance.council_min_seeds` 3 |
 | C2 | (T12) Every Council entry is at least 30 sols after the Settlement entry before it, and every Council change is at least `min_dwell_sols` after the previous `age_history` entry | structural |
 | C3 | (T12) At most 4 Council changes (entries plus splits) per seed | `balance.max_council_changes` 4 |
-| C4 | A pledge on at least 1 seed by sol 300; pledge sols reported | `balance.pledge_min_seeds` 1 |
+| C4 | A pledge on at least 1 seed by sol 300; pledge sols reported. Revision 3: by the arithmetic of 5.6 this rests on about one seed (1234). If it fails, the one pre-agreed lever is `dome.lean.base` (5.6) | `balance.pledge_min_seeds` 1 |
 | C5 | A divided or set-aside line on at least 2 seeds (the colony argues) | `balance.argue_min_seeds` 2 |
 | C6 | At at least 80 percent of divided votes, pooled over the seeds, the yes camp's mean ambition is above the no camp's and the no camp's mean caution is above the yes camp's (factions follow personality) | `balance.faction_trait_share_min` 0.8 |
 | C7 | Council lines (age lines excluded) at most 1.0 per 5 Council sols on every seed | `balance.lines_per5_max` 1.0 |
 | C8 | Cost as in section 11 | `balance.on_sol_ms_max` 3.0, `balance.step_share_max` 0.02 |
-| D | FLOOR, CEILING, SIZE-DOMINANT, LOCKSTEP and NOROOM flags (items 3, 4, 6): reported; they fail nothing and are read by the lead before the next key | none |
+| D | FLOOR, CEILING, SIZE-DOMINANT, LOCKSTEP and NOROOM flags (items 3, 4, 6): reported; they fail nothing and are read by the lead before the next key. Exception: FLOOR on the chosen reading stops calibration (item 3) | none |
 
 **T12** in `tests/balance_lib.gd`, per seed, from `stats` and the log:
 1. `len(trust_by_sol) == len(chosen_by_sol) == len(pop_by_sol)`;
@@ -497,6 +559,7 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
 2. **Readings.** Staged voice webs:
    - one part of 6 of 10 voices reads 0.6; two islands; a non-voice bridge does not join two voice parts; kin and crew pairs count for the web;
    - chosen share: a voice whose only friends are kin or crew is not counted, and one chosen voice friend counts at `chosen_friends_min` 1 but not at 2;
+   - **lineage (revision 3)**: with both pair flags false, siblings, half-siblings, a grandparent and grandchild, an aunt and nephew, and first cousins are not chosen at `kin_generations` 2. A great-grandparent and great-grandchild, two unrelated Mars-born, and a founder with another founder's child are chosen. Siblings stay family after their parent dies and is erased from `world.beings`. At `kin_generations` 0 only the flags count (revision 2 behaviour);
    - no voices gives 0.0; one entry per boundary for each reading;
    - both lengths equal `len(pop_by_sol)` on founder and blank worlds; the founder world's initial readings are 1.0 and 0.0.
 3. **Entry.**
@@ -504,7 +567,8 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
    - Web: 15 of 20 readings at 0.5 blocks, 16 enters, exactly 0.5 counts, and a 0.49 in the last 3 blocks.
    - The same four cases on the chosen readings, with the web passing.
    - 11 voices blocks, 12 enters. Landing never enters. After a split, re-entry needs 30 sols from the split entry.
-   - Entry appends one `age_history` entry `{age: council, how: council, cause: null, text, pop, family_mars_born, t, sol, clock_sol}`, increments `age_changes`, logs `age_began` and leaves `ages.last_change_sol` unchanged. The second entry in a run uses `council_again`.
+   - Entry appends one `age_history` entry `{age: council, how: council, cause: null, text, pop, family_mars_born, t, sol, clock_sol}`, increments `age_changes`, logs `age_began` and leaves `ages.last_change_sol` unchanged. It also leaves `ages.window`, `ages.last_sample` and the ages snapshots equal (deep compare before and after; revision 3). The second entry in a run uses `council_again`.
+   - On a boundary where ages enters Settlement or falls back, the Council does not enter, even with every other clause staged to pass.
 4. **Split.** Before the 20-sol dwell, no split. 16 of 20 below 0.3 with the last 3 below splits (`how` `council_split`, age `settlement`); 15 of 20 does not; a reading of 0.3 is not below. A low chosen share alone never splits.
 5. **Ages interplay.** On a staged world in Council, a life-support window that sends a Settlement colony to Landing at sol N sends the Council colony to Landing at the same sol N, with the same `fell_back` text and cause. `Ages.decide` for Landing and Settlement inputs is unchanged, and `sols_in_age.council` is credited.
 6. **Lean.**
@@ -512,14 +576,17 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
    - The child stake applies at 19 sols after a living child's birth and not at 21; a dead child gives no stake.
    - The clamp at plus and minus 1.
    - The hard window counts hard sols over the last 10, and the hard clause is the most frequent failing clause, ties ice, air, food. The hard read uses the ages.md 4.2 formulas for 1a, 1b and 5.
-7. **Sway.** An isolated voice has stance equal to lean. Two voice friends move toward each other by the formula. A close friend weighs `close_weight`. A non-voice friend is ignored. Reversing the order of `world.beings` gives identical stances.
+   - Changing `dome.lean.trait_centre` in the world's `cfg` moves the personal term and the temperament factors by the formula.
+7. **Sway.** An isolated voice has stance equal to lean. Two voice friends move toward each other by the formula. A close friend weighs `close_weight`. A non-voice friend is ignored. Reversing the order of `world.beings` gives identical stances. **Pair insertion order (revision 3):** two worlds whose `relationships.pairs` hold the same pairs inserted in opposite orders give bit-identical stances, trust and chosen readings.
 8. **Gatherings and meetings.**
    - No meeting before the interval.
    - With 30 voices, a best gathering of 4 does not meet and 5 does. With 80 voices, 7 does not meet and 8 does (`ceil(0.1 x 80)`).
    - The earliest tick wins a tie, and the lower building id within a tick.
    - The meeting place is the best building. `best` is cleared after a meeting. Meetings happen only in Council.
+   - **Staleness (revision 3):** a best gathering 5 sols old still counts, and one older than 5 sols is cleared before the meeting check, so no meeting is held on it.
 9. **Raise.**
-   - At the first meeting the highest-stance voice of the room is named (ties lowest id), with the place phrase.
+   - At the first meeting the highest-stance voice of the room is named, with the place phrase. **Ties (revision 3):** two voices with equal stance name the lower id.
+   - **Dead voice in `best.ids` (revision 3):** the highest-stance voice of the room dies before the meeting, and the next living voice is named. If every voice of the room is dead, the meeting is held, nothing is raised, and the quiet line follows the quiet rule.
    - When nobody in the room is above `yes_above`, there is no raise and the quiet line is logged once per term (the `quiet_hard` variant at hard share 0.5, with the clause phrase). There is no quiet line when a proposal is open or the topic is pledged.
    - Never two open proposals.
    - The "again" text comes after a set-aside once 30 sols have passed, not at 29. After a hard set-aside, there is no re-raise while the hard share is at least 0.5, even after 30 sols.
@@ -530,10 +597,13 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
     - 12 open votes give `set_aside_long`.
     - Divided: the line is offered once per proposal, with the speaker rules.
     - Reasons: a staged yes speaker whose largest term is size gets "since the modules are full"; a speaker whose lean sign differs from their stance gets "as their friends do"; a no speaker with hard dominant gets the clause phrase; `{adj}` is the speaker's top trait adjective.
+    - **Speaker ties (revision 3):** two yes voices with equal in-camp friend counts name the higher stance, and with equal stance the lower id. For the no camp it is the lower stance, then the lower id.
+    - **Reason fallbacks (revision 3):** with `lean.base` staged at +0.3 and every term at or below 0, the yes speaker's reason and the pledge `{why}` are `personal`. Equal size and child terms give `size` (tie order). A lean of exactly `yes_above` counts as inside the band, so the reason is `friends`.
 11. **Pledge and after.**
     - The pledge sets `pledge_sol`, appends one chapter and blocks any further raise. It survives a fall-back and a re-entry.
     - The pledge line names the proposer, the place of the pledging meeting and the reason with the largest mean over yes voices. It is the `pledge_divided` text when the divided line was offered (logged or dropped).
     - Aftermath at pledge + 4: `aftermath_round` when the doubter's stance is now yes, `aftermath_still` otherwise, nothing when the doubter is dead or the age is not Council.
+    - **Doubter fallback (revision 3):** if the no speaker has died, the doubter is the lowest-stance `no` voice at the pledging vote (ties: lower id). With no `no` voice there is no aftermath. An aftermath that is skipped or dropped is not retried at pledge + 5.
     - The after-pledge line comes once at the first meeting 30 or more sols after the pledge.
 12. **Lapse.** A split or fall-back with a proposal open sets outcome `lapsed`, logs nothing, and allows the "again" raise in the next term.
 13. **Circles family.**
@@ -542,16 +612,22 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
     - Both come again in a later Settlement term.
 14. **Line cap.** A staged meeting where divided and pledge both fire logs only the pledge (divided variant), with `lines_dropped` 1. Generally, no boundary logs two Council-kind lines.
 15. **Texts.** Every text from data is rendered with sample names, every place phrase, every clause phrase, every reason and every adjective and season. None has a digit or a `%`, and none contains "vote", "percent", "Landing", "fail", "is building" or "has built" (case-insensitive). The first sentence of both pledge texts is "The council has agreed to build a dome."
-16. **Purity.** Seed 42, 120 sols (long enough to reach Council on a staged override if needed).
+16. **Purity (revision 3: no vacuous pass).** Seed 42, 160 sols, with a staged override on the `council_enabled` true world's `cfg` (section 3): `entry.trust_share_min` 0.0, `entry.chosen_share_min` 0.0 and `entry.voices_min` 1. The Council therefore enters at Settlement + 30 (about sol 97) and has about 60 sols of meetings.
+    - **Guard first.** The test fails, rather than passing, unless the enabled world has a `council` entry in `age_history`, `sessions` of at least 3, and at least one raise or quiet line. A purity check on a world where the module did nothing proves nothing.
     - Worlds with `council_enabled` true and false have equal beings (id, building, state, energy), equal stocks, equal relationship stats and equal next 1,000 `rng` draws.
     - Their `age_history` projected onto Landing and not Landing is equal.
-    - Two same-seed worlds have identical `stats.council` and logs.
+    - Two same-seed worlds with the same override have identical `stats.council` and logs.
 17. **Data.** Key-path parity for `council.json` (section 14), both ways, and the sanity rules:
     - `exit.trust_share_below < entry.trust_share_min`;
     - `entry.trust_ok_min`, `entry.recent_ok`, `exit.split_min` and `exit.recent_below` are each at most `trust.window_sols`;
     - `support.no_below < 0 < support.yes_above`;
     - `decide.carry_share > 0.5`; `decide.divided_share < 0.5`;
     - `topics` is non-empty, and each topic has a `text` and `lean` block;
+    - (revision 3) `entry.settled_sols >= ages.min_dwell_sols` and `min_dwell_sols >= ages.min_dwell_sols` (C2 holds for entries and splits);
+    - `decide.max_open_votes >= max(decide.carry_sessions, decide.reject_sessions) + 1`;
+    - `lines.after_pledge_sols >= lines.aftermath_sols`;
+    - `session.interval_sols >= 1` and `session.gathering_max_age_sols >= 1`;
+    - `dome.lean.trait_centre > 0` (it is a divisor) and `chosen.kin_generations >= 0`;
     - every building kind in `buildings.json` has a place phrase;
     - no Council key in `ages.json` (ages test 18 kept).
 18. **Balance helpers.**
@@ -559,13 +635,15 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
     - `cn` prints `-`, `C`, `P`.
     - `council_hash_proof` helpers strip `cn` on synthetic tables and refuse a table whose last field is not `cn`.
     - The T10 projection helper maps a synthetic history (S, C, L, S, C, S) to (S, L, S) with 2 projected changes.
+    - (revision 3) `relationships_hash_proof` helpers strip `cn`, then `web`, then `age` on a synthetic table, and still refuse a reordered one.
 19. **HUD.**
-    - The age word is "Council" from `council.json`.
+    - The age word is "Council" from `council.json`, read through `SimData.council()` in `view/main.gd`.
     - The strip shows at most 3 merged chapters.
     - The pledge stays pinned: with three later age entries, the strip shows the latest 2 and the pledge, in time order.
     - The HUD source reads no stance, reading, share or `session_log`.
-20. **Relationships off.** With `relationships_enabled` false, the Council appends 0.0 readings and never enters.
-21. **Existing suite with the module on.** Every Task 1 to 4 test passes. Any test changed for log pollution or the `sols_in_age` key is listed in the task log with the reason.
+20. **Relationships off.** With `relationships_enabled` false and `council_enabled` true, `council.on_sol` appends one 0.0 trust and one 0.0 chosen reading per boundary. Both lists keep the length of `pop_by_sol`, the stances are empty, nothing enters, and no Council line is logged. The same holds with `world.relationships` set to null.
+21. **Existing suite with the module on.** Every Task 1 to 4 test passes. The edits of 9.1 (`test_ages.gd` lines 1372 and 1443, `relationships_hash_proof.gd`) and any test changed for log pollution are listed in the task log with the reason.
+22. **Council off (revision 3).** With `council_enabled` false from creation on a founder world, `stats.council.trust_by_sol` holds only the initial reading, no Council hook runs (the staged override of test 16 cannot make it enter), `sols_in_age.council` stays 0, and the HUD shows no Council word.
 
 ## 14. Tunables (`data/council.json` unless stated; E = estimate for the probe)
 | Key | Unit | Start | Source |
@@ -585,6 +663,7 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
 | council.entry.trust_share_min | share of voices | 0.5 | lead, E |
 | council.entry.chosen_share_min | share of voices | 0.5 | lead (rev 2, emergence M2), E |
 | council.entry.chosen_friends_min | chosen voice friends | 1 | lead (rev 2), E |
+| council.chosen.kin_generations | generations up the lineage that make a pair family (0 = pair flags only) | 2 | lead (rev 3, code review 1), E |
 | council.entry.trust_ok_min | readings of the window | 16 | lead, E |
 | council.entry.recent_ok | readings | 3 | lead, E |
 | council.entry.voices_min | voices | 12 | lead, E |
@@ -595,10 +674,13 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
 | council.session.interval_sols | sols | 5 | lead, E |
 | council.session.min_voices | voices together at one tick | 5 | lead, E |
 | council.session.min_voices_share | share of voices together at one tick | 0.1 | lead (rev 2, clarity S1), E |
+| council.session.gathering_max_age_sols | sols a best gathering stays valid | 5 | lead (rev 3, code review), E |
 | council.dome.lean.ambition / caution | per unit of trait above 0.5 | 1.0 / 1.0 | lead, E |
 | council.dome.lean.size / means / hard | lean at a trait of 0.5 | 0.15 / 0.1 / 0.4 | lead (rev 2, emergence M1; were 0.3 / 0.3 / 0.8 flat), E |
 | council.dome.lean.child | lean | 0.15 | lead (rev 2, emergence M1), E |
-| council.dome.lean.base | lean | 0.0 | lead, E |
+| council.dome.lean.base | lean | 0.0 | lead, E; the one pre-agreed lever for C4 (rev 3, 5.6): +0.05 steps, at most +0.10 |
+| council.dome.lean.trait_centre | trait value (zero of the personal term, divisor of the temperament factor) | 0.5 | lead (rev 3: was a hidden constant) |
+| council.dome.lean.means_centre | `means` value at which the means term is zero | 0.5 | lead (rev 3: was a hidden constant) |
 | council.dome.cond.size_from / size_span | beings | 40 / 80 | lead, E |
 | council.dome.cond.child_sols | sols since a child's birth | 20 | lead (rev 2), E |
 | council.cond.hard_window_sols | sols | 10 | lead, E |
@@ -624,15 +706,19 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
 | council.balance.step_share_max | share of mean step | 0.02 | lead, E |
 | council.balance.lockstep_share | share of voices on one side | 0.95 | lead (rev 2, emergence M1), E |
 | council.balance.noroom_share_max | share of eligible Council sols with no meeting | 0.5 | lead (rev 2), E |
+| council.balance.discrim_from_sol | sol where the trust-discrimination window starts (it ends at the run's end) | 60 | lead (rev 3: was a hidden constant) |
+| council.balance.first_raise_flag_sols / first_raise_flag_seeds | sols from entry to first raise / seeds of 5 | 6 / 3 | lead (rev 3: were hidden constants), feel 4 |
 | relationships.balance.log_share_flag | share of log entries | 0.15 | feel F4-3, E |
 | relationships.balance.r9_seeds | list of seeds | 42, 7, 99, 1234, 2026, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89 | lead (E4-4) |
 | relationships.balance.r9_gain_min | share | 0.03 | lead, E |
 | relationships.balance.r9_seeds_better_min | seeds of 15 | 10 | lead (rev 2, emergence S4), E |
 | relationships.balance.repeat_rise_max | hours a sol | 0.5 | lead (rev 2, emergence S4), E |
+| relationships.balance.repeat_window_sols | first sols of a newborn's life measured | 20 | lead (rev 3, code review 8), E |
+| relationships.balance.repeat_seeds_min | seeds of 15 with a value on both runs | 10 | lead (rev 3, code review 8), E |
 
 **Reused, not duplicated**: `ages.sample.o2_min_fraction`, `food_min_fraction`, `ice_min_sols`, `ages.season_phrases`, `ages.hud.chapters_shown`, `colony.consumption.ice_per_being`, `relationships.effects.lonely_pull`, `persona.traits`, `persona.adjectives`, `persona.dims`, `SimWorld.STEP_EPS`, `Ages.CMP_EPS`.
 
-**Not data**: the ids `council`, `council_again`, `council_split`; the line kinds; the order of steps in 5.8; the tie rules and orders (reason ties, clause ties); the line priority of 7.4; "no voices reads 0.0"; the centre 0.5 of the trait terms and the temperament factor `trait / 0.5`.
+**Not data**: the ids `council`, `council_again`, `council_split`; the line kinds; the order of steps in 5.8; the tie rules and orders (reason ties, clause ties, speaker and proposer ties); the reason fallbacks of 7.3 (`personal`, clause `ice`); the line priority of 7.4; "no voices reads 0.0". Revision 3 moves the trait centre, the means centre, the probe's raise-timing trigger and the discrimination window start into data.
 
 **Who reads what**: `balance.*` keys are read by the probe and `balance_lib.gd` only; `age.name` and `text.*` by the view or the log; the rest by `sim/council.gd`. `SimData.council()` is the accessor, and `data_hash` in `balance_lib.gd` adds `council`.
 
@@ -687,6 +773,8 @@ council.dome.lean.means
 council.dome.lean.hard
 council.dome.lean.child
 council.dome.lean.base
+council.dome.lean.trait_centre
+council.dome.lean.means_centre
 council.dome.cond.size_from
 council.dome.cond.size_span
 council.dome.cond.child_sols
@@ -696,6 +784,7 @@ council.entry.settled_sols
 council.entry.trust_share_min
 council.entry.chosen_share_min
 council.entry.chosen_friends_min
+council.chosen.kin_generations
 council.entry.trust_ok_min
 council.entry.recent_ok
 council.entry.voices_min
@@ -706,6 +795,7 @@ council.min_dwell_sols
 council.session.interval_sols
 council.session.min_voices
 council.session.min_voices_share
+council.session.gathering_max_age_sols
 council.cond.hard_window_sols
 council.sway.share
 council.sway.close_weight
@@ -734,18 +824,23 @@ council.balance.on_sol_ms_max
 council.balance.step_share_max
 council.balance.lockstep_share
 council.balance.noroom_share_max
+council.balance.discrim_from_sol
+council.balance.first_raise_flag_sols
+council.balance.first_raise_flag_seeds
 relationships.balance.log_share_flag
 relationships.balance.r9_seeds
 relationships.balance.r9_gain_min
 relationships.balance.r9_seeds_better_min
 relationships.balance.repeat_rise_max
+relationships.balance.repeat_window_sols
+relationships.balance.repeat_seeds_min
 ```
 
 ## 15. Plan questions answered, Task 4 inputs, scope cuts
 ### Plan questions Q1 to Q10
 | Q | Answer | Whose |
 | --- | --- | --- |
-| Q1 Council gate | Settlement held 30 sols since its latest `age_history` entry; the voice web at least 0.5 and the chosen-friend share at least 0.5, each on 16 of 20 readings including the last 3; at least 12 voices; split when the web is under 0.3. Recurrence and fall-back are in 5.3 to 5.5. It never gates on the first Settlement entry, and `web_by_sol`, `second_by_sol` and `lonely_by_sol` are not gate inputs (5.2 says why) | owner, O1 |
+| Q1 Council gate | Settlement held 30 sols since its latest `age_history` entry; the voice web at least 0.5 and the chosen-friend share at least 0.5 (chosen: not kin, not crew, not family within two generations; revision 3), each on 16 of 20 readings including the last 3; at least 12 voices; split when the web is under 0.3. Recurrence and fall-back are in 5.3 to 5.5. It never gates on the first Settlement entry, and `web_by_sol`, `second_by_sol` and `lonely_by_sol` are not gate inputs (5.2 says why) | owner, O1 |
 | Q2 Texture memory | no new art | owner, O4 |
 | Q3 Hashes | Council hash-neutral; one possible reset, from the lonely pull, with owner approval | owner, O3 |
 | Q4 Scope | In: the Council age, voices, two trust readings, gatherings and meetings, the topic-keyed proposal machinery with one topic (the dome), raise, argument with reasons, divided camps, set-aside, pledge, aftermath. Later: building the dome, the Dome age, "more domes", other topics (water rule, O5), dislike bonds | owner, O2 and O5 |
@@ -800,7 +895,8 @@ relationships.balance.repeat_rise_max
 Round 1 (revision 1) is answered in section 17. For revision 2, there is no new round unless the owner's answers change O1, O2 or O5. The code reviewer is asked to check:
 - the projected `age` column edit (9);
 - the T10 projection helper (12);
-- the chosen-friend count reading the `kin` and `crew` flags without a second pair walk (5.2, 11);
+- the chosen-friend count reading the `kin` and `crew` flags and the lineage sets without a second pair walk, and the unsorted walk with sorted per-voice friend lists (5.2, 11; revision 3);
+- the edit list of 9.1, as complete (revision 3);
 - that the reason and child-stake reads write nothing (9, purity test 16).
 
 ## 17. Design review record
@@ -858,6 +954,24 @@ Reviewers: emergence (Will Wright lens), feel (Eric Barone lens), clarity (Karol
 | S6 | At most one Council line per sol boundary | **A** (7.4), with a priority order and `lines_dropped` |
 | Ideas | Highlight on the meeting building; Send a sign reads through the same lines | Highlight is owner O4 (b), recommended against for Task 5; Send a sign recorded under Q7 |
 
+### Code review of revision 2 (applied in revision 3)
+The reviewer's findings were checked against the code before they were applied. `relationships.gd` sets `kin` only at line 239 (child and its one parent) and `crew` only at line 113 (founder pairs). `Being` has one `parent_id`. `SimWorld._kill` erases the dead from `world.beings`. `view/main.gd` reads the age word from `SimData.ages()` only. `relationships_hash_proof.gd` strips `web` and then `age` as the last fields. `test_ages.gd` line 1372 expects exactly two `sols_in_age` keys. `age_probe.gd` and `relationships_probe.gd` print `S` only for `settlement`. T10 (1) judges a range, not exact sols. All confirmed.
+| # | Finding | Decision |
+| --- | --- | --- |
+| B1 | "Chosen" leaks family (siblings, grandparents, cousins); housemates also count; the clause becomes a timer | **A, both parts.** Chosen is now defined by lineage within `chosen.kin_generations` (2), using the module's own `parent_of` record, because the dead are erased (2, 5.2). The housemate leak is stated, not fixed: there is no "raised together" record, and inventing one would be a second unmeasured definition. FLOOR on the chosen reading becomes a stop rule that sends the matter to the owner (12, item 3). Two generations, not the whole tree: the whole tree would turn the clause into "friends across founder lines". Replay points 0, 1, 2 let the probe show the difference |
+| B2 | Who appends 0.0 readings when relationships or the Council are off | **A.** The world calls `on_sol` whenever `council_enabled` is true. The module appends the 0.0 readings when relationships are off or null. With `council_enabled` false nothing is appended and the length rule is not claimed (4, 5.10, tests 20 and 22) |
+| B3 | Lean arithmetic contradicts "Expected"; C4 unsupported | **AM.** The table is recomputed from the spec's own numbers (5.6). It agrees with the reviewer: a mean lean near +0.15 and about 63 percent yes only at pop 120 or more with stone; about 36 to 43 percent at pop 72 to 82; seed 7 never. The formula is not rewritten on arithmetic alone. The risk is stated, and one lever is agreed before the probe: `dome.lean.base`, +0.05 steps, at most +0.10, kept only if LOCKSTEP, SIZE-DOMINANT, C5 and C6 hold. Otherwise the result goes to the owner. C4 notes that it rests on about one seed |
+| B4 | Reason fallbacks undefined | **A.** Strictly positive candidates, the listed tie orders, a `personal` fallback for speakers and `{why}`, `{clause}` always the hard clause with a defensive `ice` default, and the `{adj}` tie by `persona.dims` (7.3) |
+| B5 | Test 16 may pass vacuously | **A.** A staged `cfg` override, 160 sols, and a guard that requires a Council entry, at least 3 meetings and a raise or quiet line (test 16) |
+| B6 | Missing sanity rules; 5.3 and 5.10 reasoning | **A.** Five rules added (test 17). 5.3 and 5.10 now argue from hook order (ages runs first), not from the 20-sol gap |
+| B7 | Existing code edits not listed | **A.** Section 9.1 lists every edit, including the reviewer's four and `view/main.gd`, `sim_data.gd` and the T10 report line |
+| B8 | Lonely adoption not computable | **A.** The repeat-company measure is defined (probe code, groups as in `on_step` so work crews count, the first 20 sols of life, medians, seeds with values on both runs, at least 10). Clause 2 counts seeds with no late newborn, and ties, as not better, out of 15 as O3 states. Clause 5 is reconciled with T10 (1): the range stays judged, and exact sols are only reported (10) |
+| Optional | Cost and sort; cross-reference; stale gatherings; aftermath retry; hidden constants; missing tests; `SimData.council()` in the view | **A** for all. The sort is dropped (11). 5.7 now points to section 4. Gatherings older than 5 sols are cleared. The aftermath is evaluated once and never retried. Five constants become keys. Tests are added for pair insertion order, a dead voice in `best.ids`, proposer and speaker ties, `enter_age` leaving the ages window and snapshots alone, the doubter fallback and `council_enabled` false. The view edit is listed |
+
+**Owner-decision check.** None of these fixes changes an owner decision. Two of them touch the wording of one, and are flagged in the report:
+- **B1 and O1.** O1 (a) says "neither kin nor crew". Revision 3 reads "kin" as family within two generations rather than the code's parent-child flag. The lead holds that this is O1's plain meaning, not a change to it. The owner may prefer whole-tree lineage, or the flag only.
+- **B8 and O3.** Under O3's literal "10 of 15", a seed already at zero zero-friend newborns can never count as better. If more than 5 seeds are like that, clause 2 cannot pass. Rather than change O3's count, the lead will report this before the verdict (10, clause 2), and the owner can then choose a count over eligible seeds.
+
 ### Dissent and tensions resolved
 - **O5: feel and clarity (a) against emergence (b).** Emergence argues that one matter, followed by silence, makes the Council a single event rather than a possibility space, and that building the water rule shipped off costs no hashes. Feel and clarity argue that the water rule changes births and therefore every ice crisis, so it deserves its own task and calibration. Clarity accepts post-pledge silence as the price; feel wants a hook for Task 6. The lead sides with (a) for Task 5 on calibration grounds. Task 5 already holds one behaviour run (the lonely pull) and an uncalibrated stance model, and a second shipped-off mechanic would double the probe work before either is measured. Emergence's structural point is taken as far as it costs nothing: the machinery is topic-keyed, so the water rule is one data block and one lean formula later. The after-pledge line names the silence instead of hiding it. Emergence's dissent stands and is put to the owner as O5 (b).
 - **M1 form: emergence's multiplier against the lead's.** Emergence proposed scaling `(trait - 0.5)` by colony conditions. Under hardship that makes low-caution voices lean further toward yes, so the bold would get bolder as the ice runs out. That is a story, but not the one the hard-share texts tell. The lead uses `trait / 0.5`, which scales the shared push by temperament without flipping sign. Emergence's test (SIZE-DOMINANT or LOCKSTEP means rewrite, not retune) is adopted unchanged.
@@ -881,3 +995,17 @@ Reviewers: emergence (Will Wright lens), feel (Eric Barone lens), clarity (Karol
   - **Scope**: explicit cut list (15). Owner questions updated with reviewer input.
 
   Shipped behaviour is still hash-neutral: every addition reads the world and writes only `stats.council` and the log. `data/` not edited; not committed.
+- 2026-10-07: revision 3 (lead designer). Code review findings applied (section 17, "Code review of revision 2"). The owner decisions block is unchanged.
+  - **Chosen friends** are defined by lineage within two generations, from the module's own `parent_of` record. The housemate leak is stated, and FLOOR on the chosen reading is now a stop rule (2, 3, 5.2, 12).
+  - **Disabled modules**: who appends the 0.0 readings, and when the length rule holds (4, 5.10, tests 20 and 22).
+  - **Lean**: "Expected" recomputed from the formula; C4 risk stated; `dome.lean.base` named as the one pre-agreed lever (5.6, 12).
+  - **Reasons**: tie orders and fallbacks for speakers, `{why}`, `{clause}` and `{adj}` (7.3).
+  - **Tests**: test 16 guarded with a staged override. New tests for lineage, pair insertion order, dead voices in `best.ids`, ties, `enter_age` purity, the doubter fallback, staleness and Council off (22). Five sanity rules (17).
+  - **Clash reasoning** argues from hook order (5.3, 5.10).
+  - **Existing code edits** listed in full (9.1).
+  - **Lonely run**: repeat-company measure defined; clause 2 edge cases; clause 5 reconciled with T10 (1) (10).
+  - **Unsorted pair walk** with sorted per-voice lists; cost re-estimated (11).
+  - **Stale-gathering limit**; the aftermath is evaluated once (5.7, 5.9).
+  - **Constants moved to data**: trait centre, means centre, probe triggers and window (14).
+
+  Still hash-neutral. `data/` not edited; not committed.
