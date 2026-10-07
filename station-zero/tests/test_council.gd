@@ -2237,3 +2237,489 @@ func test_t10k_the_personal_fallback_when_no_term_is_positive(t) -> void:
 			"every term is zero, the base lifts the lean: the reason is personal")
 	t.eq(str(_cs(w).proposals[0].reason), "personal", "stored in the proposals entry")
 	_end(t)
+
+
+# ================================================================ 11. pledge and after
+
+## Raise at 45, votes at 50 and 55 (room = `room`): a pledge at sol 55 when the shares carry.
+func _to_pledge(w, room: Array) -> void:
+	_raise(w, room)
+	_meet(w, 50, room)
+	_meet(w, 55, room)
+
+
+func _means_world() -> Dictionary:
+	var v := _vw(0, 0, 10, {"dome.lean.base": 0.1})
+	v.w.colony.regolith = v.w.colony.regolith_target()
+	return v
+
+
+func test_t11a_the_pledge_sets_its_record_and_blocks_a_further_raise(t) -> void:
+	if not _api(t):
+		return
+	var v := _means_world()
+	var w = v.w
+	_to_pledge(w, v.all.slice(0, 5))
+	t.eq(_kinds(w), ["council_proposal", "council_pledge"], "a raise and a pledge")
+	t.eq(int(w.council.pledged.get("dome", -1)), 55, "pledged at sol 55")
+	t.eq(_cs(w).pledge_sol, 55, "stats pledge_sol")
+	t.check(w.council.open == null, "the proposal is closed")
+	var p: Dictionary = _cs(w).proposals[0]
+	t.check(str(p.outcome) == "pledged" and int(p.outcome_sol) == 55, "proposals: pledged at 55")
+	t.eq(str(p.reason), "means", "reason: the largest mean term over the yes voices (stone in store)")
+	t.eq(_cs(w).chapters.size(), 1, "one chapter")
+	var ch: Dictionary = _cs(w).chapters[0]
+	t.check(str(ch.kind) == "pledge" and str(ch.topic) == "dome" and int(ch.sol) == 55, "its kind, topic and sol")
+	t.check(str(ch.text).begins_with("The council has agreed to build a dome."), "its text starts with the fixed first sentence")
+	t.check(ch.has("t") and ch.has("clock_sol"), "t and clock_sol")
+	_meet(w, 60, v.all.slice(0, 5))
+	_meet(w, 65, v.all.slice(0, 5))
+	t.eq(_cs(w).proposals.size(), 1, "no further raise")
+	t.check(w.council.open == null, "nothing open")
+	t.eq(_cs(w).chapters.size(), 1, "still one chapter")
+	_end(t)
+
+
+func test_t11b_the_pledge_line_names_proposer_place_and_reason(t) -> void:
+	if not _api(t):
+		return
+	var v := _means_world()
+	var w = v.w
+	_raise(w, v.all.slice(0, 5))
+	_meet(w, 50, v.all.slice(0, 5))
+	_meet(w, 55, v.all.slice(5, 10), GREEN)
+	var e: Dictionary = _last_line(w)
+	t.eq(str(e.kind), "council_pledge", "the pledge line")
+	t.eq(str(e.text), _fmt(_dt("pledge"), {"a": "N%d" % v.all[0], "place": _place("green_room"), "why": _yes_reason("means")}),
+			"the proposer of the first meeting, the place of the pledging meeting, the means reason")
+	t.eq(int(e.being_id), int(v.all[0]), "being_id is the proposer")
+	t.eq(int(e.building_id), GREEN, "building_id is the pledging room")
+	t.eq(str(e.topic), "dome", "topic")
+	_end(t)
+
+
+func test_t11c_the_divided_pledge_text(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(6, 3, 1)
+	var w = v.w
+	_to_pledge(w, v.yes)
+	t.eq(_kinds(w), ["council_proposal", "council_divided", "council_pledge"], "raise, divided, pledge")
+	t.eq(str(_last_line(w).text), _fmt(_dt("pledge_divided"), {"a": "N%d" % v.yes[0], "place": _place("habitat"), "why": _dt("pledge_why_personal")}),
+			"the divided variant, with the personal reason (the yes voices' largest term is the personal one)")
+	_end(t)
+
+
+func test_t11d_a_dropped_divided_line_still_marks_the_pledge(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(7, 2, 1)
+	var w = v.w
+	_raise(w, v.yes)
+	_meet(w, 50, v.yes)
+	t.eq(_kinds(w), ["council_proposal"], "staging: 7 yes and 2 no of 10 is not divided at the first vote")
+	_set_traits(w, v.neu[0], NO)
+	_meet(w, 55, v.yes)
+	t.eq(_kinds(w), ["council_proposal", "council_pledge"], "divided and pledge on one boundary: only the pledge is logged")
+	t.eq(str(_last_line(w).text), _fmt(_dt("pledge_divided"), {"a": "N%d" % v.yes[0], "place": _place("habitat"), "why": _dt("pledge_why_personal")}),
+			"and it is the divided variant")
+	t.eq(int(_cs(w).lines_dropped), 1, "the dropped line is counted")
+	_end(t)
+
+
+func test_t11e_the_pledge_survives_a_fall_back_and_a_reentry(t) -> void:
+	if not _api(t):
+		return
+	var v := _means_world()
+	var w = v.w
+	_to_pledge(w, v.all.slice(0, 5))
+	w.ages.age = "landing"
+	w.stats.age = "landing"
+	_bnd(w, 60)
+	t.check(w.council.pledged.has("dome"), "a fall-back to Landing leaves the pledge")
+	_settle(w, 61, "settled_again")
+	w.ages.enter_age(w, "council", "council_again", "Again.")
+	w.council.last_session_sol = 61
+	_meet(w, 66, v.all.slice(0, 5))
+	_meet(w, 71, v.all.slice(0, 5))
+	t.check(w.council.pledged.has("dome") and w.council.open == null, "and a re-entry")
+	t.eq(_cs(w).proposals.size(), 1, "the dome is not raised again")
+	t.eq(_cs(w).chapters.size(), 1, "no second chapter")
+	_end(t)
+
+
+## Pledge world with a divided council: yes 1 to 6, no 7 to 9 (the no speaker is 7), neutral 10. Pledged at sol 55.
+func _aftermath_world() -> Dictionary:
+	var v := _vw(6, 3, 1)
+	_to_pledge(v.w, v.yes)
+	return v
+
+
+func test_t11f_aftermath_after_four_sols_still_or_come_round(t) -> void:
+	if not _api(t):
+		return
+	var v := _aftermath_world()
+	var w = v.w
+	var d: int = v.no[0]
+	t.check(w.council.aftermath != null and int(w.council.aftermath.doubter_id) == d and int(w.council.aftermath.due_sol) == 59,
+			"staging: the doubter is the no speaker, due at sol 59")
+	var n0 := _clines(w).size()
+	_bnd(w, 58)
+	t.eq(_clines(w).size(), n0, "nothing before the due sol")
+	_bnd(w, 59)
+	t.eq(str(_last_line(w).kind), "council_aftermath", "the aftermath line at the due sol")
+	t.eq(str(_last_line(w).text), _fmt(_dt("aftermath_still"), {"b": "N%d" % d}), "the doubter still says not yet")
+	t.eq(int(_last_line(w).being_id), d, "being_id is the doubter")
+	t.check(w.council.aftermath == null, "evaluated once, then cleared")
+	_bnd(w, 60)
+	_bnd(w, 61)
+	t.eq(_clines(w).size(), n0 + 1, "never repeated")
+	# come round
+	var v2 := _aftermath_world()
+	var w2 = v2.w
+	_set_traits(w2, v2.no[0], YES)
+	_bnd(w2, 59)
+	t.eq(str(_last_line(w2).text), _fmt(_dt("aftermath_round"), {"b": "N%d" % v2.no[0]}), "a doubter whose stance is now yes has come round")
+	# evaluated at the first boundary at or after the due sol
+	var v3 := _aftermath_world()
+	_bnd(v3.w, 62)
+	t.eq(str(_last_line(v3.w).kind), "council_aftermath", "a late boundary (62) still gives the line")
+	_end(t)
+
+
+func test_t11g_no_aftermath_when_the_doubter_is_gone_or_the_age_changed(t) -> void:
+	if not _api(t):
+		return
+	var v := _aftermath_world()
+	var w = v.w
+	w._kill(_being(w, v.no[0]), "other")
+	var n0 := _clines(w).size()
+	_bnd(w, 59)
+	t.eq(_clines(w).size(), n0, "the doubter is dead: no line")
+	t.check(w.council.aftermath == null, "and nothing is kept")
+	var v2 := _aftermath_world()
+	var w2 = v2.w
+	var m0 := _clines(w2).size()
+	w2.ages.enter_age(w2, "settlement", "council_split", "Split.")
+	_bnd(w2, 59)
+	t.eq(_clines(w2).size(), m0, "the colony has left Council at the due sol: no line")
+	w2.ages.enter_age(w2, "council", "council_again", "Again.")
+	_bnd(w2, 61)
+	_bnd(w2, 65)
+	t.eq(_clines(w2).size(), m0, "and it is not retried once the Council is back")
+	_end(t)
+
+
+func test_t11h_the_doubter_fallback(t) -> void:
+	if not _api(t):
+		return
+	# no divided line: no speaker was recorded, so the lowest-stance no voice at the pledging vote
+	var v := _vw(7, 2, 1)
+	var w = v.w
+	_set_traits(w, v.no[1], {"steady": 1.0, "care": 1.0})
+	_to_pledge(w, v.yes)
+	t.check(w.council.aftermath != null and int(w.council.aftermath.doubter_id) == int(v.no[1]), "the lowest stance among the no voices")
+	_bnd(w, 59)
+	t.eq(str(_last_line(w).text), _fmt(_dt("aftermath_still"), {"b": "N%d" % v.no[1]}), "named in the line")
+	# equal stances: the lower id
+	var v2 := _vw(7, 2, 1)
+	_to_pledge(v2.w, v2.yes)
+	t.check(v2.w.council.aftermath != null and int(v2.w.council.aftermath.doubter_id) == int(v2.no[0]), "equal stances: the lower id")
+	# the recorded no speaker has died before the pledge: the fallback applies
+	var v3 := _vw(6, 3, 1)
+	var w3 = v3.w
+	_raise(w3, v3.yes)
+	_meet(w3, 50, v3.yes)
+	t.eq(_kinds(w3), ["council_proposal", "council_divided"], "staging: divided, no speaker is the first no voice")
+	w3._kill(_being(w3, v3.no[0]), "other")
+	_meet(w3, 55, v3.yes)
+	t.check(w3.council.pledged.has("dome"), "staging: pledged")
+	t.check(w3.council.aftermath != null and int(w3.council.aftermath.doubter_id) == int(v3.no[1]), "the next no voice by stance, then id")
+	# no no voice at all: no aftermath
+	var v4 := _vw(6, 0, 4)
+	_to_pledge(v4.w, v4.yes)
+	t.check(v4.w.council.pledged.has("dome"), "staging: pledged")
+	t.check(v4.w.council.aftermath == null, "no no voice at the pledging vote: no aftermath")
+	var n0 := _clines(v4.w).size()
+	_bnd(v4.w, 59)
+	t.eq(_clines(v4.w).size(), n0, "and no line")
+	_end(t)
+
+
+func test_t11i_the_after_pledge_line_comes_once(t) -> void:
+	if not _api(t):
+		return
+	var v := _aftermath_world()
+	var w = v.w
+	_bnd(w, 59)
+	_meet(w, 80, v.yes)
+	t.check(not ("council_after_pledge" in _kinds(w)), "25 sols after the pledge: not yet")
+	_meet(w, 85, v.yes)
+	t.eq(str(_last_line(w).kind), "council_after_pledge", "the first meeting 30 sols after the pledge")
+	t.eq(str(_last_line(w).text), _dt("after_pledge"), "its text")
+	_meet(w, 90, v.yes)
+	_meet(w, 95, v.yes)
+	var n := 0
+	for k in _kinds(w):
+		if k == "council_after_pledge":
+			n += 1
+	t.eq(n, 1, "once in the run")
+	_end(t)
+
+
+# ================================================================ 12. lapse
+
+func test_t12a_a_split_with_a_proposal_open_lapses_it(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(6, 0, 4)
+	var w = v.w
+	_raise(w, v.yes)
+	t.check(w.council.open != null, "staging: open")
+	w.council.trust_win = []
+	for i in 19:
+		w.council.trust_win.append(0.1)
+	_bnd(w, 60)
+	t.eq(str(w.stats.age), "settlement", "staging: the Council split at sol 60")
+	t.check(w.council.open == null, "the proposal is gone")
+	t.eq(_cs(w).proposals[0].outcome, "lapsed", "outcome lapsed")
+	t.eq(_kinds(w), ["council_proposal"], "no Council line for it")
+	t.check(not w.council.set_aside.has("dome"), "set_aside is unchanged")
+	# the next term raises it with the again text
+	_settle(w, 61, "settled_again")
+	w.ages.enter_age(w, "council", "council_again", "Again.")
+	w.council.last_session_sol = 61
+	w.council.quiet_logged = false
+	_meet(w, 66, v.yes)
+	t.eq(str(_last_line(w).kind), "council_proposal_again", "the again text at the first meeting of the next term")
+	_end(t)
+
+
+func test_t12b_a_fall_back_with_a_proposal_open_lapses_it(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(6, 0, 4)
+	var w = v.w
+	_raise(w, v.yes)
+	w.ages.age = "landing"
+	w.stats.age = "landing"
+	_bnd(w, 50)
+	t.check(w.council.open == null, "the proposal is gone")
+	t.eq(_cs(w).proposals[0].outcome, "lapsed", "outcome lapsed")
+	t.eq(_kinds(w), ["council_proposal"], "no Council line")
+	t.check(not w.council.set_aside.has("dome"), "set_aside is unchanged")
+	_end(t)
+
+
+# ================================================================ 13. circles family
+
+func _circles_world(voices: int) -> Variant:
+	var w = _world()
+	_voices(w, voices)
+	_calm(w)
+	_settle(w, 10)
+	return w
+
+
+func _circle_lines(w) -> Array:
+	var out: Array = []
+	for e in w.log:
+		if str(e.kind) == "council_circles":
+			out.append(e)
+	return out
+
+
+func test_t13a_the_first_line_comes_fifty_sols_into_settlement(t) -> void:
+	if not _api(t):
+		return
+	var w = _circles_world(14)
+	_bnd(w, 59)
+	t.eq(_circle_lines(w).size(), 0, "49 sols into Settlement: nothing")
+	_bnd(w, 60)
+	t.eq(_circle_lines(w).size(), 1, "50 sols: the first circles line")
+	t.eq(str(_circle_lines(w)[0].text), _tx("circles"), "plain text with 12 voices or more")
+	var w2 = _circles_world(5)
+	_bnd(w2, 60)
+	t.eq(str(_circle_lines(w2)[0].text), _tx("circles_few"), "under 12 voices: circles_few")
+	_end(t)
+
+
+func test_t13b_the_second_line_comes_a_hundred_sols_later_and_no_third(t) -> void:
+	if not _api(t):
+		return
+	var w = _circles_world(14)
+	_bnd(w, 60)
+	_bnd(w, 159)
+	t.eq(_circle_lines(w).size(), 1, "99 sols after the first: still one")
+	_bnd(w, 160)
+	t.eq(_circle_lines(w).size(), 2, "100 sols after: the second")
+	t.eq(str(_circle_lines(w)[1].text), _tx("circles_again"), "circles_again")
+	_bnd(w, 300)
+	_bnd(w, 500)
+	t.eq(_circle_lines(w).size(), 2, "there is no third")
+	var w2 = _circles_world(5)
+	_bnd(w2, 60)
+	_bnd(w2, 160)
+	t.eq(str(_circle_lines(w2)[1].text), _tx("circles_few"), "the second line is circles_few when voices fail")
+	_end(t)
+
+
+func test_t13c_both_come_again_in_a_later_settlement_term(t) -> void:
+	if not _api(t):
+		return
+	var w = _circles_world(14)
+	_bnd(w, 60)
+	_bnd(w, 160)
+	t.eq(_circle_lines(w).size(), 2, "staging: two lines in the first term")
+	_settle(w, 200, "settled_again")
+	_bnd(w, 249)
+	t.eq(_circle_lines(w).size(), 2, "49 sols into the next term: nothing")
+	_bnd(w, 250)
+	t.eq(_circle_lines(w).size(), 3, "50 sols: a first line again")
+	t.eq(str(_circle_lines(w)[2].text), _tx("circles"), "with the first text")
+	_bnd(w, 350)
+	t.eq(_circle_lines(w).size(), 4, "and a second 100 sols later")
+	t.eq(str(_circle_lines(w)[3].text), _tx("circles_again"), "with the again text")
+	_end(t)
+
+
+# ================================================================ 14. line cap
+
+func test_t14a_the_higher_line_wins_and_the_lower_is_counted(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(6, 3, 1, {"lines.after_pledge_sols": 4})
+	var w = v.w
+	_to_pledge(w, v.yes)
+	t.eq(int(_cs(w).lines_dropped), 0, "staging: nothing dropped so far")
+	_meet(w, 60, v.yes)
+	t.eq(str(_last_line(w).kind), "council_after_pledge", "after-pledge outranks the aftermath on the same boundary")
+	t.eq(int(_cs(w).lines_dropped), 1, "the aftermath is counted as dropped")
+	_meet(w, 65, v.yes)
+	_meet(w, 70, v.yes)
+	var n := 0
+	for k in _kinds(w):
+		if k == "council_aftermath":
+			n += 1
+	t.eq(n, 0, "and it is not retried")
+	t.check(w.council.aftermath == null, "cleared")
+	_end(t)
+
+
+func test_t14b_no_boundary_logs_two_council_lines(t) -> void:
+	if not _api(t):
+		return
+	var v := _divided_world()
+	var w = v.w
+	for i in 12:
+		_meet(w, 50 + 5 * i, v.yes)
+	var seen := {}
+	var dup := false
+	for e in _clines(w):
+		if seen.has(int(e.sol)):
+			dup = true
+		seen[int(e.sol)] = true
+	t.check(not dup, "one Council line per sol boundary over a whole proposal")
+	t.check(_clines(w).size() >= 3, "staging: raise, divided and rest lines were logged")
+	_end(t)
+
+
+# ================================================================ 15. texts
+
+func _all_strings(node: Variant, out: Array, path: String = "") -> void:
+	if node is Dictionary:
+		for k in node:
+			_all_strings(node[k], out, path + "." + str(k))
+	elif node is String:
+		out.append([path, node])
+
+
+## Every rendering of one template: placeholders replaced by every sample.
+func _renders(tpl: String, d: Dictionary) -> Array:
+	var outs: Array = [tpl]
+	var subs := {"a": ["Lena"], "b": ["Omar"], "place": d.places, "clause": d.clauses, "adj": d.adjs,
+			"ra": d.yes_reasons, "rb": d.no_reasons, "why": d.whys}
+	for key in subs:
+		var tag := "{%s}" % key
+		var next: Array = []
+		for s in outs:
+			if tag in str(s):
+				for r in subs[key]:
+					next.append(str(s).replace(tag, str(r)))
+			else:
+				next.append(s)
+		outs = next
+	return outs
+
+
+func test_t15_texts_have_no_numbers_and_no_banned_words(t) -> void:
+	if not _api(t):
+		return
+	var cd := _cd()
+	var pd: Dictionary = SimData.load_json("persona.json")
+	var ad: Dictionary = SimData.load_json("ages.json")
+	var places: Array = []
+	for k in cd.text.place:
+		places.append(str(cd.text.place[k]))
+	var clauses: Array = []
+	for k in cd.text.clause:
+		clauses.append(str(cd.text.clause[k]))
+	var adjs: Array = []
+	for k in pd.adjectives:
+		adjs.append(str(pd.adjectives[k]))
+	var yes_r: Array = []
+	var no_r: Array = []
+	var base := {"places": places, "clauses": clauses, "adjs": adjs, "yes_reasons": [], "no_reasons": [], "whys": []}
+	for k in cd.dome.text.reason.yes:
+		yes_r += _renders(str(cd.dome.text.reason.yes[k]), base)
+	for k in cd.dome.text.reason.no:
+		no_r += _renders(str(cd.dome.text.reason.no[k]), base)
+	var whys: Array = yes_r.duplicate()
+	whys.append(str(cd.dome.text.pledge_why_personal))
+	var d := {"places": places, "clauses": clauses, "adjs": adjs, "yes_reasons": yes_r, "no_reasons": no_r, "whys": whys}
+	var strings: Array = []
+	_all_strings(cd.text, strings, "text")
+	_all_strings(cd.dome.text, strings, "dome.text")
+	_all_strings(cd.age, strings, "age")
+	t.check(strings.size() >= 40, "staging: the texts were collected (%d)" % strings.size())
+	var banned := ["vote", "percent", "landing", "fail", "is building", "has built"]
+	var bad: Array[String] = []
+	var rendered := 0
+	for pair in strings:
+		for r in _renders(str(pair[1]), d):
+			rendered += 1
+			var s: String = r
+			var low := s.to_lower()
+			for ch in s:
+				if ch >= "0" and ch <= "9":
+					bad.append("%s has a digit: %s" % [pair[0], s])
+					break
+			if "%" in s:
+				bad.append("%s has a %%: %s" % [pair[0], s])
+			if "{" in s or "}" in s:
+				bad.append("%s has an unfilled placeholder: %s" % [pair[0], s])
+			for w in banned:
+				if w in low:
+					bad.append("%s contains '%s': %s" % [pair[0], w, s])
+	t.check(rendered > strings.size(), "staging: templates rendered more than once")
+	t.eq(bad.slice(0, 5), [], "no digit, no percent sign, no banned word, no stray placeholder")
+	var seasons: Array = ad.season_phrases
+	for sp in seasons:
+		var low := str(sp).to_lower()
+		for ch in str(sp):
+			t.check(not (ch >= "0" and ch <= "9"), "season phrase has no digit")
+			break
+		t.check(not ("%" in str(sp)), "season phrase has no percent sign")
+	for key in ["pledge", "pledge_divided"]:
+		t.check(str(cd.dome.text[key]).begins_with("The council has agreed to build a dome."), key + " starts with the fixed first sentence")
+	_end(t)
+
+
+func test_t15b_a_council_log_line_is_the_data_text_exactly(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(0, 0, 12)
+	var w = v.w
+	_meet(w, 45, v.all.slice(0, 6))
+	t.eq(str(_last_line(w).text), _tx("quiet"), "a Council line is the data text exactly")
+	_end(t)
