@@ -360,7 +360,7 @@ Agent prompts live in `.claude/agents/` at the repository root (recreated in Tas
 | Agent | Job | Model |
 | --- | --- | --- |
 | project-manager | Keeps the task queue, splits work, enforces one task at a time and the definition of done. Does not give game-design advice | sonnet |
-| game-designer | Lead designer. Owns every design decision; writes specs with numbers for systems (ages, diplomacy, needs) before anyone codes; synthesizes the assistant designers' reviews | opus |
+| game-designer | Lead designer. Owns every design decision; writes specs with numbers for systems (ages, diplomacy, needs) before anyone codes; synthesizes the assistant designers' reviews | sonnet |
 | designer-emergence | Assistant designer, systems and emergence lens (Will Wright's published work): agents, needs, possibility space, god as gardener. Read-only reviewer | sonnet |
 | designer-feel | Assistant designer, warmth and rhythm lens (Eric Barone's published work, Stardew Valley): days and seasons, character, small delights, scope discipline. Read-only reviewer | sonnet |
 | designer-clarity | Assistant designer, readable-simulation lens (Karoliina Korppoo's published work, Cities: Skylines): what the player is told, legibility at scale, agency without micromanagement. Read-only reviewer | sonnet |
