@@ -445,6 +445,13 @@ relationships.balance.met_friend_share_flag
 relationships.balance.first_line_min_sol
 relationships.balance.first_line_max_sol
 relationships.balance.found_friend_tail_per5_max
+relationships.balance.log_share_flag
+relationships.balance.r9_seeds
+relationships.balance.r9_gain_min
+relationships.balance.r9_seeds_better_min
+relationships.balance.repeat_rise_max
+relationships.balance.repeat_window_sols
+relationships.balance.repeat_seeds_min
 art.interior.stranger_talk_share
 art.interior.stranger_talk_cycle_s
 ```

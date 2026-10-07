@@ -1,6 +1,8 @@
 class_name Council
 extends RefCounted
-## THROWAWAY PROTOTYPE of docs/specs/council.md revision 3, written to check the tests are satisfiable. Not committed.
+## The Council (docs/specs/council.md revision 4): voices, trust readings, lean and stance, gatherings, meetings, the dome
+## proposal. Pure logic: draws no random numbers, writes only stats.council, the log and (via Ages.enter_age) the age. Holds no
+## reference to the world; every method takes it as an argument.
 
 var cfg: Dictionary = {}
 var parent_of: Dictionary = {}
@@ -107,14 +109,17 @@ func on_step(world: SimWorld) -> void:
 	seen_ticks = world.relationships.ticks
 	if world.ages.age != "council":
 		return
+	var vs := {}
+	for b in world.beings:
+		if _is_voice_b(world, b):
+			vs[b.id] = true
 	var bids: Array = world.relationships.present.keys()
 	bids.sort()
 	for bid in bids:
 		var ids: Array = []
 		for id in world.relationships.present[bid]:
-			for b in world.beings:
-				if b.id == id and _is_voice_b(world, b):
-					ids.append(id)
+			if vs.has(id):
+				ids.append(id)
 		ids.sort()
 		var cnt := ids.size()
 		if cnt > int(best.get("count", 0)):
@@ -150,8 +155,6 @@ func on_sol(world: SimWorld) -> void:
 		_lapse(world)
 	if world.colony.pop() == 0:
 		return
-	if age != "council" and aftermath != null and n >= int(aftermath.due_sol):
-		aftermath = null
 	if age == "settlement":
 		if _decide_entry(world, n):
 			var how := "council" if st.first_council_sol == null else "council_again"
@@ -172,7 +175,22 @@ func on_sol(world: SimWorld) -> void:
 			best = {}
 		else:
 			_council_sol(world, n)
+	_aftermath(world, n)
 	_flush(world)
+
+
+## Evaluated once, at the first boundary at or after due_sol in any age (5.9): cleared whatever happens; a line only when
+## the colony is still in Council and the doubter is still a voice.
+func _aftermath(world: SimWorld, n: int) -> void:
+	if aftermath == null or n < int(aftermath.due_sol):
+		return
+	var d: int = aftermath.doubter_id
+	aftermath = null
+	if str(world.ages.age) != "council" or not is_voice(world, d):
+		return
+	var key := "aftermath_round" if stance_of(d) > float(cfg.support.yes_above) else "aftermath_still"
+	_offer(2, "council_aftermath", key, _fmt(str(cfg.dome.text[key]), {"b": _name(world, d)}),
+			{"being_id": d, "other_id": null, "building_id": null, "topic": "dome"})
 
 
 func _push_win(win: Array, v: float) -> void:
@@ -183,54 +201,109 @@ func _push_win(win: Array, v: float) -> void:
 
 func _readings(world: SimWorld, st: Dictionary) -> void:
 	var voices: Array = []
+	var top := 0
 	for b in world.beings:
+		top = maxi(top, b.id + 1)
 		if _is_voice_b(world, b):
 			voices.append(b.id)
 	voices.sort()
-	var vset := {}
-	for id in voices:
-		vset[id] = true
-	var root := {}
-	for id in voices:
-		root[id] = id
+	var nv := voices.size()
+	# Packed per-id state (ids are small and dense): voice flag, union-find parent (a root is the smaller id, so the result
+	# does not depend on the order the pairs are visited), chosen-friend counts.
+	var isv := PackedByteArray()
+	isv.resize(top)
+	isv.fill(0)
+	var uf := PackedInt32Array()
+	uf.resize(top)
+	var chosen_cnt := PackedInt32Array()
+	chosen_cnt.resize(top)
+	chosen_cnt.fill(0)
 	_friends = {}
+	var lin := {}  # lineage set of each voice (itself plus up to kin_generations ancestors)
 	for id in voices:
+		isv[id] = 1
+		uf[id] = id
 		_friends[id] = []
-	var chosen_cnt := {}
-	for id in voices:
-		chosen_cnt[id] = 0
-	for key in world.relationships.pairs:
-		var p: Dictionary = world.relationships.pairs[key]
-		if not p.friends:
-			continue
-		var a := int(p.lo)
-		var b := int(p.hi)
-		if not (vset.has(a) and vset.has(b)):
-			continue
-		var ra := _find(root, a)
-		var rb := _find(root, b)
+		lin[id] = _lin(id)
+	# Friend pairs of two voices, as parallel packed arrays: the two ends and flag bits (1 close, 2 kin, 4 crew).
+	var pa := PackedInt32Array()
+	var pb := PackedInt32Array()
+	var pf := PackedByteArray()
+	var rel: Relationships = world.relationships
+	if rel._sk.size() == rel._sf.size() and rel._sf.size() == rel.pairs.size():
+		# Read-only walk of Relationships' slot mirror of `pairs` (low id, high id, flag bits 1 friends and 2 close, the pair
+		# dictionary), refreshed by its own sol reading just before this one. Only friend pairs touch a dictionary.
+		var sf := rel._sf
+		var sl := rel._sl
+		var sh := rel._sh
+		for i in sf.size():
+			var f := sf[i]
+			if not (f & 1):
+				continue
+			var a := sl[i]
+			var b := sh[i]
+			if a >= top or b >= top or isv[a] == 0 or isv[b] == 0:
+				continue
+			var p: Dictionary = rel._sp[i]
+			pa.append(a)
+			pb.append(b)
+			pf.append((1 if (f & 2) else 0) | (2 if p.kin else 0) | (4 if p.crew else 0))
+	else:
+		for key in rel.pairs:  # mirror not in step (a staged world): the dictionary's own order
+			var p: Dictionary = rel.pairs[key]
+			if not p.friends:
+				continue
+			var a := int(p.lo)
+			var b := int(p.hi)
+			if a >= top or b >= top or isv[a] == 0 or isv[b] == 0:
+				continue
+			pa.append(a)
+			pb.append(b)
+			pf.append((1 if p.close else 0) | (2 if p.kin else 0) | (4 if p.crew else 0))
+	for k in pa.size():
+		var a := pa[k]
+		var b := pb[k]
+		var fl := pf[k]
+		var ra := a
+		while uf[ra] != ra:
+			ra = uf[ra]
+		var rb := b
+		while uf[rb] != rb:
+			rb = uf[rb]
 		if ra != rb:
-			root[maxi(ra, rb)] = mini(ra, rb)
-		_friends[a].append([b, bool(p.close)])
-		_friends[b].append([a, bool(p.close)])
-		if not p.kin and not p.crew and not is_family(a, b):
+			uf[maxi(ra, rb)] = mini(ra, rb)
+		# friend entries are friend_id * 2 + close, so a plain sort orders each list by friend id
+		_friends[a].append(b * 2 + (fl & 1))
+		_friends[b].append(a * 2 + (fl & 1))
+		if fl & 6:
+			continue
+		var la: Array = lin[a]
+		var lb: Array = lin[b]
+		var family := false
+		for x in la:
+			if x in lb:
+				family = true
+				break
+		if not family:
 			chosen_cnt[a] += 1
 			chosen_cnt[b] += 1
 	for id in voices:
-		_friends[id].sort_custom(func(x, y): return x[0] < y[0])
-	var sizes := {}
-	for id in voices:
-		var r := _find(root, id)
-		sizes[r] = int(sizes.get(r, 0)) + 1
+		_friends[id].sort()
+	var sizes := PackedInt32Array()
+	sizes.resize(top)
+	sizes.fill(0)
 	var big := 0
-	for r in sizes:
-		big = maxi(big, int(sizes[r]))
-	var nv := voices.size()
-	var trust := float(big) / float(nv) if nv > 0 else 0.0
 	var ch := 0
+	var need := int(cfg.entry.chosen_friends_min)
 	for id in voices:
-		if chosen_cnt[id] >= int(cfg.entry.chosen_friends_min):
+		var r: int = id
+		while uf[r] != r:
+			r = uf[r]
+		sizes[r] += 1
+		big = maxi(big, sizes[r])
+		if chosen_cnt[id] >= need:
 			ch += 1
+	var trust := float(big) / float(nv) if nv > 0 else 0.0
 	var chosen := float(ch) / float(nv) if nv > 0 else 0.0
 	st.trust = trust
 	st.chosen = chosen
@@ -239,12 +312,6 @@ func _readings(world: SimWorld, st: Dictionary) -> void:
 	st.chosen_by_sol.append(chosen)
 	_push_win(trust_win, trust)
 	_push_win(chosen_win, chosen)
-
-
-func _find(root: Dictionary, x: int) -> int:
-	while int(root[x]) != x:
-		x = int(root[x])
-	return x
 
 
 func _hard_entry(world: SimWorld) -> void:
@@ -297,27 +364,32 @@ func _lean_stance(world: SimWorld) -> void:
 			voices.append(b.id)
 			by_id[b.id] = b
 	voices.sort()
+	var kids := {}  # parents of a living being born within child_sols (inclusive, revision 4)
+	var child_h := float(cc.child_sols) * world.clock.sol_h + SimWorld.STEP_EPS
+	for o in world.beings:
+		if o.parent_id != 0 and world.t - o.born_t <= child_h:
+			kids[o.parent_id] = true
 	var prev := stance
 	_lean = {}
 	_terms = {}
+	var w_amb := float(lc.ambition)
+	var w_cau := float(lc.caution)
+	var k_size := float(lc.size) * size
+	var k_means := float(lc.means) * (means - float(lc.means_centre))
+	var k_hard := float(lc.hard) * hard
+	var k_child := float(lc.child)
+	var base := float(lc.base)
 	for id in voices:
-		var b = by_id[id]
-		var tr: Dictionary = b.persona.traits
+		var tr: Dictionary = by_id[id].persona.traits
 		var amb := (float(tr.drive) + float(tr.curiosity) + float(tr.restless)) / 3.0
 		var cau := (float(tr.steady) + float(tr.care)) / 2.0
-		var child := 0.0
-		for o in world.beings:
-			if o.parent_id == id and world.t - o.born_t < float(cc.child_sols) * world.clock.sol_h:
-				child = float(lc.child)
-				break
-		var tm := {
-			"personal": float(lc.ambition) * (amb - c) - float(lc.caution) * (cau - c),
-			"size": float(lc.size) * size * (amb / c),
-			"means": float(lc.means) * (means - float(lc.means_centre)) * (amb / c),
-			"hard": float(lc.hard) * hard * (cau / c),
-			"child": child}
-		_terms[id] = tm
-		_lean[id] = clampf(tm.personal + tm.size + tm.means - tm.hard + tm.child + float(lc.base), -1.0, 1.0)
+		var personal := w_amb * (amb - c) - w_cau * (cau - c)
+		var t_size := k_size * (amb / c)
+		var t_means := k_means * (amb / c)
+		var t_hard := k_hard * (cau / c)
+		var t_child := k_child if kids.has(id) else 0.0
+		_terms[id] = {"personal": personal, "size": t_size, "means": t_means, "hard": t_hard, "child": t_child}
+		_lean[id] = clampf(personal + t_size + t_means - t_hard + t_child + base, -1.0, 1.0)
 	var ns := {}
 	var sw := float(cfg.sway.share)
 	var cw := float(cfg.sway.close_weight)
@@ -329,8 +401,9 @@ func _lean_stance(world: SimWorld) -> void:
 		var num := 0.0
 		var den := 0.0
 		for f in fr:
-			var w := cw if f[1] else 1.0
-			var sj: float = float(prev[f[0]]) if prev.has(f[0]) else float(_lean[f[0]])
+			var fid: int = f >> 1
+			var w := cw if (f & 1) else 1.0
+			var sj: float = float(prev[fid]) if prev.has(fid) else float(_lean[fid])
 			num += w * sj
 			den += w
 		ns[id] = (1.0 - sw) * _lean[id] + sw * num / den
@@ -476,24 +549,14 @@ func _circles(world: SimWorld, n: int) -> void:
 func _council_sol(world: SimWorld, n: int) -> void:
 	var st := _st(world)
 	var si: Dictionary = cfg.session
-	if not best.is_empty() and world.t - float(best.t) > float(si.gathering_max_age_sols) * world.clock.sol_h:
+	if not best.is_empty() and world.t - float(best.t) > float(si.gathering_max_age_sols) * world.clock.sol_h + SimWorld.STEP_EPS:
 		best = {}
 	var held := false
 	var voices := int(st.voices)
 	if voices > 0 and n - last_session_sol >= int(si.interval_sols) and not best.is_empty() \
-			and int(best.count) >= maxi(int(si.min_voices), int(ceil(float(si.min_voices_share) * voices - 1e-9))):
+			and int(best.count) >= maxi(int(si.min_voices), int(ceil(float(si.min_voices_share) * voices - Ages.CMP_EPS))):
 		held = true
 		_meeting(world, n)
-	# aftermath
-	if aftermath != null and n >= int(aftermath.due_sol):
-		var am: Dictionary = aftermath
-		aftermath = null
-		var d: int = am.doubter_id
-		if is_voice(world, d):
-			var round_ := stance_of(d) > float(cfg.support.yes_above)
-			var key := "aftermath_round" if round_ else "aftermath_still"
-			_offer(2, "council_aftermath", key, _fmt(str(cfg.dome.text[key]), {"b": _name(world, d)}),
-					{"being_id": d, "other_id": null, "building_id": null, "topic": "dome"})
 	if held:
 		last_session_sol = n
 		best = {}
@@ -518,7 +581,7 @@ func _meeting(world: SimWorld, n: int) -> void:
 	st.sessions += 1
 	var yn := _yes_no(world)
 	st.session_log.append({"sol": n, "building_id": best.building_id, "present": best.count, "voices": st.voices,
-			"yes": yn[0].size(), "no": yn[1].size(), "hard": hard_share()})
+			"yes": yn[0].size(), "no": yn[1].size(), "hard": hard_share() >= float(cfg.lines.hard_share_min)})
 	var topic := "dome"
 	var tcfg := _topic_cfg(topic)
 	if open == null and not pledged.has(topic):
@@ -549,14 +612,12 @@ func _meeting(world: SimWorld, n: int) -> void:
 						"outcome_sol": null, "reason": null, "hard": null})
 				open = {"topic": topic, "raised_sol": n, "proposer_id": pid, "votes": 0, "carry_run": 0, "reject_run": 0,
 						"divided": false, "no_speaker_id": null}
-		if not raised and not quiet_logged:
+		if ok and not raised and not quiet_logged:  # a raise blocked by a set-aside window asks no one and logs no quiet line
 			quiet_logged = true
 			var hard := hard_share() >= float(cfg.lines.hard_share_min)
 			var qk := "quiet_hard" if hard else "quiet"
 			_offer(4, "council_quiet", qk, _fmt(str(cfg.text[qk]), {"clause": cfg.text.clause[hard_clause()]}),
 					{"being_id": null, "other_id": null, "building_id": best.building_id, "topic": null})
-		if pledged.has(topic) is bool:
-			pass
 	elif open != null:
 		if int(open.raised_sol) == n:
 			return
@@ -659,7 +720,7 @@ func _speaker(camp: Array, yes: bool) -> Variant:
 	for id in camp:
 		var c := 0
 		for f in _friends.get(id, []):
-			if cs.has(f[0]):
+			if cs.has(f >> 1):
 				c += 1
 		var s := stance_of(id)
 		var better := false

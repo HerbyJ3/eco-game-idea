@@ -211,6 +211,8 @@ func _clock_text(w: SimWorld) -> String:
 		var age_id: String = str(w.stats.age)
 		if ad.has(age_id):
 			line += "  |  " + str(ad[age_id].name)
+		elif age_id == "council":
+			line += "  |  " + str(SimData.council().age.name)  # spec council.md 7.6: no Council key in ages.json
 	return line
 
 
