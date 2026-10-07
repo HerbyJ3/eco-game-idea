@@ -346,11 +346,17 @@ func _seed_run(seed_in: int, sols: int, pull: String, out_dir: String, params: D
 			if trust_win.size() > WIN_SOLS:
 				trust_win.pop_front()
 				chosen_win.pop_front()
-			if str(w.ages.age) == Ages.SETTLEMENT:
-				settle_s = int(w.stats.age_history[w.stats.age_history.size() - 1].sol)
+			# Gate replay reads the Landing / not-Landing projection (council.md 9, 12), so a live Council entry (age "council")
+			# is still "settled": S is the sol of the latest age_history entry whose age is settlement (5.3 clause 1).
+			var projected_s: bool = str(w.ages.age) != Ages.LANDING
+			if projected_s:
+				for hi in range(w.stats.age_history.size() - 1, -1, -1):
+					if str(w.stats.age_history[hi].age) == Ages.SETTLEMENT:
+						settle_s = int(w.stats.age_history[hi].sol)
+						break
 			vr["sol"] = s
 			vr["age"] = str(w.ages.age)
-			vr["c1"] = str(w.ages.age) == Ages.SETTLEMENT and settle_s >= 0 and s - settle_s >= SETTLED_SOLS
+			vr["c1"] = projected_s and settle_s >= 0 and s - settle_s >= SETTLED_SOLS
 			vr["c2"] = _window_ok(trust_win, TRUST_SHARE_MIN, TRUST_OK_MIN)
 			vr["c3"] = _window_ok(chosen_win, CHOSEN_SHARE_MIN, TRUST_OK_MIN)
 			vr["c4"] = int(vr.voices) >= VOICES_MIN
