@@ -16,6 +16,7 @@ func _abort_msg(t) -> String:
 
 
 func test_web_column_is_last_after_age_with_two_decimals(t) -> void:
+	# Task 5 (council.md 9.1): the trailing `cn` column now follows `web`; web keeps its place right after age.
 	t._failures.append(_abort_msg(t))
 	var lib: GDScript = load("res://tests/balance_lib.gd")
 	var P: GDScript = load("res://tests/age_hash_proof.gd")
@@ -23,14 +24,15 @@ func test_web_column_is_last_after_age_with_two_decimals(t) -> void:
 	var body: Array = P.body_of(r.lines)
 	t.check(body.size() >= 3, "the table has a header and rows")
 	var head: PackedStringArray = str(body[0]).split(" ", false)
-	t.eq(head[head.size() - 1], "web", "the last header field is web")
-	t.eq(head[head.size() - 2], "age", "and the one before it is age")
+	t.eq(head[head.size() - 1], "cn", "the last header field is cn")
+	t.eq(head[head.size() - 2], "web", "web comes right before cn")
+	t.eq(head[head.size() - 3], "age", "and the one before web is age")
 	for i in range(1, body.size()):
 		var f: PackedStringArray = str(body[i]).split(" ", false)
-		var v := f[f.size() - 1]
+		var v := f[f.size() - 2]
 		t.check(v.is_valid_float() and v.length() - v.find(".") == 3, "row %d: web %s has two decimals" % [i, v])
-	t.eq(float(body[body.size() - 1].split(" ", false)[-1]), snappedf(float(r.world.stats.relationships.web_share), 0.01),
-			"the last row is the latest web_share")
+	t.eq(float(body[body.size() - 1].split(" ", false)[-2]), snappedf(float(r.world.stats.relationships.web_share), 0.01),
+			"the last row's web is the latest web_share")
 	t._failures.erase(_abort_msg(t))
 
 
