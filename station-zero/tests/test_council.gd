@@ -1618,3 +1618,307 @@ func test_t07g_pair_insertion_order_changes_nothing(t) -> void:
 	t.check(float(_cs(a).chosen) == float(_cs(b).chosen), "identical chosen share")
 	t.check(_cs(a).trust_by_sol == _cs(b).trust_by_sol and _cs(a).chosen_by_sol == _cs(b).chosen_by_sol, "and identical series")
 	_end(t)
+
+
+# ================================================================ 8. gatherings and meetings
+
+func _held(w) -> int:
+	return int(_cs(w).sessions)
+
+
+## One relationship tick as the phase 11b hook sees it: `present` is set, `ticks` moves, the Council reads it.
+func _tick(w, present: Dictionary, hours: float = 0.0) -> void:
+	w.t += hours
+	w.buildings.now = w.t
+	w.relationships.present = present
+	w.relationships.ticks += 1
+	w.council.on_step(w)
+
+
+func test_t08a_no_meeting_before_the_interval(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(2, 0, 10)
+	var w = v.w
+	var room: Array = v.all.slice(0, 6)
+	_meet(w, 44, room)
+	t.eq(_held(w), 0, "the Council began at sol 40: sol 44 is 4 sols on, under the 5-sol interval")
+	_meet(w, 45, room)
+	t.eq(_held(w), 1, "sol 45 meets")
+	_meet(w, 49, room)
+	t.eq(_held(w), 1, "4 sols after a meeting: none")
+	_meet(w, 50, room)
+	t.eq(_held(w), 2, "5 sols after: a meeting")
+	_end(t)
+
+
+func test_t08b_the_room_must_be_big_enough_scaled_by_voices(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(0, 0, 30)
+	var w = v.w
+	_meet(w, 45, v.all.slice(0, 4))
+	t.eq(_held(w), 0, "30 voices: a best gathering of 4 does not meet (min_voices 5)")
+	_meet(w, 46, v.all.slice(0, 5))
+	t.eq(_held(w), 1, "5 meets (the interval had already passed, so the meeting was only waiting)")
+	var v2 := _vw(0, 0, 80)
+	var w2 = v2.w
+	_meet(w2, 45, v2.all.slice(0, 7))
+	t.eq(_held(w2), 0, "80 voices: 7 does not meet, ceil(0.1 x 80) is 8")
+	_meet(w2, 46, v2.all.slice(0, 8))
+	t.eq(_held(w2), 1, "8 meets")
+	_end(t)
+
+
+func test_t08c_gathering_read_ties_and_counting(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(0, 0, 12)
+	var w = v.w
+	var base: float = w.t
+	var h: float = w.clock.sol_h
+	var kid = _voice(w, {}, 0, 44.0)  # 1 sol old at sol 45: no voice
+	var ids: Array = v.all
+	# tick 1: building 3 holds five voices and the newborn, listed in descending order
+	var five: Array = ids.slice(0, 5)
+	var lst: Array = five.duplicate()
+	lst.append(kid.id)
+	lst.reverse()
+	_tick(w, {HAB2: lst}, 5.0 * h)
+	t.eq(int(w.council.best.get("building_id", -1)), HAB2, "the room of tick 1 is the best")
+	t.eq(int(w.council.best.get("count", -1)), 5, "the newborn is not counted")
+	t.eq(w.council.best.get("ids", []), five, "ids are the voices, ascending")
+	var t1: float = w.t
+	t.eq(float(w.council.best.get("t", -1.0)), t1, "t is the tick time")
+	# tick 2: an equal room elsewhere does not replace it (the earliest tick wins a tie)
+	_tick(w, {HAB1: ids.slice(5, 10)}, 1.0)
+	t.eq(int(w.council.best.building_id), HAB2, "a tie across ticks: the earliest tick stays")
+	t.eq(float(w.council.best.t), t1, "and keeps its time")
+	# no new tick: nothing is read, even if present changed
+	w.relationships.present = {HAB1: ids.slice(0, 9)}
+	w.council.on_step(w)
+	t.eq(int(w.council.best.building_id), HAB2, "without a new relationship tick nothing is read")
+	# tick 3: a larger room replaces it
+	_tick(w, {HAB1: ids.slice(0, 6)}, 1.0)
+	t.eq(int(w.council.best.building_id), HAB1, "strictly more replaces")
+	t.eq(int(w.council.best.count), 6, "count 6")
+	# a tie within one tick: the lower building id
+	var v2 := _vw(0, 0, 12)
+	var w2 = v2.w
+	_tick(w2, {HAB2: v2.all.slice(0, 5), HAB1: v2.all.slice(5, 10)}, 5.0 * h)
+	t.eq(int(w2.council.best.building_id), HAB1, "a tie within one tick: the lower building id")
+	# a dark room counts
+	var v3 := _vw(0, 0, 12)
+	var w3 = v3.w
+	w3.set_offline(HAB1, true)
+	_tick(w3, {HAB1: v3.all.slice(0, 5)}, 5.0 * h)
+	t.eq(int(w3.council.best.get("count", 0)), 5, "an offline room counts, as in Task 4")
+	_end(t)
+
+
+func test_t08d_only_the_council_reads_gatherings(t) -> void:
+	if not _api(t):
+		return
+	var w = _world()
+	var ids := _voices(w, 12)
+	_calm(w)
+	_settle(w, 10)
+	_sol_set(w, 45)
+	_tick(w, {HAB1: ids.slice(0, 8)})
+	t.check(w.council.best.is_empty(), "in Settlement the gathering read does nothing")
+	_best(w, HAB1, ids.slice(0, 8))
+	w.council.last_session_sol = 0
+	w.council.on_sol(w)
+	t.eq(_held(w), 0, "and no meeting is held in Settlement")
+	_end(t)
+
+
+func test_t08e_the_place_and_the_cleared_best(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(0, 0, 12)
+	var w = v.w
+	_meet(w, 45, v.all.slice(0, 7), GREEN)
+	t.eq(_held(w), 1, "a meeting")
+	var rec: Dictionary = _cs(w).session_log.back()
+	t.eq(int(rec.building_id), GREEN, "the place is the best building")
+	t.eq(int(rec.sol), 45, "session_log sol")
+	t.eq(int(rec.present), 7, "present is the best count")
+	t.eq(int(rec.voices), 12, "voices")
+	for k in ["yes", "no", "hard"]:
+		t.check(rec.has(k), "session_log carries " + k)
+	t.check(w.council.best.is_empty(), "best is cleared after a meeting")
+	t.eq(int(w.council.last_session_sol), 45, "last_session_sol")
+	_end(t)
+
+
+func test_t08f_a_stale_best_gathering_is_cleared(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(0, 0, 12)
+	var w = v.w
+	var h: float = w.clock.sol_h
+	_sol_set(w, 45)
+	_best(w, HAB1, v.all.slice(0, 7), w.t - 4.9 * h)
+	w.council.on_sol(w)
+	t.eq(_held(w), 1, "a best gathering 4.9 sols old still counts")
+	var v2 := _vw(0, 0, 12)
+	var w2 = v2.w
+	_sol_set(w2, 45)
+	_best(w2, HAB1, v2.all.slice(0, 7), w2.t - 5.1 * h)
+	w2.council.on_sol(w2)
+	t.eq(_held(w2), 0, "one 5.1 sols old is cleared before the meeting check: none")
+	t.check(w2.council.best.is_empty(), "and best is empty")
+	_end(t)
+
+
+# ================================================================ 9. raise
+
+func test_t09a_the_highest_stance_of_the_room_raises_it(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(3, 0, 3)
+	var w = v.w
+	var y: Array = v.yes
+	# the room: the second and third yes voices and two neutral ones (the first yes voice is outside)
+	_meet(w, 45, [y[2], y[1], v.neu[0], v.neu[1], v.neu[2]], GREEN)
+	t.eq(_kinds(w), ["council_proposal"], "one proposal line and nothing else")
+	var e: Dictionary = _last_line(w)
+	t.eq(int(e.being_id), int(y[1]), "equal stances: the lower id of the room, not the better-placed one outside it")
+	t.eq(str(e.text), _fmt(_dt("proposal"), {"a": "N%d" % y[1], "place": _place("green_room")}), "the text, with the place phrase")
+	t.eq(int(e.building_id), GREEN, "building_id")
+	t.eq(str(e.topic), "dome", "topic")
+	t.check(w.council.open != null and str(w.council.open.topic) == "dome" and int(w.council.open.proposer_id) == int(y[1]), "a proposal is open")
+	t.eq(int(w.council.open.votes), 0, "the raising meeting is not a vote")
+	t.eq(_cs(w).proposals.size(), 1, "one proposals entry")
+	var p: Dictionary = _cs(w).proposals[0]
+	t.check(int(p.raised_sol) == 45 and int(p.proposer_id) == int(y[1]) and not bool(p.again) and p.outcome == null, "its fields")
+	_end(t)
+
+
+func test_t09b_a_dead_voice_in_the_room_is_skipped(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(2, 0, 8)
+	var w = v.w
+	var top = null
+	for b in w.beings:
+		if b.id == v.yes[0]:
+			top = b
+	top.persona.traits.drive = 1.0
+	top.persona.traits.curiosity = 1.0
+	top.persona.traits.restless = 1.0
+	var room: Array = [v.yes[0], v.yes[1], v.neu[0], v.neu[1], v.neu[2]]
+	_bnd(w, 41)
+	t.check(float(w.council.stance_of(v.yes[0])) > float(w.council.stance_of(v.yes[1])), "staging: the first yes voice has the higher stance")
+	w._kill(top, "other")
+	_sol_set(w, 45)
+	_best(w, HAB1, room)
+	w.council.on_sol(w)
+	t.eq(_held(w), 1, "the meeting is held on the strength of the full room")
+	t.eq(int(_last_line(w).being_id), int(v.yes[1]), "the next living voice of the room is named")
+	# every voice of the room dead: the meeting is held, nothing is raised, the quiet line follows
+	var v2 := _vw(5, 0, 8)
+	var w2 = v2.w
+	var dead: Array = []
+	for b in w2.beings.duplicate():
+		if v2.yes.has(b.id):
+			dead.append(b.id)
+			w2._kill(b, "other")
+	_sol_set(w2, 45)
+	_best(w2, HAB1, dead)
+	w2.council.on_sol(w2)
+	t.eq(_held(w2), 1, "a room of the dead still counts as a meeting (its size was read when it was full)")
+	t.check(w2.council.open == null, "nothing is raised")
+	t.eq(_kinds(w2), ["council_quiet"], "the quiet line is logged")
+	_end(t)
+
+
+func test_t09c_nobody_wants_it_the_quiet_line_once_per_term(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(0, 0, 12)
+	var w = v.w
+	_meet(w, 45, v.all.slice(0, 6))
+	t.eq(_kinds(w), ["council_quiet"], "no one in the room is above yes_above: the quiet line")
+	t.eq(str(_last_line(w).text), _tx("quiet"), "the plain text")
+	t.check(w.council.open == null, "nothing is open")
+	_meet(w, 50, v.all.slice(0, 6))
+	t.eq(_kinds(w), ["council_quiet"], "the second silent meeting logs nothing more")
+	# the hard variant at a hard share of 0.5
+	var v2 := _vw(0, 0, 12)
+	var w2 = v2.w
+	_sol_set(w2, 45)
+	_best(w2, HAB1, v2.all.slice(0, 6))
+	w2.council.hard_win = _hard_entries(5, 0)  # five hard sols of the last ten: the hard share is 0.5
+	w2.council.on_sol(w2)
+	t.eq(_kinds(w2), ["council_quiet"], "a quiet line in a world of its own")
+	t.eq(str(_last_line(w2).text), _fmt(_tx("quiet_hard"), {"clause": _clause("ice")}), "hard share 0.5: the hard variant with the clause phrase")
+	# no quiet line when a proposal is open or the topic is pledged
+	var v3 := _vw(2, 0, 10)
+	var w3 = v3.w
+	_meet(w3, 45, [v3.yes[0], v3.yes[1], v3.neu[0], v3.neu[1], v3.neu[2]])
+	t.check(w3.council.open != null, "staging: a proposal is open")
+	var v4 := _vw(0, 0, 12)
+	var w4 = v4.w
+	w4.council.pledged["dome"] = 41
+	_meet(w4, 45, v4.all.slice(0, 6))
+	t.check(not ("council_quiet" in _kinds(w4)), "pledged: no quiet line")
+	_end(t)
+
+
+func test_t09d_never_two_open_proposals(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(6, 0, 4)
+	var w = v.w
+	var room: Array = v.all.slice(0, 6)
+	_meet(w, 45, room)
+	_meet(w, 50, room)
+	_meet(w, 55, room)
+	var n := 0
+	for k in _kinds(w):
+		if k == "council_proposal" or k == "council_proposal_again":
+			n += 1
+	t.eq(n, 1, "one raise only while the proposal is open (or pledged)")
+	t.eq(_cs(w).proposals.size(), 1, "one proposals entry")
+	_end(t)
+
+
+func test_t09e_the_again_text_and_the_reraise_clock(t) -> void:
+	if not _api(t):
+		return
+	var cfg := {"dome.lean.base": 0.6}
+	for days in [29, 30]:
+		var v := _vw(3, 0, 9, cfg)
+		var w = v.w
+		w.council.raised_ever["dome"] = true
+		w.council.set_aside["dome"] = {"sol": 15, "hard": false}
+		w.council.last_session_sol = 0
+		var n := 15 + int(days)
+		_meet(w, n, [v.yes[0], v.yes[1], v.yes[2], v.neu[0], v.neu[1]])
+		if days == 29:
+			t.check(w.council.open == null and not ("council_proposal_again" in _kinds(w)), "29 sols after a set-aside: not raised")
+		else:
+			t.eq(_kinds(w), ["council_proposal_again"], "30 sols: raised again")
+			t.eq(str(_last_line(w).text), _fmt(_dt("proposal_again"), {"a": "N%d" % v.yes[0], "place": _place("habitat")}), "with the again text")
+			t.check(bool(_cs(w).proposals.back().again), "and the proposals entry says again")
+	# after a hard set-aside: no re-raise while the hard share is still at least 0.5, even after 30 sols
+	var vh := _vw(3, 0, 9, cfg)
+	var wh = vh.w
+	wh.council.raised_ever["dome"] = true
+	wh.council.set_aside["dome"] = {"sol": 15, "hard": true}
+	wh.council.last_session_sol = 0
+	wh.council.hard_win = _hard_entries(9, 0)
+	_meet(wh, 60, [vh.yes[0], vh.yes[1], vh.yes[2], vh.neu[0], vh.neu[1]])
+	t.check(wh.council.open == null, "a hard set-aside is not raised again in the same crisis")
+	# and when the hard share has fallen below 0.5 it is
+	var vc := _vw(3, 0, 9, cfg)
+	var wc = vc.w
+	wc.council.raised_ever["dome"] = true
+	wc.council.set_aside["dome"] = {"sol": 15, "hard": true}
+	wc.council.last_session_sol = 0
+	wc.council.hard_win = _hard_entries(3, 6)
+	_meet(wc, 60, [vc.yes[0], vc.yes[1], vc.yes[2], vc.neu[0], vc.neu[1]])
+	t.check(wc.council.open != null, "with the hard share under 0.5 it is raised again")
+	_end(t)
