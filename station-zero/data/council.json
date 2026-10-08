@@ -119,6 +119,7 @@
  },
  "decide": {
   "carry_share": 0.6,
+  "carry_quorum": 0.35,
   "carry_sessions": 2,
   "reject_share": 0.5,
   "reject_sessions": 2,
@@ -143,7 +144,8 @@
   "max_council_changes": 4,
   "faction_trait_share_min": 0.8,
   "lines_per5_max": 1.0,
-  "on_sol_ms_max": 3.0,
+  "on_sol_ms_max": 5.0,
+  "on_sol_ms_peak_max": 16.7,
   "step_share_max": 0.02,
   "lockstep_share": 0.95,
   "noroom_share_max": 0.5,

@@ -786,9 +786,9 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
 | council.balance.max_council_changes | changes per 300 sols | 4 | lead, E |
 | council.balance.faction_trait_share_min | share of divided votes | 0.8 | lead, E |
 | council.balance.lines_per5_max | lines per 5 Council sols | 1.0 | lead, E |
-| council.balance.on_sol_ms_max | ms, median at pop above 120 | 5.0 (revision 5; was 3.0) | lead, E; measured 3.0 and 4.2 (11.1). Data edit pending, own commit before the next run |
-| council.balance.on_sol_ms_peak_max | ms, max at pop above 120 | 16.7 (new, revision 5; the limit was `sim.advance_budget_ms` 8.0) | lead, E; one 60 fps frame; measured 6.2 and 9.7. Data edit and key-path leaf pending |
-| council.decide.carry_quorum | share of voices | 0.35 (pending O6 (A); absent until the owner answers) | lead, E; fitted to five seeds, stated in O6 |
+| council.balance.on_sol_ms_max | ms, median at pop above 120 | 5.0 (revision 5; was 3.0) | lead, E; measured 3.0 and 4.2 (11.1). Data edit done (revision 5 implementation) |
+| council.balance.on_sol_ms_peak_max | ms, max at pop above 120 | 16.7 (new, revision 5; the limit was `sim.advance_budget_ms` 8.0) | lead, E; one 60 fps frame; measured 6.2 and 9.7. Data edit and key-path leaf done |
+| council.decide.carry_quorum | share of voices | 0.35 (O6 = A, owner 2026-10-08) | lead, E; fitted to five seeds, stated in O6 |
 | council.balance.step_share_max | share of mean step | 0.02 | lead, E |
 | council.balance.lockstep_share | share of voices on one side | 0.95 | lead (rev 2, emergence M1), E |
 | council.balance.noroom_share_max | share of eligible Council sols with no meeting | 0.5 | lead (rev 2), E |
@@ -889,6 +889,7 @@ council.support.yes_above
 council.support.no_below
 council.decide.carry_share
 council.decide.carry_sessions
+council.decide.carry_quorum
 council.decide.reject_share
 council.decide.reject_sessions
 council.decide.divided_share
@@ -907,6 +908,7 @@ council.balance.max_council_changes
 council.balance.faction_trait_share_min
 council.balance.lines_per5_max
 council.balance.on_sol_ms_max
+council.balance.on_sol_ms_peak_max
 council.balance.step_share_max
 council.balance.lockstep_share
 council.balance.noroom_share_max
