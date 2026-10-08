@@ -189,7 +189,7 @@ func _aftermath(world: SimWorld, n: int) -> void:
 	if str(world.ages.age) != "council" or not is_voice(world, d):
 		return
 	var key := "aftermath_round" if stance_of(d) > float(cfg.support.yes_above) else "aftermath_still"
-	_offer(2, "council_aftermath", key, _fmt(str(cfg.dome.text[key]), {"b": _name(world, d)}),
+	_offer(PRIO.aftermath, "council_aftermath", key, _fmt(str(cfg.dome.text[key]), {"b": _name(world, d)}),
 			{"being_id": d, "other_id": null, "building_id": null, "topic": "dome"})
 
 
@@ -479,6 +479,9 @@ func _lapse(world: SimWorld) -> void:
 
 # ---------------------------------------------------------------- lines
 
+## Line priorities of spec 7.4: when two Council lines fall on one boundary the higher wins.
+const PRIO := {"outcome": 7, "divided": 6, "raise": 5, "quiet": 4, "after_pledge": 3, "aftermath": 2, "circles": 1}
+
 func _offer(prio: int, kind: String, key: String, text: String, extra: Dictionary) -> void:
 	_cands.append({"prio": prio, "kind": kind, "key": key, "text": text, "extra": extra})
 
@@ -541,7 +544,7 @@ func _circles(world: SimWorld, n: int) -> void:
 	var key := "circles_few" if few else ("circles" if circles_count == 0 else "circles_again")
 	circles_count += 1
 	circles_last_sol = n
-	_offer(1, "council_circles", key, str(cfg.text[key]), {"being_id": null, "other_id": null, "building_id": null, "topic": null})
+	_offer(PRIO.circles, "council_circles", key, str(cfg.text[key]), {"being_id": null, "other_id": null, "building_id": null, "topic": null})
 
 
 # ---------------------------------------------------------------- council sol
@@ -606,7 +609,7 @@ func _meeting(world: SimWorld, n: int) -> void:
 				var again := raised_ever.has(topic)
 				raised_ever[topic] = true
 				var key := "proposal_again" if again else "proposal"
-				_offer(3, "council_" + key, key, _fmt(str(tcfg.text[key]), {"a": _name(world, pid), "place": _place(world, best.building_id)}),
+				_offer(PRIO.raise, "council_" + key, key, _fmt(str(tcfg.text[key]), {"a": _name(world, pid), "place": _place(world, best.building_id)}),
 						{"being_id": pid, "other_id": null, "building_id": best.building_id, "topic": topic})
 				st.proposals.append({"topic": topic, "raised_sol": n, "proposer_id": pid, "again": again, "outcome": null,
 						"outcome_sol": null, "reason": null, "hard": null})
@@ -616,7 +619,7 @@ func _meeting(world: SimWorld, n: int) -> void:
 			quiet_logged = true
 			var hard := hard_share() >= float(cfg.lines.hard_share_min)
 			var qk := "quiet_hard" if hard else "quiet"
-			_offer(4, "council_quiet", qk, _fmt(str(cfg.text[qk]), {"clause": cfg.text.clause[hard_clause()]}),
+			_offer(PRIO.quiet, "council_quiet", qk, _fmt(str(cfg.text[qk]), {"clause": cfg.text.clause[hard_clause()]}),
 					{"being_id": null, "other_id": null, "building_id": best.building_id, "topic": null})
 	elif open != null:
 		if int(open.raised_sol) == n:
@@ -625,7 +628,7 @@ func _meeting(world: SimWorld, n: int) -> void:
 	if pledged.has(topic) and not after_pledge_logged and open == null:
 		if n - int(pledged[topic]) >= int(cfg.lines.after_pledge_sols):
 			after_pledge_logged = true
-			_offer(5, "council_after_pledge", "after_pledge", str(tcfg.text.after_pledge),
+			_offer(PRIO.after_pledge, "council_after_pledge", "after_pledge", str(tcfg.text.after_pledge),
 					{"being_id": null, "other_id": null, "building_id": best.building_id, "topic": topic})
 
 
@@ -659,9 +662,8 @@ func _vote(world: SimWorld, n: int, yn: Array, tcfg: Dictionary) -> void:
 		open.no_speaker_id = nsp
 		var ra := _reason(world, ysp, true)
 		var rb := _reason(world, nsp, false)
-		_offer(2 + 0, "council_divided", "divided", _fmt(str(tcfg.text.divided), {"a": _name(world, ysp), "b": _name(world, nsp), "ra": ra, "rb": rb}),
+		_offer(PRIO.divided, "council_divided", "divided", _fmt(str(tcfg.text.divided), {"a": _name(world, ysp), "b": _name(world, nsp), "ra": ra, "rb": rb}),
 				{"being_id": ysp, "other_id": nsp, "building_id": best.building_id, "topic": "dome"})
-		_cands.back().prio = 6
 	var pr: Dictionary = st.proposals.back()
 	if open.carry_run >= int(d.carry_sessions):
 		var topic: String = open.topic
@@ -671,7 +673,7 @@ func _vote(world: SimWorld, n: int, yn: Array, tcfg: Dictionary) -> void:
 		var key := "pledge_divided" if open.divided else "pledge"
 		var wtxt := str(tcfg.text.pledge_why_personal) if why == "personal" else _fmt(str(tcfg.text.reason.yes[why]), {})
 		var text := _fmt(str(tcfg.text[key]), {"a": _name(world, open.proposer_id), "place": _place(world, best.building_id), "why": wtxt})
-		_offer(9, "council_pledge", key, text, {"being_id": open.proposer_id, "other_id": null, "building_id": best.building_id, "topic": topic})
+		_offer(PRIO.outcome, "council_pledge", key, text, {"being_id": open.proposer_id, "other_id": null, "building_id": best.building_id, "topic": topic})
 		st.chapters.append({"kind": "pledge", "topic": topic, "text": text, "t": world.t, "sol": n, "clock_sol": world.clock.sol_index(world.t)})
 		pr.outcome = "pledged"
 		pr.outcome_sol = n
@@ -695,10 +697,10 @@ func _vote(world: SimWorld, n: int, yn: Array, tcfg: Dictionary) -> void:
 		pr.outcome_sol = n
 		pr.hard = hard
 		if hard:
-			_offer(9, "council_set_aside_hard", "set_aside_hard", _fmt(str(tcfg.text.set_aside_hard), {"clause": cfg.text.clause[hard_clause()]}),
+			_offer(PRIO.outcome, "council_set_aside_hard", "set_aside_hard", _fmt(str(tcfg.text.set_aside_hard), {"clause": cfg.text.clause[hard_clause()]}),
 					{"being_id": null, "other_id": null, "building_id": best.building_id, "topic": open.topic})
 		else:
-			_offer(9, "council_set_aside", "set_aside", _fmt(str(tcfg.text.set_aside), {"b": _name(world, nsp)}),
+			_offer(PRIO.outcome, "council_set_aside", "set_aside", _fmt(str(tcfg.text.set_aside), {"b": _name(world, nsp)}),
 					{"being_id": nsp, "other_id": null, "building_id": best.building_id, "topic": open.topic})
 		open = null
 	elif open.votes >= int(d.max_open_votes):
@@ -706,7 +708,7 @@ func _vote(world: SimWorld, n: int, yn: Array, tcfg: Dictionary) -> void:
 		pr.outcome = "set_aside"
 		pr.outcome_sol = n
 		pr.hard = false
-		_offer(9, "council_set_aside_long", "set_aside_long", str(tcfg.text.set_aside_long),
+		_offer(PRIO.outcome, "council_set_aside_long", "set_aside_long", str(tcfg.text.set_aside_long),
 				{"being_id": null, "other_id": null, "building_id": best.building_id, "topic": open.topic})
 		open = null
 

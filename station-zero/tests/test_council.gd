@@ -2673,6 +2673,30 @@ func test_t14a_the_higher_line_wins_and_the_lower_is_counted(t) -> void:
 	_end(t)
 
 
+func test_t14a2_the_full_priority_order_of_spec_7_4(t) -> void:
+	if not _api(t):
+		return
+	var order := ["outcome", "divided", "raise", "quiet", "after_pledge", "aftermath", "circles"]
+	var prio: Dictionary = Council.PRIO
+	t.eq(prio.keys(), order, "the table lists the seven families in spec order")
+	for i in order.size() - 1:
+		t.check(int(prio[order[i]]) > int(prio[order[i + 1]]), "%s outranks %s" % [order[i], order[i + 1]])
+	# every pair, offered low first and high first, through the real flush
+	for i in order.size():
+		for j in range(i + 1, order.size()):
+			for flip in [false, true]:
+				var v := _vw(6, 3, 1)
+				var w = v.w
+				var c = w.council
+				var pair := [order[j], order[i]] if not flip else [order[i], order[j]]
+				for k in pair:
+					c._offer(int(prio[k]), "council_" + str(k), str(k), "text " + str(k), {})
+				c._flush(w)
+				t.eq(str(_last_line(w).kind), "council_" + order[i], "%s beats %s (flip %s)" % [order[i], order[j], flip])
+				t.eq(int(_cs(w).lines_dropped), 1, "the loser is counted")
+	_end(t)
+
+
 func test_t14b_no_boundary_logs_two_council_lines(t) -> void:
 	if not _api(t):
 		return
