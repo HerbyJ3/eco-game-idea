@@ -1971,6 +1971,68 @@ func test_t10a_counts_are_exact_at_the_carry_and_reject_lines(t) -> void:
 	_end(t)
 
 
+## Carry of one vote at 100 voices (yes, no, undecided = the rest): returns carry_run after the first vote.
+func _carry_after_vote(t, yes: int, no: int, cfg_edit: Dictionary = {}) -> int:
+	var v := _vw(maxi(yes, 1), no, 100 - maxi(yes, 1) - no, _nosize(cfg_edit))
+	var w = v.w
+	_raise(w, v.all)
+	if yes == 0:  # nobody leaning yes at the vote: the one proposer turns neutral
+		var c := float(_ccfg(w).dome.lean.trait_centre)
+		_set_traits(w, v.yes[0], {"drive": c, "curiosity": c, "restless": c, "steady": c, "care": c})
+	_meet(w, 50, v.all)
+	return int(_open(w).get("carry_run", -1))
+
+
+## 100 voices would switch the size term on; the carry cases stage the shares alone.
+func _nosize(cfg_edit: Dictionary = {}) -> Dictionary:
+	var e := cfg_edit.duplicate()
+	e["dome.cond.size_from"] = 1000
+	return e
+
+
+func test_t10a2_carry_counts_those_with_a_view_and_needs_a_quorum(t) -> void:
+	if not _api(t):
+		return
+	t.eq(_carry_after_vote(t, 36, 24), 1, "36 yes, 24 no of 100: ratio 0.6, share 0.36: carries")
+	t.eq(_carry_after_vote(t, 36, 25), 0, "36 yes, 25 no: ratio 0.590 under 0.6: does not carry")
+	t.eq(_carry_after_vote(t, 34, 1), 0, "34 yes, 1 no: share 0.34 under the quorum 0.35: does not carry")
+	t.eq(_carry_after_vote(t, 35, 1), 1, "35 yes, 1 no: share 0.35 exactly (CMP_EPS): carries")
+	t.eq(_carry_after_vote(t, 0, 0), 0, "no yes and no no: never carries, and no division by zero")
+	t.eq(_carry_after_vote(t, 40, 12), 1, "40 yes, 12 no, 48 undecided: carries (the old rule would not)")
+	_end(t)
+
+
+func test_t10a3_an_undecided_heavy_colony_pledges_at_the_second_vote(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(40, 12, 48, _nosize())
+	var w = v.w
+	var room: Array = v.yes + v.no
+	_raise(w, room)
+	_meet(w, 50, room)
+	t.eq(int(_open(w).get("carry_run", -1)), 1, "first vote carries")
+	t.check(not w.council.pledged.has("dome"), "not yet pledged")
+	_meet(w, 55, room)
+	t.check(w.council.pledged.has("dome") and int(w.council.pledged["dome"]) == 55, "second vote pledges at sol 55")
+	_end(t)
+
+
+func test_t10a4_the_reject_step_ignores_the_quorum(t) -> void:
+	if not _api(t):
+		return
+	var v := _vw(40, 50, 10, _nosize())
+	var w = v.w
+	var room: Array = v.yes + v.no
+	_raise(w, room)
+	_meet(w, 50, room)
+	t.eq(int(_open(w).get("reject_run", -1)), 1, "50 no of 100 rejects whatever the yes share")
+	t.eq(int(_open(w).get("carry_run", -1)), 0, "40 yes of 90 with a view is 0.44: no carry")
+	_meet(w, 55, room)
+	t.check(w.council.set_aside.has("dome"), "two rejecting votes set the dome aside")
+	_end(t)
+
+
+
 func test_t10b_a_carrying_vote_then_a_failing_one_resets_the_run(t) -> void:
 	if not _api(t):
 		return
@@ -2914,6 +2976,8 @@ func _broken_rules(d: Dictionary, ages: Dictionary, bkinds: Array) -> Array:
 		f.append("carry_share")
 	if not float(d.decide.divided_share) < 0.5:
 		f.append("divided_share")
+	if not (float(d.decide.carry_quorum) > float(d.decide.divided_share) and float(d.decide.carry_quorum) <= 0.5):
+		f.append("carry_quorum")
 	if not (d.topics is Array and not d.topics.is_empty()):
 		f.append("topics")
 	else:
@@ -2958,6 +3022,8 @@ func test_t17c_data_sanity_rules_hold_and_each_can_fail(t) -> void:
 		["support.yes_above", 0.0, "support band"],
 		["decide.carry_share", 0.5, "carry_share"],
 		["decide.divided_share", 0.5, "divided_share"],
+		["decide.carry_quorum", 0.25, "carry_quorum"],
+		["decide.carry_quorum", 0.55, "carry_quorum"],
 		["topics", [], "topics"],
 		["entry.settled_sols", 19, "entry.settled_sols"],
 		["min_dwell_sols", 19, "min_dwell_sols"],
