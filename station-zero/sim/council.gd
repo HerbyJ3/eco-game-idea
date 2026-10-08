@@ -671,7 +671,7 @@ func _vote(world: SimWorld, n: int, yn: Array, tcfg: Dictionary) -> void:
 		var key := "pledge_divided" if open.divided else "pledge"
 		var wtxt := str(tcfg.text.pledge_why_personal) if why == "personal" else _fmt(str(tcfg.text.reason.yes[why]), {})
 		var text := _fmt(str(tcfg.text[key]), {"a": _name(world, open.proposer_id), "place": _place(world, best.building_id), "why": wtxt})
-		_offer(9, "council_pledge", "pledge", text, {"being_id": open.proposer_id, "other_id": null, "building_id": best.building_id, "topic": topic})
+		_offer(9, "council_pledge", key, text, {"being_id": open.proposer_id, "other_id": null, "building_id": best.building_id, "topic": topic})
 		st.chapters.append({"kind": "pledge", "topic": topic, "text": text, "t": world.t, "sol": n, "clock_sol": world.clock.sol_index(world.t)})
 		pr.outcome = "pledged"
 		pr.outcome_sol = n

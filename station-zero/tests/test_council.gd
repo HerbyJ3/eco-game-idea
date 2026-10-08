@@ -2371,6 +2371,8 @@ func test_t11c_the_divided_pledge_text(t) -> void:
 	t.eq(_kinds(w), ["council_proposal", "council_divided", "council_pledge"], "raise, divided, pledge")
 	t.eq(str(_last_line(w).text), _fmt(_dt("pledge_divided"), {"a": "N%d" % v.yes[0], "place": _place("habitat"), "why": _dt("pledge_why_personal")}),
 			"the divided variant, with the personal reason (the yes voices' largest term is the personal one)")
+	t.eq(int(_cs(w).lines.get("pledge_divided", 0)), 1, "counted under its own lines key")
+	t.eq(int(_cs(w).lines.get("pledge", 0)), 0, "and not under the plain pledge key")
 	_end(t)
 
 
@@ -2387,6 +2389,7 @@ func test_t11d_a_dropped_divided_line_still_marks_the_pledge(t) -> void:
 	t.eq(_kinds(w), ["council_proposal", "council_pledge"], "divided and pledge on one boundary: only the pledge is logged")
 	t.eq(str(_last_line(w).text), _fmt(_dt("pledge_divided"), {"a": "N%d" % v.yes[0], "place": _place("habitat"), "why": _dt("pledge_why_personal")}),
 			"and it is the divided variant")
+	t.eq(int(_cs(w).lines.get("pledge_divided", 0)), 1, "the dropped-divided pledge is counted as pledge_divided")
 	t.eq(int(_cs(w).lines_dropped), 1, "the dropped line is counted")
 	_end(t)
 
