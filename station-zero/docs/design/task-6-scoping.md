@@ -53,3 +53,9 @@ Out (defer to the "later" list): `lines_dropped_by_type` (hash-neutral stat, do 
 - Mood tick cost at 160+ beings and seed 1234 in the Council age (13.7 ms peak, not proven by construction). Mood must be a cheap update with no pair walk.
 - Mood readable to the player without a meter. The test of success: a player can say why a named being is upset from log lines and the inspect text alone.
 - Scope: mood must not become a new need bar. One value or a small set of named states, decided in the spec.
+
+## Owner decisions (Herby, 2026-10-08)
+- **A. First slice:** emotions (6a) first, with the two 6p items folded in (public accessor for the relationships packed mirror; a being inspect panel carrying the K1 sentence). Order after that: 6b AI minds, 6c memory and culture, 6d server.
+- **B. Behaviour:** emotions **change behaviour now**. The owner accepts a baseline reset: the Task 1/3/4/5 table hashes will change once 6a's behaviour is on; the reset must be recorded (old and new hashes per seed, twice-run identical), and T1-T12 plus the Task 3 ages and Task 5 Council results re-measured and reported before/after.
+- **C. Deimos:** sets each being's baseline mood and recovery rate; events push mood away and it decays back.
+- **D. Display:** text only, no new art: inspect text and log lines, no meter, no colony-wide mood word. Texture budget untouched.
