@@ -12,6 +12,9 @@ Locked decisions respected:
 
 Tunables live in `data/mood.json` (new). No tunable in the new module `sim/moods.gd` and no literal in the two edited behaviour sites in `sim/being.gd`. This spec describes behaviour and numbers only, no code. **Every number marked E is an estimate until the calibration probe (section 12) measures it.**
 
+
+**Owner answers on revision 2 (Herby, 2026-10-08):** Q1 = (a) the four strong-case temperament sentences, always (dropped while a why shows). Q2 = (a) report and accept, judged against the noise-floor control; a C1 or C4 miss opens a named Council recalibration sub-task; no council.* key moves in 6a. Q3 = (a) keep the old hash chain as the dormant-mode proof until 6a closes, then retire it. Q4 = (a) no baseline drift in 6a; recorded as a candidate after 6a closes.
+
 ## Owner decisions (Herby, 2026-10-08), as binding for this spec
 - **A.** 6a is first, with two 6p items folded in: a public read-only accessor for the relationships packed mirror (section 9.1, replaces the Council's private reads) and a being inspect panel carrying the K1 sentence "{name} knows no one well yet." (section 7).
 - **B.** Emotions change behaviour now. A baseline reset is accepted. It must be recorded: old and new table hashes per seed, each seed run twice with identical output, T1 to T12 and the Task 3 ages and Task 5 Council results measured before and after (section 10).
