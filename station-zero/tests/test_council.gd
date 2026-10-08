@@ -672,6 +672,88 @@ func test_t02p_landing_skips_the_readings_and_carries_the_series_forward(t) -> v
 	_end(t)
 
 
+func test_t02q_first_settlement_stance_after_landing_is_built_from_lean(t) -> void:
+	if not _api(t):
+		return
+	var w = _world()
+	var a = _voice(w, {"drive": 0.9, "curiosity": 0.9, "restless": 0.9}, 0, null)
+	var b = _voice(w, {"steady": 0.9, "care": 0.9}, 0, null)
+	_friend(w, a.id, b.id)
+	_calm(w)
+	_settle(w, 9)
+	_bnd(w, 10)  # a stance from before, which the Landing stretch must not leave behind as a decayed one
+	w.ages.age = "landing"
+	w.stats.age = "landing"
+	w.council.stance.clear()
+	for n in [11, 12, 13]:
+		_bnd(w, n)
+	t.check(w.council.stance.is_empty(), "Landing: still no stance")
+	_settle(w, 14)
+	_bnd(w, 14)
+	var sw := float(_cd().sway.share)
+	var cw := float(_cd().sway.close_weight)
+	var la := float(w.council.lean_of(a.id))
+	var lb := float(w.council.lean_of(b.id))
+	t.check(absf(la - lb) > 0.01, "the two leans differ (the test can tell)")
+	var close: bool = w.relationships.pairs[Relationships.key_of(a.id, b.id)].close
+	var wt := cw if close else 1.0
+	t.near(float(w.council.stance_of(a.id)), (1.0 - sw) * la + sw * lb, CMP, "first Settlement boundary: a's stance = lean blended with b's lean (weight %.1f)" % wt)
+	t.near(float(w.council.stance_of(b.id)), (1.0 - sw) * lb + sw * la, CMP, "and b's likewise")
+	_end(t)
+
+
+func test_t02r_landing_settlement_landing_settlement_matches_a_world_that_read_throughout(t) -> void:
+	if not _api(t):
+		return
+	var a = _world()
+	var b = _world()
+	for w in [a, b]:
+		for i in 6:
+			_voice(w, {}, 0, null)
+		_chain(w, [1, 2, 3, 4, 5, 6])
+		_calm(w)
+	a.ages.age = "landing"
+	a.stats.age = "landing"
+	for n in [10, 11]:
+		_bnd(a, n)
+	_settle(a, 12)
+	for n in range(12, 18):
+		_bnd(a, n)
+	# a falls back to Landing in the middle, for four boundaries
+	a.ages.age = "landing"
+	a.stats.age = "landing"
+	for n in range(18, 22):
+		_bnd(a, n)
+	_settle(a, 22)
+	_settle(b, 12)
+	for n in range(12, 22):
+		_bnd(b, n)
+	_settle(b, 22)
+	for n in range(22, 45):
+		_bnd(a, n)
+		_bnd(b, n)
+	t.eq(_cs(a).trust_by_sol.size(), 35, "a: one entry per boundary throughout")
+	t.check(a.council.trust_win == b.council.trust_win and a.council.chosen_win == b.council.chosen_win, "20 Settlement readings after the fall-back: the windows equal those of a world that read throughout")
+	t.check(a.council._decide_entry_parts(a, 44) == b.council._decide_entry_parts(b, 44), "and the gate parts are equal")
+	_end(t)
+
+
+func test_t02s_with_ages_disabled_no_reading_is_taken(t) -> void:
+	if not _api(t):
+		return
+	var w = SimWorld.new(42)
+	w.ages_enabled = false
+	for i in 3 * 500:
+		w.step()
+	t.check(w.stats.pop_by_sol.size() >= 3, "three sols passed")
+	t.eq(str(w.ages.age), "landing", "the age never leaves Landing")
+	t.check(w.council.trust_win.is_empty() and w.council.chosen_win.is_empty(), "no reading was pushed to the windows")
+	t.check(w.council.stance.is_empty(), "no stance")
+	t.eq(_cs(w).trust_by_sol.size(), w.stats.pop_by_sol.size(), "the series still keep pace with pop_by_sol")
+	t.near(float(_cs(w).trust_by_sol.back()), float(_cs(w).trust_by_sol[0]), CMP, "carrying the founder reading forward")
+	_end(t)
+
+
 func test_t02m_no_voices_read_zero_and_one_entry_per_boundary(t) -> void:
 	if not _api(t):
 		return
@@ -3051,6 +3133,8 @@ func _broken_rules(d: Dictionary, ages: Dictionary, bkinds: Array) -> Array:
 				f.append("topic block " + str(topic))
 	if not int(d.entry.settled_sols) >= int(ages.min_dwell_sols):
 		f.append("entry.settled_sols")
+	if not int(d.entry.settled_sols) >= int(d.trust.window_sols):
+		f.append("entry.settled_sols >= trust.window_sols")  # the Landing skip's safety
 	if not int(d.min_dwell_sols) >= int(ages.min_dwell_sols):
 		f.append("min_dwell_sols")
 	if not int(d.decide.max_open_votes) >= maxi(int(d.decide.carry_sessions), int(d.decide.reject_sessions)) + 1:
@@ -3091,6 +3175,7 @@ func test_t17c_data_sanity_rules_hold_and_each_can_fail(t) -> void:
 		["decide.carry_quorum", 0.55, "carry_quorum"],
 		["topics", [], "topics"],
 		["entry.settled_sols", 19, "entry.settled_sols"],
+		["trust.window_sols", 31, "entry.settled_sols >= trust.window_sols"],
 		["min_dwell_sols", 19, "min_dwell_sols"],
 		["decide.max_open_votes", 2, "max_open_votes"],
 		["lines.after_pledge_sols", 3, "after_pledge_sols"],
