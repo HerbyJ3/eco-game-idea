@@ -417,7 +417,9 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 		var notland := age != Ages.LANDING
 		var sg := int(cfg.entry.settled_sols)
 		var row := {"sol": n, "pop": pop, "voices": int(rd.voices), "trust": float(rd.trust), "ch": rd.ch,
-				"chosen_live": float(cst.chosen), "trust_live": float(cst.trust), "voices_live": int(cst.voices),
+				# live readings are carried placeholders in Landing (sim/council.gd skips the read); -1 marks them as not taken
+				"chosen_live": float(cst.chosen) if notland else -1.0, "trust_live": float(cst.trust) if notland else -1.0,
+				"voices_live": int(cst.voices) if notland else -1,
 				"age": age, "notland": notland, "cn": "P" if cst.pledge_sol != null else ("C" if age == "council" else "-"),
 				"s": s_all, "sns": sns, "chosen_pairs": int(rd.chosen_pairs), "mars_unrelated": int(rd.mars_unrelated),
 				"turned": int(rd.turned), "friend_pairs": int(rd.friend_pairs),
@@ -426,12 +428,17 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 		row["c1"] = notland and s_all >= 0 and n - s_all >= sg
 		var tw: Array = []
 		var cw: Array = []
-		var lo := maxi(0, rows.size() - 19)
-		for j in range(lo, rows.size()):
-			tw.append(float(rows[j].trust))
-			cw.append(float(rows[j].ch["f%dg%d" % [int(cfg.entry.chosen_friends_min), int(cfg.chosen.kin_generations)]]))
-		tw.append(float(rd.trust))
-		cw.append(float(rd.ch["f%dg%d" % [int(cfg.entry.chosen_friends_min), int(cfg.chosen.kin_generations)]]))
+		# the module pushes no reading in Landing, so its window holds the last 19 non-Landing rows plus this one
+		var ckey := "f%dg%d" % [int(cfg.entry.chosen_friends_min), int(cfg.chosen.kin_generations)]
+		var j := rows.size() - 1
+		while j >= 0 and tw.size() < 19:
+			if bool(rows[j].notland):
+				tw.push_front(float(rows[j].trust))
+				cw.push_front(float(rows[j].ch[ckey]))
+			j -= 1
+		if notland:
+			tw.append(float(rd.trust))
+			cw.append(float(rd.ch[ckey]))
 		row["c2"] = _window_ok(tw, float(cfg.entry.trust_share_min), int(cfg.entry.trust_ok_min), int(cfg.entry.recent_ok), 20)
 		row["c3"] = _window_ok(cw, float(cfg.entry.chosen_share_min), int(cfg.entry.trust_ok_min), int(cfg.entry.recent_ok), 20)
 		row["c4"] = int(rd.voices) >= int(cfg.entry.voices_min)
@@ -618,6 +625,8 @@ func _summary(w: SimWorld, tc: TimedCouncil, rows: Array, votes: Array, clog: Ar
 	var nrows := rows.size()
 	var off := ct.size() - nrows  # the founder reading sits first
 	for i in nrows:
+		if not bool(rows[i].notland):
+			continue  # Landing rows hold carried placeholders in the module's series, not readings
 		dmax_t = maxf(dmax_t, absf(float(rows[i].trust) - float(ct[i + off])))
 		dmax_c = maxf(dmax_c, absf(float(rows[i].ch[key]) - float(cc[i + off])))
 	var clause_mismatch := 0
