@@ -26,7 +26,7 @@ static func is_blank(name: String) -> bool:
 
 
 static func known(name: String) -> bool:
-	return name == "founders" or name == "dead_colony" or name in BLANK
+	return name == "founders" or name == "dead_colony" or name == "council_pledge" or name in BLANK
 
 
 static func apply(name: String, world: SimWorld) -> bool:
@@ -58,6 +58,9 @@ static func apply(name: String, world: SimWorld) -> bool:
 		"showcase_lamp_dusk":
 			_showcase(world)
 			_lamp_row(world)
+			return true
+		"council_pledge":
+			_council_pledge(world)
 			return true
 		"dead_colony":
 			# Every being gone, stocks as they were: the HUD hides the age at pop 0.
@@ -188,3 +191,23 @@ static func _interior_talk(world: SimWorld) -> void:
 		world.relationships.debug_set_bond(ids[0], ids[1], 0.9)
 		world.relationships.debug_set_bond(ids[2], ids[3], 0.9)
 		return
+
+
+## The Council age with a made pledge and four later age entries: the HUD shows the Council word and the strip pins the
+## pledge among the latest two chapters (council.md 9). Texts come from the data files; only stats are staged.
+static func _council_pledge(world: SimWorld) -> void:
+	var ah: Dictionary = SimData.ages()
+	var cd: Dictionary = SimData.council()
+	var sol_h: float = world.clock.sol_h
+	var hist: Array = []
+	var seq := [["landing", "landing", 1, str(ah.landing.log_start)], ["settlement", "settled", 12, str(ah.settlement.log_enter)],
+			["council", "council", 40, str(cd.text.enter)], ["landing", "fell_back", 90, str(ah.landing.log_fall_back)],
+			["settlement", "settled_again", 110, str(ah.settlement.log_enter_again)],
+			["council", "council_again", 130, str(cd.text.enter_again)]]
+	for e: Array in seq:
+		hist.append({"age": e[0], "how": e[1], "cause": null, "text": e[3], "pop": world.colony.pop(), "family_mars_born": 0,
+				"t": (int(e[2]) - 1) * sol_h, "sol": int(e[2]) - 1, "clock_sol": int(e[2])})
+	world.stats.age_history = hist
+	world.stats.age = "council"
+	var ptxt := str(cd.dome.text.pledge).replace("{a}", "Lena").replace("{place}", "in the green room").replace("{why}", "because the children need a roof")
+	world.stats.council.chapters = [{"kind": "pledge", "topic": "dome", "text": ptxt, "t": 69.0 * sol_h, "sol": 69, "clock_sol": 70}]
