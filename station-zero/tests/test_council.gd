@@ -158,6 +158,10 @@ func _world(seed_in: int = 1) -> Variant:
 	w.add_building("habitat", 80, 0)
 	w.add_building("workshop", 120, 0)
 	w.add_building("green_room", 160, 0)
+	# The Council skips its readings in Landing (spec 11.1 remedy a), so a staged world that is read starts out as Settlement
+	# would have left it. Tests of Landing itself set the age back (see _landing).
+	w.ages.age = "settlement"
+	w.stats.age = "settlement"
 	return w
 
 
@@ -631,6 +635,40 @@ func test_t02l_lineage_is_recorded_for_every_living_being(t) -> void:
 	t.eq(int(w.council.parent_of[tr.c1]), tr.p1, "c1's parent is p1")
 	t.eq(int(w.council.parent_of[tr.gg]), 0, "a founder's parent is 0")
 	t.check(w.council.is_family(tr.c1, tr.c2) and not w.council.is_family(tr.c1, tr.u1), "is_family: cousins yes, other lines no")
+	_end(t)
+
+
+func test_t02p_landing_skips_the_readings_and_carries_the_series_forward(t) -> void:
+	if not _api(t):
+		return
+	var a = _world()
+	var b = _world()
+	for w in [a, b]:
+		for i in 6:
+			_voice(w, {}, 0, null)
+		_chain(w, [1, 2, 3, 4, 5, 6])
+		_calm(w)
+	# a is staged in Landing for three boundaries, then Settlement; b is Settlement throughout (the old behaviour)
+	a.ages.age = "landing"
+	a.stats.age = "landing"
+	for n in [10, 11, 12]:
+		_bnd(a, n)
+	t.eq(_cs(a).trust_by_sol.size(), 3, "Landing: one trust entry per boundary")
+	t.eq(_cs(a).chosen_by_sol.size(), 3, "Landing: one chosen entry per boundary")
+	t.near(float(_cs(a).trust_by_sol[2]), 0.0, CMP, "Landing: the series carry the last reading forward (blank world: 0.0)")
+	t.near(float(_cs(a).trust), 0.0, CMP, "Landing: the live reading is not taken")
+	t.check(a.council.trust_win.is_empty() and a.council.chosen_win.is_empty(), "Landing: the entry windows are not pushed")
+	t.check(a.council.stance.is_empty(), "Landing: no stance is computed")
+	t.eq(a.council.hard_win.size(), 3, "Landing: the hard window is kept")
+	_settle(a, 13)
+	_settle(b, 13)
+	for n in range(13, 36):
+		_bnd(a, n)
+		_bnd(b, n)
+	t.eq(_cs(a).trust_by_sol.size(), 26, "after Landing: still one entry per boundary")
+	t.check(a.council.trust_win == b.council.trust_win and a.council.chosen_win == b.council.chosen_win, "20 Settlement readings: the entry windows equal those of a world that read throughout")
+	t.check(a.council._decide_entry_parts(a, 35) == b.council._decide_entry_parts(b, 35), "and the gate parts are equal")
+	t.check(float(_cs(a).trust) == float(_cs(b).trust) and float(_cs(a).chosen) == float(_cs(b).chosen), "and so are the live readings")
 	_end(t)
 
 

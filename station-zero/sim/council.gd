@@ -147,10 +147,18 @@ func on_sol(world: SimWorld) -> void:
 		st.voices = live
 		stance.clear()
 		return
-	_readings(world, st)
-	_hard_entry(world)
-	_lean_stance(world)
 	var age := world.ages.age
+	if age == "landing":
+		# Spec 11.1 remedy (a): nothing reads trust, chosen share, lean or stance in Landing (Landing never enters, and the
+		# entry windows hold 20 readings against 30 settled sols), so the pair walk and the sway are skipped. The series carry
+		# the last reading forward so they keep the length of pop_by_sol; the windows are not pushed. The hard window is kept.
+		_hard_entry(world)
+		st.trust_by_sol.append(st.trust_by_sol.back() if not st.trust_by_sol.is_empty() else 0.0)
+		st.chosen_by_sol.append(st.chosen_by_sol.back() if not st.chosen_by_sol.is_empty() else 0.0)
+	else:
+		_readings(world, st)
+		_hard_entry(world)
+		_lean_stance(world)
 	if age != "council" and open != null:
 		_lapse(world)
 	if world.colony.pop() == 0:
