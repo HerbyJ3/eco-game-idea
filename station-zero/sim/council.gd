@@ -1,6 +1,6 @@
 class_name Council
 extends RefCounted
-## The Council (docs/specs/council.md revision 4): voices, trust readings, lean and stance, gatherings, meetings, the dome
+## The Council (docs/specs/council.md revision 5): voices, trust readings, lean and stance, gatherings, meetings, the dome
 ## proposal. Pure logic: draws no random numbers, writes only stats.council, the log and (via Ages.enter_age) the age. Holds no
 ## reference to the world; every method takes it as an argument.
 
