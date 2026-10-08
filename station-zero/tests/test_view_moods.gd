@@ -334,6 +334,9 @@ func test_t22h_the_panel_is_never_more_than_four_sentences_and_has_no_digit(t) -
 					var w = _world()
 					var a = _being(w)
 					var x = _being(w, HAB2)
+					# Digit-free names, so the digit check looks at the templates and nothing else.
+					a.name = "Vana"
+					x.name = "Kiro"
 					if company == "friend":
 						w.relationships.debug_set_bond(a.id, x.id, 0.4)
 					elif company == "close":
@@ -344,21 +347,23 @@ func test_t22h_the_panel_is_never_more_than_four_sentences_and_has_no_digit(t) -
 					if wk != "":
 						var sign := -1 if band < 2 else 1
 						a.mood_why = _why(wk, x.id, sign, float(w.t), "ice")
+						a.mood_why.name = "Kiro"
 					var ls := _lines(w, a)
 					checked += 1
 					var n := _sentences(ls)
 					if n > worst:
 						worst = n
 						worst_desc = "company %s nature %s band %d why %s" % [company, str(nat[2]), band, wk]
-					if digit.search(_text(ls)) != null or _text(ls).find("%") >= 0:
+					var txt := _text(ls)
+					if digit.search(txt) != null or txt.find("%") >= 0:
 						bad_digit += 1
 					if str(nat[2]) != "":
-						var nat_txt := _tx(str(nat[2]), "N1")
+						var nat_txt := _tx(str(nat[2]), "Vana")
 						var has_why := false
 						for k in ["grief_new", "grief_still", "friend", "friend_old", "close", "close_old", "lapse", "birth", "hard", "pledge"]:
-							if _text(ls).find(_tx("text.why." + k, "N1", "N2")) >= 0:
+							if txt.find(_tx("text.why." + k, "Vana", "Kiro")) >= 0:
 								has_why = true
-						if has_why and _text(ls).find(nat_txt) >= 0:
+						if has_why and txt.find(nat_txt) >= 0:
 							nature_with_why += 1
 	t.check(checked == 3 * 5 * 5 * 9, "staging: the sweep ran (%d panels)" % checked)
 	t.check(worst <= 4, "never more than four sentences (worst %d at %s)" % [worst, worst_desc])

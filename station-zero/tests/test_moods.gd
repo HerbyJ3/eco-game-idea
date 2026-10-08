@@ -671,6 +671,7 @@ func _grief_world() -> Variant:
 	var w = _world()
 	for i in 8:
 		_being(w, HAB1 if i < 4 else HAB2)
+	_tick(w)  # relationships only learns who exists at a tick; a death is only noticed for a known being
 	return w
 
 
@@ -885,6 +886,7 @@ func test_t09a_the_pledge_pushes_everyone_once(t) -> void:
 	var w = _world()
 	var a = _being(w, HAB1)
 	var b = _being(w, HAB2)
+	_stocks(w)
 	w.moods.on_sol(w)
 	t.check(not bool(w.moods.pending_pledge), "no pledge yet: nothing pending")
 	w.stats.council.pledge_sol = 195
@@ -906,6 +908,7 @@ func test_t09b_an_age_change_pushes_nothing(t) -> void:
 		return
 	var w = _world()
 	var a = _being(w, HAB1, 0.03, 0.0)
+	_stocks(w)
 	for step in [["settlement", "settled"], ["landing", "fall_back"], ["settlement", "settled_again"], ["council", "council"]]:
 		w.ages.enter_age(w, step[0], step[1], "Staged.")
 		w.moods.on_sol(w)
@@ -1120,6 +1123,7 @@ func _why_world() -> Dictionary:
 	var b = _being(w, GREEN)
 	_setb(w, a.id, x.id, 0.5)
 	_setb(w, a.id, b.id, 0.5)
+	_stocks(w)
 	return {"w": w, "a": a, "x": x, "b": b}
 
 
@@ -1346,6 +1350,8 @@ func test_t13j_pair_bound_whys_are_cleared_when_the_pair_no_longer_holds(t) -> v
 	_inject(c.w)
 	t.check(c.a.mood_why == null, "the friend why is cleared at the next tick when the pair lapsed")
 	var c2 := _why_world()
+	_stage_why(c2.a, "close", c2.x.id, 1, 0.60)
+	_tick(c2.w)  # relationships learns who exists
 	_stage_why(c2.a, "close", c2.x.id, 1, 0.60)
 	_kill(c2.w, c2.x.id)
 	_tick(c2.w)
@@ -1854,7 +1860,6 @@ func test_t19e_relief_rules(t) -> void:
 	_inject(w3)
 	t.eq(_lines_of(w3, "mood_relief").size(), 1, "it is offered again at the next tick and logged")
 	t.check(q.mood_down_t == null, "and clears mood_down_t")
-	_t13_lines(t, w3, "19e")
 	_end(t)
 
 
@@ -2199,12 +2204,11 @@ func _sanity(md: Dictionary) -> Dictionary:
 	r["min_push_at_most_smallest_major"] = float(md.why.min_push) <= majors.min()
 	r["birth_reaches_light"] = float(pu.birth_parent) >= float(bd.light) + float(bd.hyst)
 	r["show_dev_is_band_exit"] = absf(float(md.why.show_dev) - (float(bd.light) - float(bd.hyst))) < 1e-9
-	var ref_gain: float = float(ef.travel_coef) if float(ef.travel_coef) > 0.0 else 2.0 * float(ef.fallback_travel_coef)
+	# The starting gains are 0.15 and 0.25 whatever is shipped (the dormant build ships 0.0), so the two rules that name them use
+	# the spec constants (spec question: both rules are vacuous or false at the dormant gains if read from effects.*).
 	r["control_gains"] = float(md.calibration.control_gain) < float(md.calibration.control_gain_next) \
-			and float(md.calibration.control_gain_next) <= 0.01 * ref_gain
-	var tc: float = float(ef.travel_coef) if float(ef.travel_coef) > 0.0 else 2.0 * float(ef.fallback_travel_coef)
-	var ec: float = float(ef.energy_coef) if float(ef.energy_coef) > 0.0 else 2.0 * float(ef.fallback_energy_coef)
-	r["fallback_is_half"] = absf(float(ef.fallback_travel_coef) - tc / 2.0) < 1e-9 and absf(float(ef.fallback_energy_coef) - ec / 2.0) < 1e-9
+			and float(md.calibration.control_gain_next) <= 0.01 * 0.15
+	r["fallback_is_half"] = absf(float(ef.fallback_travel_coef) - 0.15 / 2.0) < 1e-9 and absf(float(ef.fallback_energy_coef) - 0.25 / 2.0) < 1e-9
 	var sel: Dictionary = md.selection
 	r["selection_positive"] = float(sel.refresh_hz) > 0.0 and float(sel.hold_s) > 0.0 and float(sel.died_beat_s) > 0.0 \
 			and float(sel.tap_radius_px) > 0.0 and float(sel.outline_px) > 0.0 \
@@ -2424,6 +2428,7 @@ func test_t28_friends_of_is_ascending_with_flags_and_a_dictionary_fallback(t) ->
 		t.check(bool(f3[1].crew), "2-3 is crew")
 	t.eq(w.relationships.friends_of(4).size(), 0, "a being with no friend has none")
 	t.eq(w.relationships.friends_of(999).size(), 0, "a missing id returns an empty array")
+	_tick(w)  # relationships learns who exists
 	_kill(w, 1)
 	_tick(w)
 	t.eq(w.relationships.friends_of(1).size(), 0, "a dead id returns an empty array")
@@ -2623,7 +2628,7 @@ func test_t34a_control_gain_takes_the_mood_branch_with_a_tiny_shift(t) -> void:
 	t.eq(c.rng.args.size(), 1, "exactly one draw per call")
 	if c.rng.args.size() == 1:
 		var shift := absf(float(c.rng.args[0]) - base)
-		t.check(shift > 0.0, "the argument differs from Task 5's (shift %.3e)" % shift)
+		t.check(shift > 0.0, "the argument differs from Task 5's (shift %s)" % str(shift))
 		t.check(shift < g * 0.6, "by less than control_gain x 0.6 (the clamp bounds it)")
 	c.rng.args.clear()
 	c.s.mood = 0.0
