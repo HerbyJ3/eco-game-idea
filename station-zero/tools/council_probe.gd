@@ -25,6 +25,8 @@ const T3_SETTLE := {42: 67, 7: 58, 99: 54, 1234: 65, 2026: 53}
 const T3_CHANGES := {42: 2, 7: 1, 99: 2, 1234: 1, 2026: 1}
 const FM := [1, 2]
 const GENS := [0, 1, 2]
+## --base DIR: the earlier run (same tag) whose stats.council digest the judge compares on the unchanged seeds.
+var base_dir := ""
 
 
 ## Times the module's two hooks and calls the real ones. Copies state with the module's own fields; changes no behaviour.
@@ -75,6 +77,9 @@ func _init() -> void:
 				i += 1
 				var kv: PackedStringArray = args[i].split("=", true, 1)
 				params[kv[0]] = lib.parse_value(kv[1])
+			"--base":
+				i += 1
+				base_dir = args[i]
 			"--hash":
 				mode = "hash"
 			"--judge":
@@ -356,6 +361,7 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 	var sns := -1  # latest Settlement entry that is not a Council split
 	var s_all := -1  # latest Settlement entry (any how)
 	var hist_seen := 0
+	var bnd_us: Array = []  # [pop before, microseconds] of the whole world.step() on sol-boundary steps
 	while w.sol() < sols:
 		var pop_before := w.colony.pop()
 		tc.step_acc = 0
@@ -392,6 +398,7 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 				tick_max = maxi(tick_max, c)
 		if not w._sol_started:
 			continue
+		bnd_us.append([pop_before, dt])
 		# ---------------- sol boundary row
 		var n := w.sol()
 		var pop := w.colony.pop()
@@ -468,6 +475,20 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 			if (sv > 0.0 and lv < 0.0) or (sv < 0.0 and lv > 0.0):
 				signdiff += 1
 		var ns := ids.size()
+		var st_mean := 0.0
+		for id in ids:
+			st_mean += float(tc.stance[id])
+		st_mean = st_mean / ns if ns > 0 else 0.0
+		var st_var := 0.0
+		for id in ids:
+			st_var += (float(tc.stance[id]) - st_mean) * (float(tc.stance[id]) - st_mean)
+		var pmean := _mean(pers) if not pers.is_empty() else 0.0
+		var pvar := 0.0
+		for x in pers:
+			pvar += (float(x) - pmean) * (float(x) - pmean)
+		row["stance_sd"] = sqrt(st_var / ns) if ns > 0 else 0.0
+		row["personal_sd"] = sqrt(pvar / pers.size()) if pers.size() > 0 else 0.0
+		row["undecided_share"] = float(ns - yes_ids.size() - no_ids.size()) / ns if ns > 0 else 0.0
 		for kk in m:
 			m[kk] = float(m[kk]) / ns if ns > 0 else 0.0
 		row["mean_lean"] = m.lean
@@ -522,6 +543,9 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 				for x in pers:
 					vv += (float(x) - mp) * (float(x) - mp)
 				vrec["personal_sd"] = sqrt(vv / pers.size()) if pers.size() > 0 else 0.0
+				vrec["mean_stance"] = m.stance
+				vrec["stance_sd"] = row.stance_sd
+				vrec["undecided_share"] = row.undecided_share
 				vrec["mean_lean"] = m.lean
 				vrec["t_personal"] = m.personal
 				vrec["t_size"] = m.size_t
@@ -539,6 +563,7 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 	# ---------------- summary
 	var wall := float(Time.get_ticks_msec() - t_start) / 1000.0
 	var sum := _summary(w, tc, rows, votes, clog, kind_n, log_total, eligible, eligible_unheld, eligible_unheld_sols, bands, max_pop, seed_in, sols)
+	sum.cost["boundary_us"] = _bnd_dists(bnd_us)
 	sum["tag"] = tag
 	sum["params"] = params
 	sum["wall_s"] = wall
@@ -677,6 +702,17 @@ func _summary(w: SimWorld, tc: TimedCouncil, rows: Array, votes: Array, clog: Ar
 	var settled_rows := 0
 	var after_entry_min := 9.0
 	var fe: Variant = cst.first_council_sol
+	# FLOOR window (12.1): the sols the gate was live, S+30 to the first Council entry (or the end of the Settlement term)
+	var fl_web := 9.0
+	var fl_ch := 9.0
+	var fl_rows := 0
+	# CEILING window (12.1): Council terms only
+	var cn_web := 9.0
+	var cn_rows := 0
+	var cn_u50 := 0
+	var cn_u30 := 0
+	var run30 := 0
+	var run30_max := 0
 	for r: Dictionary in rows:
 		if int(r.sol) >= df:
 			tmin = minf(tmin, float(r.trust))
@@ -692,6 +728,23 @@ func _summary(w: SimWorld, tc: TimedCouncil, rows: Array, votes: Array, clog: Ar
 			min_ch_settled = minf(min_ch_settled, float(r.ch[key]))
 		if fe != null and int(r.sol) > int(fe):
 			after_entry_min = minf(after_entry_min, float(r.trust))
+		if bool(r.c1) and r.age == "settlement" and int(r.voices) > 0 and (fe == null or int(r.sol) < int(fe)):
+			fl_rows += 1
+			fl_web = minf(fl_web, float(r.trust))
+			fl_ch = minf(fl_ch, float(r.ch[key]))
+		if r.age == "council":
+			cn_rows += 1
+			cn_web = minf(cn_web, float(r.trust))
+			if float(r.trust) < 0.5:
+				cn_u50 += 1
+			if float(r.trust) < 0.3:
+				cn_u30 += 1
+				run30 += 1
+				run30_max = maxi(run30_max, run30)
+			else:
+				run30 = 0
+		else:
+			run30 = 0
 	var last_r: Dictionary = rows[nrows - 1]
 	sum["discrim"] = {"from_sol": df, "trust_min": tmin, "trust_max": tmax, "chosen_min": cmin, "chosen_max": cmax,
 			"leak_end": float(last_r.mars_unrelated) / float(maxi(1, int(last_r.chosen_pairs))), "leak_mean": _mean(leak),
@@ -699,7 +752,10 @@ func _summary(w: SimWorld, tc: TimedCouncil, rows: Array, votes: Array, clog: Ar
 			"turned_max": turned_max, "friend_pairs_end": last_r.friend_pairs,
 			"min_web_after_settled": min_web_settled if settled_rows > 0 else -1.0,
 			"min_chosen_after_settled": min_ch_settled if settled_rows > 0 else -1.0, "settled_rows": settled_rows,
-			"min_web_after_entry": after_entry_min if fe != null and after_entry_min < 9.0 else -1.0}
+			"min_web_after_entry": after_entry_min if fe != null and after_entry_min < 9.0 else -1.0,
+			"floor_rows": fl_rows, "floor_web_min": fl_web if fl_rows > 0 else -1.0, "floor_chosen_min": fl_ch if fl_rows > 0 else -1.0,
+			"council_rows": cn_rows, "council_web_min": cn_web if cn_rows > 0 else -1.0, "council_u50": cn_u50, "council_u30": cn_u30,
+			"council_run_u30": run30_max}
 	# --- proposals, votes
 	var props: Array = []
 	for pi in cst.proposals.size():
@@ -712,7 +768,7 @@ func _summary(w: SimWorld, tc: TimedCouncil, rows: Array, votes: Array, clog: Ar
 		if p.outcome_sol != null and int(p.outcome_sol) >= 1 and int(p.outcome_sol) <= nrows:
 			var orow: Dictionary = rows[int(p.outcome_sol) - 1]
 			term = {"mean_lean": orow.mean_lean, "personal": orow.t_personal, "size": orow.t_size, "means": orow.t_means,
-					"hard": orow.t_hard, "child": orow.t_child}
+					"hard": orow.t_hard, "child": orow.t_child, "personal_sd": orow.personal_sd}
 		props.append({"index": pi, "raised_sol": int(p.raised_sol), "proposer_id": int(p.proposer_id), "again": bool(p.again),
 				"outcome": p.outcome, "outcome_sol": p.outcome_sol, "reason": p.reason, "hard": p.hard, "votes": pv.size(),
 				"vote_sols": pv.map(func(v): return int(v.sol)), "terms_at_outcome": term})
@@ -801,6 +857,16 @@ func _summary(w: SimWorld, tc: TimedCouncil, rows: Array, votes: Array, clog: Ar
 	sum["cost"] = cost
 	sum["version_note"] = "t3_settle %d t3_changes %d" % [int(T3_SETTLE.get(seed_in, -1)), int(T3_CHANGES.get(seed_in, -1))]
 	return sum
+
+
+static func _bnd_dists(b: Array) -> Dictionary:
+	var all: Array = []
+	var g120: Array = []
+	for e in b:
+		all.append(e[1])
+		if int(e[0]) > 120:
+			g120.append(e[1])
+	return {"all": _dist(all), "pop_gt120": _dist(g120)}
 
 
 static func _dist(a: Array) -> Dictionary:
@@ -924,38 +990,46 @@ func _judge(dir: String, tag: String) -> void:
 				"; ".join(hs), "; ".join(es) if not es.is_empty() else "none", str(_c(d.splits)), str(_c(d.fallbacks_from_council)), d.council_changes])
 	# --- discrimination
 	o.append("\n### Trust discrimination (from sol %d) and flags FLOOR / CEILING" % int(cfg.balance.discrim_from_sol))
-	o.append("| seed | trust min / max | chosen min / max | min web since settled-30 | min chosen since settled-30 | min web after first entry | chosen pairs Mars-born+unrelated (end) | mean leak share | pairs turned to family (end / max) |")
-	o.append("|---|---|---|---|---|---|---|---|---|")
+	o.append("| seed | trust min / max | chosen min / max | FLOOR window (gate-live sols: S+30 to first entry): sols, min web / min chosen | CEILING window (Council terms only): sols, min web, sols < 0.5, sols < 0.3, longest run < 0.3 | chosen pairs Mars-born+unrelated (end) | mean leak share | pairs turned to family (end / max) |")
+	o.append("|---|---|---|---|---|---|---|---|")
 	var floor_web := true
 	var floor_chosen := true
+	var floor_web_any := false
+	var floor_chosen_any := false
+	var floor_web_seen := false
+	var floor_chosen_seen := false
 	var ceiling_all := true
 	var any_enter := false
 	for sd in S:
 		var d: Dictionary = S[sd]
 		var x: Dictionary = d.discrim
-		if float(x.min_web_after_settled) >= float(cfg.entry.trust_share_min) or float(x.min_web_after_settled) < 0.0:
-			pass
-		else:
-			floor_web = false
-		if float(x.min_chosen_after_settled) >= float(cfg.entry.chosen_share_min) or float(x.min_chosen_after_settled) < 0.0:
-			pass
-		else:
-			floor_chosen = false
+		if float(x.floor_web_min) >= 0.0 and float(x.floor_web_min) < float(cfg.entry.trust_share_min):
+			floor_web_any = true
+		if float(x.floor_web_min) >= 0.0:
+			floor_web_seen = true
+		if float(x.floor_chosen_min) >= 0.0 and float(x.floor_chosen_min) < float(cfg.entry.chosen_share_min):
+			floor_chosen_any = true
+		if float(x.floor_chosen_min) >= 0.0:
+			floor_chosen_seen = true
 		if d.first_council_sol != null:
 			any_enter = true
-			if float(x.min_web_after_entry) >= 0.0 and float(x.min_web_after_entry) < 0.5:
+			if float(x.council_web_min) >= 0.0 and float(x.council_web_min) < 0.5:
 				ceiling_all = false
-		o.append("| %d | %.3f / %.3f | %.3f / %.3f | %s | %s | %s | %d of %d (%.2f) | %.2f | %d / %d |" % [sd, x.trust_min, x.trust_max, x.chosen_min, x.chosen_max,
-				_n(x.min_web_after_settled), _n(x.min_chosen_after_settled), _n(x.min_web_after_entry), x.mars_unrelated_end, x.chosen_pairs_end,
-				x.leak_end, x.leak_mean, x.turned_end, x.turned_max])
-	o.append("FLOOR web (no seed's web reading ever below %.2f after its 30 settled sols): %s" % [float(cfg.entry.trust_share_min), "FLAGGED" if floor_web else "clear"])
-	o.append("FLOOR chosen (no seed's chosen reading ever below %.2f after its 30 settled sols): %s" % [float(cfg.entry.chosen_share_min), "FLAGGED (STOP RULE)" if floor_chosen else "clear"])
-	o.append("CEILING (on every seed that enters, web never below 0.5 after the entry): %s" % ("n/a, no seed enters" if not any_enter else ("FLAGGED" if ceiling_all else "clear")))
+		o.append("| %d | %.3f / %.3f | %.3f / %.3f | %d: %s / %s | %d: %s, %d, %d, %d | %d of %d (%.2f) | %.2f | %d / %d |" % [sd, x.trust_min, x.trust_max, x.chosen_min, x.chosen_max,
+				int(x.floor_rows), _n(x.floor_web_min), _n(x.floor_chosen_min), int(x.council_rows), _n(x.council_web_min), int(x.council_u50), int(x.council_u30),
+				int(x.council_run_u30), x.mars_unrelated_end, x.chosen_pairs_end, x.leak_end, x.leak_mean, x.turned_end, x.turned_max])
+	floor_web = not floor_web_any
+	floor_chosen = not floor_chosen_any
+	o.append("FLOOR web (no seed's web reading ever below %.2f in its gate-live window): %s" % [float(cfg.entry.trust_share_min), ("n/a, no live window" if not floor_web_seen else ("FLAGGED" if floor_web else "clear"))])
+	o.append("FLOOR chosen (no seed's chosen reading ever below %.2f in its gate-live window): %s" % [float(cfg.entry.chosen_share_min), ("n/a, no live window" if not floor_chosen_seen else ("FLAGGED (STOP RULE)" if floor_chosen else "clear"))])
+	o.append("CEILING (on every seed that enters, web never below 0.5 inside Council terms): %s" % ("n/a, no seed enters" if not any_enter else ("FLAGGED" if ceiling_all else "clear")))
 	# --- proposals
 	o.append("\n### Proposals")
 	o.append("| seed | # | raised sol | proposer | again | votes | outcome (sol) | reason | hard | vote sols | mean lean at outcome: total = personal + size + means - hard + child |")
 	o.append("|---|---|---|---|---|---|---|---|---|---|---|")
-	var pledges_size_dominant: Array = []
+	var pledges_size_dominant: Array = []  # old reading: size term above half the mean lean
+	var pledges_size_sd: Array = []  # corrected reading (12.1): size term at least one sd of the personal term
+	var pledge_detail: Array = []
 	var pledge_n := 0
 	for sd in S:
 		var d: Dictionary = S[sd]
@@ -969,7 +1043,10 @@ func _judge(dir: String, tag: String) -> void:
 			if p.outcome == "pledged" and not t.is_empty():
 				pledge_n += 1
 				pledges_size_dominant.append(float(t.size) > 0.5 * float(t.mean_lean))
-	var size_dom := pledge_n > 0 and not pledges_size_dominant.has(false)
+				pledges_size_sd.append(float(t.size) >= float(t.personal_sd) - Ages.CMP_EPS)
+				pledge_detail.append("seed %d sol %s: size %.4f, personal sd %.4f, mean lean %.4f" % [sd, _n(p.outcome_sol), t.size, t.personal_sd, t.mean_lean])
+	var size_dom_old := pledge_n > 0 and not pledges_size_dominant.has(false)
+	var size_dom := pledge_n > 0 and not pledges_size_sd.has(false)
 	o.append("\n### Meetings (sol: present / voices, yes, no; V = vote, R = raise or quiet meeting)")
 	for sd in S:
 		var d: Dictionary = S[sd]
@@ -987,8 +1064,8 @@ func _judge(dir: String, tag: String) -> void:
 	var sign_sh: Array = []
 	var sd_p: Array = []
 	o.append("\n### Votes: lockstep and factions")
-	o.append("| seed | sol | voices | yes | no | one side >= 0.95 | divided (both >= 0.25) | amb yes / no | caution yes / no | trait_ok | stance sign differs from lean | personal sd |")
-	o.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
+	o.append("| seed | sol | voices | yes | no | one side >= 0.95 | divided (both >= 0.25) | amb yes / no | caution yes / no | trait_ok | stance sign differs from lean | personal sd | mean stance / stance sd | undecided share |")
+	o.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 	for sd in S:
 		var d: Dictionary = S[sd]
 		var seen_div := {}
@@ -1011,13 +1088,16 @@ func _judge(dir: String, tag: String) -> void:
 					nfirst += 1
 					if v.trait_ok:
 						nfirst_ok += 1
-			o.append("| %d | %d | %d | %d | %d | %s | %s%s | %.3f / %.3f | %.3f / %.3f | %s | %.3f | %.3f |" % [sd, v.sol, v.voices, v.yes, v.no, str(v.lockstep), str(v.divided),
-					" (first)" if first_div else "", v.amb_yes, v.amb_no, v.cau_yes, v.cau_no, str(v.trait_ok), v.signdiff_share, v.personal_sd])
+			o.append("| %d | %d | %d | %d | %d | %s | %s%s | %.3f / %.3f | %.3f / %.3f | %s | %.3f | %.3f | %.3f / %.3f | %.2f |" % [sd, v.sol, v.voices, v.yes, v.no, str(v.lockstep), str(v.divided),
+					" (first)" if first_div else "", v.amb_yes, v.amb_no, v.cau_yes, v.cau_no, str(v.trait_ok), v.signdiff_share, v.personal_sd,
+					v.mean_stance, v.stance_sd, v.undecided_share])
 	var lockstep := nv > 0 and float(nlock) > 0.5 * float(nv)
 	o.append("votes pooled %d, lockstep votes %d (%.0f%%); LOCKSTEP (more than half): %s" % [nv, nlock, 100.0 * nlock / maxf(1.0, nv), "FLAGGED" if lockstep else "clear"])
 	o.append("divided votes pooled %d, trait-consistent %d (%.0f%%); first-divided-vote-per-proposal %d, trait-consistent %d" % [ndiv, ndiv_ok, 100.0 * ndiv_ok / maxf(1.0, ndiv), nfirst, nfirst_ok])
 	o.append("stance sign differs from lean (share of voices), median over votes %.3f; personal-term sd median over votes %.3f (spec estimate 0.15)" % [_median(sign_sh), _median(sd_p)])
-	o.append("pledges %d, size term above half the mean lean at each: %s; SIZE-DOMINANT: %s" % [pledge_n, str(pledges_size_dominant), "FLAGGED" if size_dom else ("clear" if pledge_n > 0 else "n/a, no pledge")])
+	o.append("pledges %d: %s" % [pledge_n, "; ".join(pledge_detail)])
+	o.append("SIZE-DOMINANT (corrected: size term >= one sd of the personal term at every pledge): %s; each pledge: %s" % ["FLAGGED" if size_dom else ("clear" if pledge_n > 0 else "n/a, no pledge"), str(pledges_size_sd)])
+	o.append("SIZE-DOMINANT (old reading, size above half the mean lean at every pledge, printed for the record): %s; each pledge: %s" % ["FLAGGED" if size_dom_old else ("clear" if pledge_n > 0 else "n/a, no pledge"), str(pledges_size_dominant)])
 	# --- gatherings
 	o.append("\n### Gatherings (largest voice gathering at one relationship tick per sol)")
 	o.append("| seed | sols >= 60: count median / p90 / max | share of voices median / p90 / max | Council sols: count median / max | eligible meeting sols | unheld | unheld share | meeting size median / max | first raise after entry (sols) |")
@@ -1070,6 +1150,17 @@ func _judge(dir: String, tag: String) -> void:
 			var x: Dictionary = os[k]
 			return "%d: %s / %s / %s" % [int(x.n), _n(x.get("median")), _n(x.get("p95")), _n(x.get("max"))]
 		o.append("| %d | %d | %s | %s | %s | %s / %s / %s |" % [sd, c.max_pop, cell.call("pop60_80"), cell.call("pop_gt120"), cell.call("peak90"), sh.call("b70"), sh.call("b120"), sh.call("all")])
+	o.append("\nWhole boundary step (world.step() on sol-boundary steps, microseconds): n median / p95 / max; the 16.7 ms trigger of 11.1 is %d us" % int(float(bal.on_sol_ms_peak_max) * 1000.0))
+	o.append("| seed | all boundary steps | pop > 120 |")
+	o.append("|---|---|---|")
+	for sd in S:
+		var bu: Dictionary = S[sd].cost.get("boundary_us", {})
+		if bu.is_empty():
+			continue
+		var bc := func(k):
+			var x: Dictionary = bu[k]
+			return "%d: %s / %s / %s" % [int(x.n), _n(x.get("median")), _n(x.get("p95")), _n(x.get("max"))] if int(x.n) > 0 else "-"
+		o.append("| %d | %s | %s |" % [sd, bc.call("all"), bc.call("pop_gt120")])
 	# --- replays
 	o.append("\n### Gate replays (first Council entry sol; '-' = never by sol %d; baseline = shipped values; exact for the first entry)" % int(S[S.keys()[0]].sols))
 	var base := base_variant()
@@ -1105,6 +1196,7 @@ func _judge(dir: String, tag: String) -> void:
 	var enter_n := 0
 	var pledge_seeds: Array = []
 	var argue_seeds: Array = []
+	var long_seeds: Array = []  # set_aside_long: a stalemate, reported not counted (12.1)
 	var c3_ok := true
 	var c2_all := true
 	for sd in S:
@@ -1114,8 +1206,10 @@ func _judge(dir: String, tag: String) -> void:
 		if d.pledge_sol != null:
 			pledge_seeds.append(sd)
 		var by: Dictionary = d.lines.by_key
-		if int(by.get("divided", 0)) > 0 or int(by.get("set_aside", 0)) > 0 or int(by.get("set_aside_hard", 0)) > 0 or int(by.get("set_aside_long", 0)) > 0:
+		if int(by.get("divided", 0)) > 0 or int(by.get("set_aside", 0)) > 0 or int(by.get("set_aside_hard", 0)) > 0 or int(by.get("pledge_divided", 0)) > 0:
 			argue_seeds.append(sd)
+		if int(by.get("set_aside_long", 0)) > 0:
+			long_seeds.append(sd)
 		if int(d.council_changes) > int(bal.max_council_changes):
 			c3_ok = false
 		if not bool(d.c2.ok):
@@ -1124,11 +1218,60 @@ func _judge(dir: String, tag: String) -> void:
 	o.append("C2 (structural, T12): %s" % ("PASS" if c2_all else "FAIL"))
 	o.append("C3 (<= %d Council changes) -> %s" % [int(bal.max_council_changes), "PASS" if c3_ok else "FAIL"])
 	o.append("C4 pledge on >= %d seed(s): seeds %s -> %s" % [int(bal.pledge_min_seeds), str(pledge_seeds), "PASS" if pledge_seeds.size() >= int(bal.pledge_min_seeds) else "FAIL"])
-	o.append("C5 divided or set-aside line on >= %d seeds: seeds %s -> %s" % [int(bal.argue_min_seeds), str(argue_seeds), "PASS" if argue_seeds.size() >= int(bal.argue_min_seeds) else "FAIL"])
+	o.append("C5 (12.1: divided, set_aside, set_aside_hard or pledge_divided) on >= %d seeds: seeds %s -> %s (set_aside_long, reported not counted, on seeds %s)" % [int(bal.argue_min_seeds), str(argue_seeds), "PASS" if argue_seeds.size() >= int(bal.argue_min_seeds) else "FAIL", str(long_seeds)])
 	o.append("C6 trait-consistent at >= %.0f%% of divided votes: %d of %d (%.0f%%); first-divided only %d of %d -> %s" % [100.0 * float(bal.faction_trait_share_min), ndiv_ok, ndiv,
 			100.0 * ndiv_ok / maxf(1.0, ndiv), nfirst_ok, nfirst, ("n/a, no divided vote" if ndiv == 0 else ("PASS" if float(ndiv_ok) >= float(bal.faction_trait_share_min) * ndiv else "FAIL"))])
 	o.append("C7 Council lines <= %.1f per 5 Council sols on every seed: all council_* %s; without circles %s" % [float(bal.lines_per5_max), "PASS" if c7_ok else "FAIL", "PASS" if c7_ok_nc else "FAIL"])
 	o.append("Flags: FLOOR web %s; FLOOR chosen %s; CEILING %s; SIZE-DOMINANT %s; LOCKSTEP %s; NOROOM %s" % ["FLAGGED" if floor_web else "clear", "FLAGGED" if floor_chosen else "clear",
 			"n/a" if not any_enter else ("FLAGGED" if ceiling_all else "clear"), "FLAGGED" if size_dom else ("n/a" if pledge_n == 0 else "clear"), "FLAGGED" if lockstep else "clear", "FLAGGED" if noroom else "clear"])
+	# --- C8 (restated, 11.1), run alone
+	var c8_ok := true
+	var c8_rows: Array = []
+	var bnd_max := 0.0
+	for sd in S:
+		var d: Dictionary = S[sd]
+		var os2: Dictionary = d.cost.on_sol_us.pop_gt120
+		var b2: Dictionary = d.cost.bands.b120
+		if int(os2.n) == 0:
+			c8_rows.append("seed %d: no sol above pop 120" % sd)
+			continue
+		var share := float(b2.mod_us) / float(b2.step_us) if int(b2.step_us) > 0 else 0.0
+		var ok_med := float(os2.median) <= float(bal.on_sol_ms_max) * 1000.0
+		var ok_max := float(os2.max) <= float(bal.on_sol_ms_peak_max) * 1000.0
+		var ok_sh := share <= float(bal.step_share_max)
+		if not (ok_med and ok_max and ok_sh):
+			c8_ok = false
+		c8_rows.append("seed %d: median %.0f us (limit %.0f) %s, max %.0f us (limit %.0f) %s, share %.4f (limit %.2f) %s" % [sd, float(os2.median), float(bal.on_sol_ms_max) * 1000.0,
+				"ok" if ok_med else "OVER", float(os2.max), float(bal.on_sol_ms_peak_max) * 1000.0, "ok" if ok_max else "OVER", share, float(bal.step_share_max), "ok" if ok_sh else "OVER"])
+		var bu2: Dictionary = d.cost.get("boundary_us", {})
+		if not bu2.is_empty() and int(bu2.all.n) > 0:
+			bnd_max = maxf(bnd_max, float(bu2.all.max))
+	o.append("C8 (on_sol median at pop > 120 <= %.1f ms, max <= %.1f ms, share <= %.2f; valid only if the run was made alone) -> %s" % [float(bal.on_sol_ms_max), float(bal.on_sol_ms_peak_max), float(bal.step_share_max), "PASS" if c8_ok else "FAIL"])
+	for r in c8_rows:
+		o.append("  " + r)
+	o.append("Boundary-step trigger (11.1): max whole boundary step %.0f us against %.0f us -> %s" % [bnd_max, float(bal.on_sol_ms_peak_max) * 1000.0, "REMEDIES TRIGGERED" if bnd_max > float(bal.on_sol_ms_peak_max) * 1000.0 else "not triggered"])
+	# --- option A keep rule (O6): byte-identical seeds, then the rule
+	if base_dir != "":
+		o.append("\n### Byte-identical check against the base run (digest covers pop, births, deaths, age_history and all of stats.council)")
+		var same_all := true
+		for sd in [42, 7, 99]:
+			var nb := _load(base_dir, sd, "base")
+			if nb.is_empty() or not S.has(sd):
+				o.append("- seed %d: base or new run missing" % sd)
+				same_all = false
+				continue
+			var same := str(nb.digest) == str(S[sd].digest)
+			if not same:
+				same_all = false
+			o.append("- seed %d: base digest %s, new digest %s -> %s" % [sd, str(nb.digest), str(S[sd].digest), "IDENTICAL" if same else "DIFFERS (a defect)"])
+		o.append("Seeds 42, 7, 99 byte-identical: %s" % ("YES" if same_all else "NO"))
+		var c4_ok := pledge_seeds.size() >= int(bal.pledge_min_seeds)
+		var c5_ok := argue_seeds.size() >= int(bal.argue_min_seeds)
+		var c6_ok := ndiv == 0 or float(ndiv_ok) >= float(bal.faction_trait_share_min) * ndiv
+		o.append("Keep rule (all of): C4 %s; C5 %s; C6 %s; LOCKSTEP %s; SIZE-DOMINANT (corrected) %s; seeds 42/7/99 identical %s; T12 and hash proof run separately." % [
+				"pass" if c4_ok else "FAIL", "pass" if c5_ok else "FAIL", "holds" if c6_ok else "FAIL", "FLAGGED" if lockstep else "clear",
+				"FLAGGED" if size_dom else "clear", "yes" if same_all else "NO"])
+		var keep := c4_ok and c5_ok and c6_ok and not lockstep and not size_dom and same_all
+		o.append("Option A verdict (before T12 and the hash proof): %s" % ("KEEP" if keep else "STOP"))
 	for line in o:
 		print(line)
