@@ -2,7 +2,7 @@
 
 Process document. Every design detail (what a gathering, proposal and support are, the Council gate, thresholds, data keys, HUD words, test targets) lives in a spec the design team writes: `docs/specs/council.md` (name proposed, spec may change it). The project manager does not design. Source of truth: station-zero-handoff/HANDOFF.md (sections 4, 7, 8, 9, 10). Model: `docs/tasks/task-4-plan.md`. Tasks 0 to 4 done.
 
-**Status: NOT STARTED.** First unchecked task in HANDOFF section 8. Task 6 is not to be started.
+**Status: DONE (closed 2026-10-08).** Checked off in HANDOFF section 8 with results, owner decisions O1-O6, cost and known issues. Next: Task 6 (later stages), not started.
 
 Rules in force (HANDOFF 10): design before code, headless tests before visuals, every tunable in `data/`, seeded RNG, one balance parameter per run, each step a commit that runs. Test command: `godot --headless --path station-zero --script res://tests/run_tests.gd`.
 
