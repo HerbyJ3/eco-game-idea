@@ -313,3 +313,62 @@ Facts from the replay table:
 8. Largest voice gathering per sol (sols from 60): median 13, 9, 12, 15, 11 voices, i.e. 0.18, 0.28, 0.16, 0.19, 0.17 of voices; largest 30, 22, 37, 44, 24. All eligible meetings were held where a Council existed.
 9. Cost: on_sol median above pop 120 is 3.0 ms on seed 42 and 4.2 ms on seed 1234 (budget 3.0), max 9.7 ms on seed 1234 (budget 8.0); step share 0.004 to 0.012 (budget 0.02). Section 11's remedies (share the union-find with relationships, skip trust and sway where nothing reads them) were not built.
 10. The housemate leak (item 3) is large: 74 to 91 percent of chosen pairs at sol 300 are both Mars-born and unrelated.
+
+## Run 2: carry quorum (O6 = A, owner 2026-10-08)
+**Change under test.** A vote carries when `yes / (yes + no) >= decide.carry_share` (0.6) and `yes / voices >= decide.carry_quorum` (0.35, new), exact by cross-multiplied counts with `CMP_EPS`; with `yes + no = 0` nothing carries. Reject bar, `carry_sessions`, `max_open_votes`, sway and every lean key are untouched. Data edited in the same step: `balance.on_sol_ms_max` 3.0 to 5.0, `balance.on_sol_ms_peak_max` 16.7 (new). Code: `sim/council.gd` `_vote`. Probe edited per spec 12.1 (C5 counting, FLOOR and CEILING windows, corrected SIZE-DOMINANT with the old reading printed, stance spread and undecided share per vote, whole boundary-step timing, web minimum and sols under 0.5 / 0.3 inside Council terms, C8 restated, byte-identical check via `--base`).
+
+**Run.** One run, seeds 42, 7, 99, 1234, 2026, 300 sols, tag `quorum`, the five seeds made one after another so the cost figures are from runs made alone. Data: `docs/balance/task-5-calibration-data-run2/` (`seed_N_quorum.json/.csv/.txt`, `judge_quorum.txt`, `council_hash_proof.txt`). Base for comparison: `docs/balance/task-5-calibration-data/`.
+
+### Byte-identical check (digest of pop, births, deaths, `age_history` and all of `stats.council`)
+| seed | base digest | run 2 digest | result |
+|---|---|---|---|
+| 42 | ea5190275431d465 | ea5190275431d465 | identical |
+| 7 | 4644c2e44dd97170 | 4644c2e44dd97170 | identical |
+| 99 | edbb5348251c8241 | edbb5348251c8241 | identical |
+
+Seeds 1234 and 2026 differ from base, as predicted. The probe digest equals the digest of the plain `balance_lib` replay on both (83820bcfb1007f89, 5b52dd2a5c6277c6).
+
+### Pledges (prediction: 1234 at sol 195, 2026 at sol 221; both hit exactly)
+| seed | raised | votes | pledged | yes / no / voices at the pledging vote | yes of those with a view | yes of all | undecided | mean lean = personal + size + means - hard + child | reason |
+|---|---|---|---|---|---|---|---|---|---|
+| 1234 | 165 | 6 | sol 195 | 44 / 14 / 107 | 0.76 | 0.41 | 0.46 | 0.148 = -0.022 + 0.119 + 0.044 - 0 + 0.007 | personal |
+| 2026 | 211 | 2 | sol 221 | 64 / 17 / 107 | 0.79 | 0.60 | 0.24 | 0.181 = 0.007 + 0.122 + 0.045 - 0 + 0.007 | personal |
+
+Previous vote on 1234: 38 / 14 / 102 (yes share of all 0.37, ratio 0.73): carried at 190 too (quorum 0.35 cleared by 0.02, as the spec said). Both pledges are undivided (`pledge` text), with aftermath (`aftermath_still`, doubters Mero-90 and Sax-42) and the after-pledge line. Seed 7 (small colony, 62 percent undecided, yes 4 to 9 of 22 to 52) and seed 42 (ice) are unchanged. After sol 221 on 2026, yes falls to 31 of 131 by sol 296 (hard share), and the pledge stands.
+
+### Spread and undecided (per vote; full table in `judge_quorum.txt`)
+| seed | undecided share at votes | stance sd at votes | personal sd at votes |
+|---|---|---|---|
+| 42 | 0.15 to 0.33 | 0.20 to 0.26 | 0.21 to 0.23 |
+| 7 | 0.47 to 0.76 | 0.13 to 0.17 | 0.175 to 0.19 |
+| 1234 | 0.39 to 0.52 | 0.18 to 0.22 | 0.19 to 0.21 |
+| 2026 | 0.24 to 0.26 | 0.23 to 0.24 | 0.23 |
+
+### Targets
+| # | Result |
+|---|---|
+| C1 | PASS: entries on 42 (115), 7 (95), 1234 (160), 2026 (206); 99 never enters |
+| C2, C3 | PASS (T12 PASS on 1234 and 2026 in the replay; the other seeds are unchanged from base) |
+| C4 | PASS: pledges on 1234 (195) and 2026 (221) |
+| C5 (12.1 definition: divided, set_aside, set_aside_hard, pledge_divided) | PASS at the minimum: seeds 42 and 7. Seed 7 also logs `set_aside_long` twice (a stalemate, reported not counted) |
+| C6 | PASS (thin): 6 of 6 divided votes trait-consistent, 3 of 3 first-per-proposal (seeds 42 and 7 only, as in base) |
+| C7 | PASS: 0.17 to 0.32 per 5 Council sols (0.14 to 0.31 without circles); seed 99 has no Council sols, one circles line in 120 Settlement sols (within `lines.circles_max`) |
+| C8 (restated) | PASS, run alone: median `on_sol` above pop 120 of 2,330 / 2,164 / 3,050 / 2,181 us on seeds 42 / 99 / 1234 / 2026 (limit 5,000); max 5,838 / 4,539 / 7,248 / 4,965 us (limit 16,700); share of the mean step 0.0036 / 0.0031 / 0.0108 / 0.0092 (limit 0.02). Seed 7 never exceeds pop 120 |
+
+Whole boundary step (`world.step()` on sol-boundary steps), max: 15.3 ms (seed 42), 7.0 (7), 13.5 (99), 15.3 (1234), 11.3 (2026) ms; at pop above 120 the median is 4.7 to 5.8 ms. The 16.7 ms trigger for the remedies of 11.1 is **not** met, with 1.4 ms of margin on seeds 42 and 1234.
+
+### Flags (12.1 definitions)
+- FLOOR: clear on both readings. Gate-live window (S+30 to first entry): web minimum 0.432 (42), 0.864 (7), 0.077 (99, 90 sols), 0.324 (1234), 0.190 (2026); chosen minimum 0.500, 0.550, 0, 0.148, 0.119. The stop rule on the chosen reading is not raised.
+- CEILING: clear. Web minimum inside Council terms: 0.346 (42, 57 of 98 sols under 0.5), 0.682 (7), 0.524 (1234), 0.315 (2026, 32 of 95 sols under 0.5). Sols under 0.3 inside Council: 0 on every seed.
+- SIZE-DOMINANT (corrected, size term at least one sd of the personal term at every pledge): **clear**. Size 0.119 against sd 0.214 (1234) and 0.122 against 0.234 (2026), 0.56 and 0.52 of an sd. Old reading (size above half the mean lean): FLAGGED on both pledges, printed for the record; it fires on any pledge, as 12.1 says.
+- LOCKSTEP: clear (0 of 42 votes with 0.95 of voices on one side). NOROOM: clear (no eligible sol without a meeting). First-raise delay trigger: met (first raise 5 sols after entry on seeds 42, 1234, 2026; 10 on seed 7); not built, as decided.
+
+### Hash proof and tests
+- `tests/council_hash_proof.gd`: all five seeds MATCH on all three checks (drop cn, drop cn and web, drop cn, web and age), same hashes as before. The Council stays hash-neutral.
+- `tests/test_council.gd`: 112 tests, 1013 checks, 0 failures (3 new tests and the quorum sanity rule, test 10 and 17).
+- Full suite: 611 tests, 42,432 checks, 6 failures, all known: `test_view_council` 19b / 19c / 19d (step 9, five checks) and the host-speed `test_view_model::test_perf_perf` (median 2.09 ms against 2.0 ms). The second host-speed timing test passed on this host.
+
+### Verdict under option A's rule
+Keep rule (all of): C4 pass; C5 pass on the corrected definition (at its minimum, 2 seeds); C6 holds; LOCKSTEP clear; SIZE-DOMINANT (corrected) clear; T12 and hash proof pass; seeds 42, 7, 99 byte-identical. **Every condition holds: KEEP.** The carry change and `decide.carry_quorum` 0.35 stay. No other key was moved.
+
+Caveats (as stated in O6): the quorum 0.35 was fitted after seeing the votes of these five seeds, and seed 1234 clears it by 0.02 at its pledging votes (0.37 at sol 190, 0.41 at sol 195). C5 passes at its minimum. Both pledges are undivided and in the growth years (pop 107 to 112). Headline beats on the five seeds: agreement on two (1234, 2026), waiting on one (7), the ice on one (42), no Council on one (99).
