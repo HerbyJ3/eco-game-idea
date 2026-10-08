@@ -216,15 +216,40 @@ func _clock_text(w: SimWorld) -> String:
 	return line
 
 
-## The pinned chapters strip: the last hud.chapters_shown age_history entries, oldest first, one line each, as
-## `sol N  <first sentence>` (the text up to and including the first ". "; the full text is in the log).
+## The pinned chapters strip (spec council.md 7 and 9): the age_history entries merged with stats.council.chapters in time
+## order (a tie on t: the age entry first), the latest hud.chapters_shown of them, oldest first, one line each, as
+## `sol N  <first sentence>` (the full text is in the log). Once the pledge is made it is pinned: it takes one of the
+## places and the latest (chapters_shown - 1) other entries fill the rest. No numbers beyond the sol.
 func _chapters_text(w: SimWorld) -> String:
 	var n := int(SimData.ages().hud.chapters_shown)
-	var hist: Array = w.stats.age_history
+	var items: Array = []  # [t, order, entry]
+	var order := 0
+	for e: Dictionary in w.stats.age_history:
+		items.append([float(e.t), order, e])
+		order += 1
+	var pinned: Array = []
+	for e: Dictionary in w.stats.council.chapters:
+		var it := [float(e.t), order, e]
+		order += 1
+		if pinned.is_empty() and str(e.get("kind", "")) == "pledge":
+			pinned = it
+		else:
+			items.append(it)
+	items.sort_custom(_chapter_before)
+	var shown: Array = items.slice(maxi(0, items.size() - (n - 1 if not pinned.is_empty() else n)))
+	if not pinned.is_empty():
+		shown.append(pinned)
+		shown.sort_custom(_chapter_before)
 	var lines: PackedStringArray = []
-	for e: Dictionary in hist.slice(maxi(0, hist.size() - n)):
-		lines.append("sol %d  %s" % [int(e.clock_sol), _first_sentence(str(e.text))])
+	for it: Array in shown:
+		lines.append("sol %d  %s" % [int(it[2].clock_sol), _first_sentence(str(it[2].text))])
 	return "\n".join(lines)
+
+
+func _chapter_before(a: Array, b: Array) -> bool:
+	if a[0] != b[0]:
+		return a[0] < b[0]
+	return a[1] < b[1]
 
 
 func _first_sentence(text: String) -> String:
