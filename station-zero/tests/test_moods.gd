@@ -825,6 +825,7 @@ func test_t08a_a_hard_sol_is_recorded_at_the_boundary_and_pushed_at_the_next_tic
 	var a = _being(w, HAB1)
 	var low = _being(w, HAB1, 0.0, floor_dev - 0.0001)
 	var near_floor = _being(w, HAB2, 0.0, -0.29)
+	var exact = _being(w, HAB2, 0.0, floor_dev)
 	_stocks(w)
 	w.moods.on_sol(w)
 	t.check(w.moods.pending_hard == null, "all three stocks fine: nothing pending")
@@ -835,6 +836,7 @@ func test_t08a_a_hard_sol_is_recorded_at_the_boundary_and_pushed_at_the_next_tic
 	_inject(w)
 	t.near(_d(a), hs, CMP, "the next tick pushes every being -0.02")
 	t.near(_d(low), floor_dev - 0.0001, CMP, "a being at or below hard_floor_dev gets none")
+	t.eq(_d(exact), floor_dev, "a being exactly at hard_floor_dev gets none (d <= floor)")
 	t.near(_d(near_floor), -0.29 + hs * _scale(-0.29, -1.0), 1e-12, "a being just above the floor is pushed, scaled")
 	t.check(w.moods.pending_hard == null, "pending cleared after the push")
 	t.eq(_push_count(w, "hard_sol"), 2, "counted once per pushed being (a and near_floor)")
@@ -1152,6 +1154,24 @@ func test_t13a_a_grief_why_is_sticky_against_every_other_push(t) -> void:
 				friends.append(a.id)
 		_inject(w, evs, friends)
 		t.check(a.mood_why != null and str(a.mood_why.key) == "grief" and int(a.mood_why.id) == 50, "the grief why survives a %s push (got %s)" % [kind, _why_key(a)])
+	_end(t)
+
+
+func test_t13a2_stickiness_holds_against_a_lapse_big_enough_to_qualify(t) -> void:
+	if not _api(t):
+		return
+	# With the shipped numbers a lapse (-0.05) can never reach half of |d| >= 0.15, so rule 4 is only observable when the
+	# world's own copy of the data makes the lapse large (spec question: sticky grief is unobservable at the shipped numbers).
+	var c := _why_world()
+	c.w.moods.cfg.push.lapse = -0.40
+	_stage_why(c.a, "grief", 50, -1, -0.20)
+	_inject(c.w, [_ev("lapse", c.a.id, c.b.id)])
+	t.check(c.a.mood_why != null and str(c.a.mood_why.key) == "grief", "a qualifying lapse does not replace a sticky grief (got %s)" % _why_key(c.a))
+	var c2 := _why_world()
+	c2.w.moods.cfg.push.lapse = -0.40
+	_stage_why(c2.a, "friend", c2.x.id, -1, -0.20)
+	_inject(c2.w, [_ev("lapse", c2.a.id, c2.b.id)])
+	t.check(c2.a.mood_why != null and str(c2.a.mood_why.key) == "lapse", "the same lapse does replace a non-sticky why (control)")
 	_end(t)
 
 
