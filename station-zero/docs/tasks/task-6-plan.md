@@ -2,7 +2,7 @@
 
 Process document. Every design detail (what emotions, temperament, a prompt, a memory, a sky name or a server world are, thresholds, data keys, HUD words, test targets) lives in a spec the design team writes (lead game-designer with designer-emergence, designer-feel, designer-clarity). The project manager does not design. Source of truth: station-zero-handoff/HANDOFF.md (sections 3, 4, 7, 8, 9, 10). Model: `docs/tasks/task-5-plan.md`. Tasks 0 to 5 done.
 
-**Status: NOT STARTED.** Task 6 is a bundle of four items. Rule 1 (one task at a time) means each item is its own sub-task with its own spec, definition of done and check-off. The queue line in HANDOFF section 8 stays unchecked until all four are done (or the owner descopes some in writing).
+**Status: IN PROGRESS (6a emotions).** Owner decisions for the first slice (2026-10-08, docs/design/task-6-scoping.md): 6a first with the two 6p items folded in; behaviour changes now (baseline reset accepted, to be recorded); Deimos sets baseline mood and recovery; text only, no new art. Task 6 is a bundle of four items. Rule 1 (one task at a time) means each item is its own sub-task with its own spec, definition of done and check-off. The queue line in HANDOFF section 8 stays unchecked until all four are done (or the owner descopes some in writing).
 
 Rules in force (HANDOFF 10): design before code, headless tests before visuals, tunables in `data/`, seeded RNG, one balance parameter per run, cheapest suitable model, each step a commit that runs. Test command: `godot --headless --path station-zero --script res://tests/run_tests.gd`.
 
