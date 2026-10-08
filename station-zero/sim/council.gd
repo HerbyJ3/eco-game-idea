@@ -640,7 +640,10 @@ func _vote(world: SimWorld, n: int, yn: Array, tcfg: Dictionary) -> void:
 	var voices := int(st.voices)
 	var y: Array = yn[0]
 	var no: Array = yn[1]
-	if _cmp_ge(y.size(), voices, float(d.carry_share)):
+	# O6 (A): carry among the voices with a view, plus a quorum of the whole colony.
+	var took_side: int = y.size() + no.size()
+	if took_side > 0 and _cmp_ge(y.size(), took_side, float(d.carry_share)) \
+			and _cmp_ge(y.size(), voices, float(d.carry_quorum)):
 		open.carry_run += 1
 	else:
 		open.carry_run = 0
