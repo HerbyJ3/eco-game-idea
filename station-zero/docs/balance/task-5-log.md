@@ -242,5 +242,5 @@ Reading: "live age changes" counts every `age_history` entry after Landing, so t
 - Parked item 2 (hash chain) is not in the unit test: it takes minutes and is `tests/council_hash_proof.gd`, recorded above. The unit test checks the strip helpers on a real printed table instead. Parked item 5 (helper agrees with `tools/age_probe.gd`) is a source check that both call `balance_lib.projected_history`, plus a synthetic history case; `age_probe.gd` itself was not re-run.
 - T10 check 4 and its "history N entries" text read the live (unprojected) history, so seed 42 prints `history 4 entries (changes+1 = 4)` next to `age_changes 2`; the projected count is only in check 2.
 - C6 to C8 and the D flags (FLOOR, CEILING, SIZE-DOMINANT, LOCKSTEP, NOROOM) were not re-measured here; `docs/balance/task-5-calibration.md` is their record. Cost was not re-measured (no new per-tick work in this step).
-- Seeds 42 and 99 end in Landing, so `cn` ends `-` on both; seeds 1234 and 2026 end `P`.
+- `cn` at sol 300: seeds 42 and 99 `-` (both end in Landing), seed 7 `C`, seeds 1234 and 2026 `P`.
 - No value was tuned.
