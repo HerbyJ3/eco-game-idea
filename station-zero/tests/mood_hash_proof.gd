@@ -20,12 +20,19 @@ extends SceneTree
 ## The helpers are static so tests/test_moods.gd (test 25) can check them on synthetic tables without a 300-sol run.
 
 ## Task 5 table hashes (full table with `cn` last), docs/balance/task-5-log.md lines 11 to 15 (first 16 hex digits of sha256).
+## pre-lifecycle baseline (Tasks 1-5), Task 5 table hashes, superseded by the calendar-lifecycle baseline (commit e1f2bdd; owner decision
+## 2026-10-09, docs/balance/lifecycle-rebaseline.md). History only, not compared against:
+##   42: "330325504427720a",
+##   7: "1ceb89a7d3e87540",
+##   99: "7feb81cee7c86fa5",
+##   1234: "7c8bcf782a06f1fa",
+##   2026: "076e42c032a208aa",
 const EXPECTED_T5 := {
-	42: "330325504427720a",
-	7: "1ceb89a7d3e87540",
-	99: "7feb81cee7c86fa5",
-	1234: "7c8bcf782a06f1fa",
-	2026: "076e42c032a208aa",
+	42: "6dd003aef320196b",
+	7: "bd45d3b3c0690911",
+	99: "0d8e25bd9b7b056f",
+	1234: "539156aead08fb41",
+	2026: "3ab707732c622968",
 }
 const SOLS := 300
 const EVERY := 30
