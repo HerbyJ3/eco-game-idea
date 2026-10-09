@@ -1,0 +1,72 @@
+[
+  {
+    "seed": 42,
+    "first_dry_sol": 370,
+    "reachable_ice_at_day_start": 356.403600514657,
+    "ice_departures": 215,
+    "exhausted_ice_departures": 45,
+    "delivered_loads": 209,
+    "empty_returns": 6,
+    "died_on_trip": 0,
+    "median_plan_to_launch_h": 53.7999999992171,
+    "median_launch_energy": 64.7100000000207,
+    "mean_delivered_load": 5.046513147447512,
+    "pending_plan_awake_hours_share": 0.4194650567939324
+  },
+  {
+    "seed": 7,
+    "first_dry_sol": 298,
+    "reachable_ice_at_day_start": 440.85022597825,
+    "ice_departures": 101,
+    "exhausted_ice_departures": 46,
+    "delivered_loads": 101,
+    "empty_returns": 0,
+    "died_on_trip": 0,
+    "median_plan_to_launch_h": 121.450000000442,
+    "median_launch_energy": 40.3850000000046,
+    "mean_delivered_load": 4.629295353319432,
+    "pending_plan_awake_hours_share": 0.4071359619740645
+  },
+  {
+    "seed": 99,
+    "first_dry_sol": 327,
+    "reachable_ice_at_day_start": 87.5142990798867,
+    "ice_departures": 209,
+    "exhausted_ice_departures": 46,
+    "delivered_loads": 207,
+    "empty_returns": 2,
+    "died_on_trip": 0,
+    "median_plan_to_launch_h": 79.8500000002905,
+    "median_launch_energy": 49.6200000000089,
+    "mean_delivered_load": 4.849851272762259,
+    "pending_plan_awake_hours_share": 0.3868949045081871
+  },
+  {
+    "seed": 1234,
+    "first_dry_sol": 520,
+    "reachable_ice_at_day_start": 124.2053680922,
+    "ice_departures": 314,
+    "exhausted_ice_departures": 91,
+    "delivered_loads": 301,
+    "empty_returns": 13,
+    "died_on_trip": 0,
+    "median_plan_to_launch_h": 66.9750000001278,
+    "median_launch_energy": 53.83250000000746,
+    "mean_delivered_load": 5.014815633109132,
+    "pending_plan_awake_hours_share": 0.36956088869278253
+  },
+  {
+    "seed": 2026,
+    "first_dry_sol": 388,
+    "reachable_ice_at_day_start": 693.329235731077,
+    "ice_departures": 254,
+    "exhausted_ice_departures": 115,
+    "delivered_loads": 238,
+    "empty_returns": 15,
+    "died_on_trip": 1,
+    "median_plan_to_launch_h": 41.75000000015185,
+    "median_launch_energy": 46.78250000000445,
+    "mean_delivered_load": 4.596888605844254,
+    "pending_plan_awake_hours_share": 0.4216226685015679
+  }
+]

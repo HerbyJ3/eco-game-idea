@@ -1,0 +1,3 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+seed 2026 trace: digest b7b6f99c2d8e6376826154675ff5883f9b5c77cffc587b148de8bf1e2819ac5c, births 8, deaths { "air": 0, "thirst": 15, "hunger": 0, "suffocated_outside": 0, "other": 0 }, mass error 0.000000000000, wall 51.357s
