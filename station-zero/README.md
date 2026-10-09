@@ -8,7 +8,7 @@ New owner inputs for player influence, organic pacing, bed capacity, and city ar
 
 Calendar pregnancy and human life stages: [lifecycle rules](docs/specs/lifecycle.md). Strictly 2D graphics direction based on the owner's concept: [art-director review](docs/art/mars-colony-redesign.md).
 
-Two interior concepts per building, prepared for manual rendering in Higgsfield Seedream 5.0 Pro: [12 concept prompts](docs/art/interior-concepts-seedream-5-pro.md). Current decisions, completed work, reference locations, and remaining tasks: [continuation handoff](docs/design/continuation-handoff.md).
+Two interior concepts per building are rendered in Higgsfield Seedream 5.0 Pro: [rendered concepts and references](docs/art/concepts/seedream-5-pro/README.md), [contact sheet](docs/art/concepts/seedream-5-pro/contact_sheet.jpg), and [12 reusable prompts](docs/art/interior-concepts-seedream-5-pro.md). The concepts await design review. Current decisions and remaining tasks: [continuation handoff](docs/design/continuation-handoff.md). Latest simulation measurements: [1,500-sol lifecycle baseline](docs/balance/lifecycle-standard-baseline.md).
 
 - `sim/`: headless simulation (RefCounted classes, no drawing). Tunables are in `data/*.json`.
 - `view/`: scenes that only read sim state. The `Sim` autoload (`view/sim_host.gd`) owns the `SimWorld` and steps it.

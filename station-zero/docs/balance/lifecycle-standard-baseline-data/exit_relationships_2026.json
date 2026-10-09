@@ -1,0 +1,23 @@
+{
+  "kind": "relationships",
+  "seed": 2026,
+  "exit_code": 0,
+  "elapsed_seconds": 74.972,
+  "command": [
+    "godot",
+    "--headless",
+    "--path",
+    "station-zero",
+    "--script",
+    "res://tools/relationships_probe.gd",
+    "--",
+    "--seed",
+    "2026",
+    "--sols",
+    "1500",
+    "--out",
+    "/workspace/eco-game-idea/station-zero/docs/balance/lifecycle-standard-baseline-data/relationships",
+    "--pull",
+    "shipped"
+  ]
+}
