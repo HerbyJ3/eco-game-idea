@@ -1,0 +1,21 @@
+{
+  "seed": 7,
+  "mode": "trace",
+  "command": [
+    "godot",
+    "--headless",
+    "--path",
+    "station-zero",
+    "--script",
+    "res://tools/ice_supply_probe.gd",
+    "--",
+    "--seed",
+    "7",
+    "--sols",
+    "720",
+    "--out",
+    "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data"
+  ],
+  "exit_code": 0,
+  "wall_seconds": 41.283
+}

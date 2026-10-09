@@ -1,0 +1,268 @@
+{
+  "horizon_sols": 720,
+  "runs": [
+    {
+      "seed": 7,
+      "mode": "trace",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "7",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 41.283
+    },
+    {
+      "seed": 2026,
+      "mode": "trace",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "2026",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 55.831
+    },
+    {
+      "seed": 42,
+      "mode": "trace",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "42",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 57.48
+    },
+    {
+      "seed": 99,
+      "mode": "trace",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "99",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 52.911
+    },
+    {
+      "seed": 1234,
+      "mode": "trace",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "1234",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 65.35
+    },
+    {
+      "seed": 7,
+      "mode": "control",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "7",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data",
+        "--control"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 36.342
+    },
+    {
+      "seed": 2026,
+      "mode": "control",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "2026",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data",
+        "--control"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 42.505
+    },
+    {
+      "seed": 42,
+      "mode": "control",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "42",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data",
+        "--control"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 44.626
+    },
+    {
+      "seed": 99,
+      "mode": "control",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "99",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data",
+        "--control"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 40.429
+    },
+    {
+      "seed": 1234,
+      "mode": "control",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "1234",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data",
+        "--control"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 47.058
+    }
+  ],
+  "snapshot_runs": [
+    {
+      "seed": 7,
+      "mode": "snapshots",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "7",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data/snapshots",
+        "--snapshots",
+        "270,280,286,298,300"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 39.224
+    },
+    {
+      "seed": 2026,
+      "mode": "snapshots",
+      "command": [
+        "godot",
+        "--headless",
+        "--path",
+        "station-zero",
+        "--script",
+        "res://tools/ice_supply_probe.gd",
+        "--",
+        "--seed",
+        "2026",
+        "--sols",
+        "720",
+        "--out",
+        "/workspace/eco-game-idea/station-zero/docs/balance/ice-supply-investigation-data/snapshots",
+        "--snapshots",
+        "278,280,288,388,391"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 51.774
+    }
+  ]
+}

@@ -10,6 +10,8 @@ Calendar pregnancy and human life stages: [lifecycle rules](docs/specs/lifecycle
 
 Two interior concepts per building are rendered in Higgsfield Seedream 5.0 Pro: [rendered concepts and references](docs/art/concepts/seedream-5-pro/README.md), [contact sheet](docs/art/concepts/seedream-5-pro/contact_sheet.jpg), and [12 reusable prompts](docs/art/interior-concepts-seedream-5-pro.md). The concepts await design review. Current decisions and remaining tasks: [continuation handoff](docs/design/continuation-handoff.md). Latest simulation measurements: [1,500-sol lifecycle baseline](docs/balance/lifecycle-standard-baseline.md).
 
+The [ice-supply investigation](docs/balance/ice-supply-investigation.md) traces the founder-era delivery bottleneck without tuning gameplay. Replay it with `tools/ice_supply_probe.gd`; use `--control` to verify end-state and RNG equality.
+
 - `sim/`: headless simulation (RefCounted classes, no drawing). Tunables are in `data/*.json`.
 - `view/`: scenes that only read sim state. The `Sim` autoload (`view/sim_host.gd`) owns the `SimWorld` and steps it.
 - `tests/`: headless tests.

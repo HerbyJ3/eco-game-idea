@@ -15,6 +15,7 @@
 - Added a brief design-dependent animator role and handoff, without new indoor activity animations.
 - Prepared and validated 12 unique interior prompts, with materially different A/B layouts per building. Both Habitat alternatives provisionally show five usable beds; the final room design and bed-capacity implementation remain open.
 - Resumed from merge `801bec5` and completed the unchanged 1,500-sol Standard baseline: five balance, five relationships, and five Council runs. All colonies become extinct from thirst by sol 704. Four enter Settlement by sol 328, so the owner's Settlement adjustment trigger is not met. [Report and measurements](../balance/lifecycle-standard-baseline.md).
+- Merged the baseline as [PR #3](https://github.com/HerbyJ3/eco-game-idea/pull/3), main `fd7f76a`. Completed the [ice-supply investigation](../balance/ice-supply-investigation.md): accessible ice remains at every first drought, but delivery throughput is inadequate. Five trace/control pairs and two checkpoint runs reproduce the baseline and RNG exactly. No gameplay or data tuning.
 
 ## Files for the next session
 
@@ -34,7 +35,7 @@ The existing concept exports and current-room reference screenshots are under `s
 
 ## Outstanding work and validation
 
-The authoritative task queue is [HANDOFF.md](../../../station-zero-handoff/HANDOFF.md), section 8. Next is an ice-supply and founder-job investigation, plus seed 2026's power outage, before emotions calibration. Keep mechanics and thresholds unchanged until the lead game designer/owner chooses a response. Generational verification and final Standard run-twice checks remain pending. `wip/6a-dormant` is still unfinished and unverified. Current continuation work is on `codex/lifecycle-standard-baseline`; GitHub API access blocks its PR workflow until the saved environment network draft is published.
+The authoritative task queue is [HANDOFF.md](../../../station-zero-handoff/HANDOFF.md), section 8. Next is a game-designer/owner specification for sustainable founder-era water collection and a separate power reserve decision, before a gameplay fix or experiment and emotions calibration. The completed investigation identifies long pending plans, commute pauses, low-energy launches, partial loads and the dependant burden; it does not approve a tuning response. Keep the real calendar, unchanged clock and late Council rule. Generational verification and final Standard run-twice checks remain pending. `wip/6a-dormant` is still unfinished and unverified. GitHub access now works; investigation work is recorded in [PR #4](https://github.com/HerbyJ3/eco-game-idea/pull/4), prepared on `codex/ice-supply-investigation`. The owner's default usage rule is: at 95%, finish the current task, update the handoff, merge, then stop without starting another task. Additional large owner images remain pending.
 
 Usable beds do not yet limit simultaneous sleepers. New furniture-aware routes, seated/equipment actions, childhood artwork, caregiver behavior, signs, rebellion, and breakaway settlements remain unimplemented. Archive and Comms are visitable rooms; research and message mechanics remain open. The Dome is a Council proposal, not a buildable interior.
 

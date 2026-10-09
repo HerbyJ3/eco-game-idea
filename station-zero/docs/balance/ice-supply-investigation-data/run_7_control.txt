@@ -1,0 +1,3 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+seed 7 control: digest 8edb89aab351496331d8f6ebd25abb5f0b8afe18c0cc9776716afa6a575fdc3b, births 5, deaths { "air": 0, "thirst": 12, "hunger": 0, "suffocated_outside": 0, "other": 0 }, mass error 0.000000000000, wall 36.076s
