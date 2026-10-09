@@ -27,6 +27,8 @@ const FM := [1, 2]
 const GENS := [0, 1, 2]
 ## --base DIR: the earlier run (same tag) whose stats.council digest the judge compares on the unchanged seeds.
 var base_dir := ""
+## --tier std (docs/specs/lifecycle-calibration.md 3.3): C1, C4, C5, C6 are printed as RETIRED (values still shown), C8 as carried to the Generational tier.
+var tier := ""
 
 
 ## Times the module's two hooks and calls the real ones. Copies state with the module's own fields; changes no behaviour.
@@ -80,6 +82,9 @@ func _init() -> void:
 			"--base":
 				i += 1
 				base_dir = args[i]
+			"--tier":
+				i += 1
+				tier = args[i]
 			"--hash":
 				mode = "hash"
 			"--judge":
@@ -1221,13 +1226,15 @@ func _judge(dir: String, tag: String) -> void:
 			c3_ok = false
 		if not bool(d.c2.ok):
 			c2_all = false
-	o.append("C1 entered by sol 300 on >= %d seeds: %d seeds (%s) -> %s" % [int(bal.council_min_seeds), enter_n, str(live_first.map(func(x): return _n(x))), "PASS" if enter_n >= int(bal.council_min_seeds) else "FAIL"])
+	var std: bool = tier == "std"
+	var retired := "RETIRED at Std (spec 3.3), value only: "
+	o.append("C1 entered by sol 300 on >= %d seeds: %d seeds (%s) -> %s" % [int(bal.council_min_seeds), enter_n, str(live_first.map(func(x): return _n(x))), (retired + str(enter_n) + " seeds entered") if std else ("PASS" if enter_n >= int(bal.council_min_seeds) else "FAIL")])
 	o.append("C2 (structural, T12): %s" % ("PASS" if c2_all else "FAIL"))
 	o.append("C3 (<= %d Council changes) -> %s" % [int(bal.max_council_changes), "PASS" if c3_ok else "FAIL"])
-	o.append("C4 pledge on >= %d seed(s): seeds %s -> %s" % [int(bal.pledge_min_seeds), str(pledge_seeds), "PASS" if pledge_seeds.size() >= int(bal.pledge_min_seeds) else "FAIL"])
-	o.append("C5 (12.1: divided, set_aside, set_aside_hard or pledge_divided) on >= %d seeds: seeds %s -> %s (set_aside_long, reported not counted, on seeds %s)" % [int(bal.argue_min_seeds), str(argue_seeds), "PASS" if argue_seeds.size() >= int(bal.argue_min_seeds) else "FAIL", str(long_seeds)])
+	o.append("C4 pledge on >= %d seed(s): seeds %s -> %s" % [int(bal.pledge_min_seeds), str(pledge_seeds), (retired + "none") if std and pledge_seeds.is_empty() else ("PASS" if pledge_seeds.size() >= int(bal.pledge_min_seeds) else "FAIL")])
+	o.append("C5 (12.1: divided, set_aside, set_aside_hard or pledge_divided) on >= %d seeds: seeds %s -> %s (set_aside_long, reported not counted, on seeds %s)" % [int(bal.argue_min_seeds), str(argue_seeds), (retired + "none") if std and argue_seeds.is_empty() else ("PASS" if argue_seeds.size() >= int(bal.argue_min_seeds) else "FAIL"), str(long_seeds)])
 	o.append("C6 trait-consistent at >= %.0f%% of divided votes: %d of %d (%.0f%%); first-divided only %d of %d -> %s" % [100.0 * float(bal.faction_trait_share_min), ndiv_ok, ndiv,
-			100.0 * ndiv_ok / maxf(1.0, ndiv), nfirst_ok, nfirst, ("n/a, no divided vote" if ndiv == 0 else ("PASS" if float(ndiv_ok) >= float(bal.faction_trait_share_min) * ndiv else "FAIL"))])
+			100.0 * ndiv_ok / maxf(1.0, ndiv), nfirst_ok, nfirst, ("n/a, no divided vote" + (" (RETIRED at Std)" if std else "") if ndiv == 0 else ("PASS" if float(ndiv_ok) >= float(bal.faction_trait_share_min) * ndiv else "FAIL"))])
 	o.append("C7 Council lines <= %.1f per 5 Council sols on every seed: all council_* %s; without circles %s" % [float(bal.lines_per5_max), "PASS" if c7_ok else "FAIL", "PASS" if c7_ok_nc else "FAIL"])
 	o.append("Flags: FLOOR web %s; FLOOR chosen %s; CEILING %s; SIZE-DOMINANT %s; LOCKSTEP %s; NOROOM %s" % ["FLAGGED" if floor_web else "clear", "FLAGGED" if floor_chosen else "clear",
 			"n/a" if not any_enter else ("FLAGGED" if ceiling_all else "clear"), "FLAGGED" if size_dom else ("n/a" if pledge_n == 0 else "clear"), "FLAGGED" if lockstep else "clear", "FLAGGED" if noroom else "clear"])
@@ -1253,7 +1260,7 @@ func _judge(dir: String, tag: String) -> void:
 		var bu2: Dictionary = d.cost.get("boundary_us", {})
 		if not bu2.is_empty() and int(bu2.all.n) > 0:
 			bnd_max = maxf(bnd_max, float(bu2.all.max))
-	o.append("C8 (on_sol median at pop > 120 <= %.1f ms, max <= %.1f ms, share <= %.2f; valid only if the run was made alone) -> %s" % [float(bal.on_sol_ms_max), float(bal.on_sol_ms_peak_max), float(bal.step_share_max), "PASS" if c8_ok else "FAIL"])
+	o.append("C8 (on_sol median at pop > 120 <= %.1f ms, max <= %.1f ms, share <= %.2f; valid only if the run was made alone) -> %s" % [float(bal.on_sol_ms_max), float(bal.on_sol_ms_peak_max), float(bal.step_share_max), "carried to the Generational tier (no sol above pop 120 at Std)" if std else ("PASS" if c8_ok else "FAIL")])
 	for r in c8_rows:
 		o.append("  " + r)
 	o.append("Boundary-step trigger (11.1): max whole boundary step %.0f us against %.0f us -> %s" % [bnd_max, float(bal.on_sol_ms_peak_max) * 1000.0, "REMEDIES TRIGGERED" if bnd_max > float(bal.on_sol_ms_peak_max) * 1000.0 else "not triggered"])

@@ -35,6 +35,9 @@ var exhausted_s: Array[int] = []  # cumulative turn_backs_exhausted
 var zero_adults_s: Array[int] = []  # adults with friend_count 0
 var zero_bonders_s: Array[int] = []  # toddler-and-up with friend_count 0
 var voices_s: Array[int] = []
+var fields_live_s: Array[int] = []   # ice fields with amount > 0
+var fields_amt_s: Array[float] = []  # their remaining amount
+var fields_reach_s: Array[int] = []  # reachable (amount > 0 and inside the trip limit)
 var wall_us_s: Array[int] = []    # wall microseconds spent in the sol (whole loop incl. observer)
 var steps_s: Array[int] = []
 var adult_ids := {}
@@ -137,6 +140,15 @@ func _on_sol(w: SimWorld, s: int) -> void:
 	trips_s.append(int(w.stats.mining_trips))
 	exhausted_s.append(int(w.stats.turn_backs_exhausted))
 	voices_s.append(int(w.stats.council.voices))
+	var fl := 0
+	var fa := 0.0
+	for f in w.resources.ice_fields:
+		if f.amount > 0.0:
+			fl += 1
+			fa += f.amount
+	fields_live_s.append(fl)
+	fields_amt_s.append(fa)
+	fields_reach_s.append(w.resources.reachable_ice_count())
 	adult_ids.clear()
 	being_cache.clear()
 	var za := 0
@@ -693,6 +705,20 @@ func finish(w: SimWorld, sols: int, legacy: Array[Dictionary]) -> Dictionary:
 	if sols - prev > gap_max:
 		gap_max = sols - prev
 		gap_at = prev
+	var alive_to := n
+	for i in n:
+		if pop_s[i] == 0:
+			alive_to = i
+			break
+	var gap_alive := 0
+	var gp := 0
+	for s3 in life_line_sols:
+		if s3 > alive_to:
+			break
+		gap_alive = maxi(gap_alive, s3 - gp)
+		gp = s3
+	gap_alive = maxi(gap_alive, alive_to - gp)
+	L.append("silence guard (while the colony lives, to sol %d): longest gap %d sols" % [alive_to, gap_alive])
 	L.append("silence guard: longest gap between sols carrying any pregnant/born/died/rel_* line: %d sols (from sol %d); sols with such lines %d of %d" % [gap_max, gap_at, life_line_sols.size(), sols])
 	L.append("log lines by kind (scanned every step, not capped): " + JSON.stringify(line_kind_n))
 	# power
@@ -706,6 +732,14 @@ func finish(w: SimWorld, sols: int, legacy: Array[Dictionary]) -> Dictionary:
 			L.append("  offline sample sol %d: %s %.1f h, supply %.1f draw %.1f reonline limit %.1f, reactors %d habitats %d sites %d adult builders %d pop %d regolith %.0f" % [
 					ps.sol, ps.who, ps.longest_h, ps.supply, ps.draw, ps.reonline_limit, ps.reactors_online, ps.habitats, ps.sites, ps.adult_builders, ps.pop, ps.reg])
 		shown += 1
+	# ice timeline (cause of thirst deaths): every 30 sols, plus the sols around each death
+	var ice_tl: Array[String] = []
+	var q := 0
+	while q < n:
+		ice_tl.append("%d:ice %.0f,pop %d,fields %d/%d reachable %d,amt %.0f" % [q, ice_s[q], pop_s[q], fields_live_s[q], int(w.stats.ice_dry) + 0, fields_reach_s[q], fields_amt_s[q]])
+		q += 30
+	L.append("ice timeline (sol:stock,pop,live fields/total dried so far at the end,reachable,remaining amount): " + " | ".join(PackedStringArray(ice_tl)))
+	L.append("ice fields: dried %d, scouts found %d, ice_dry sols %d of %d" % [int(w.stats.ice_dry), int(w.stats.scouts_found), ice_s.filter(func(x): return x <= 0.0).size(), n])
 	# friends by stage (Q8)
 	var fc: Dictionary = w.relationships.friend_count
 	var fs := {}
@@ -723,7 +757,7 @@ func finish(w: SimWorld, sols: int, legacy: Array[Dictionary]) -> Dictionary:
 	var band_txt := _cost_lines()
 	var data := {"pop": pop_s, "adults": adults_s, "stage": stage_s, "cap": cap_s, "pending": pend_s, "habitats": habs_s,
 			"ice": ice_s, "food": food_s, "oxygen": oxy_s, "builds_finished": finished_s, "trips": trips_s,
-			"zero_friend_adults": zero_adults_s, "voices": voices_s, "births": births, "conceptions": conceptions, "deaths": deaths,
+			"zero_friend_adults": zero_adults_s, "voices": voices_s, "fields_live": fields_live_s, "fields_amount": fields_amt_s, "fields_reachable": fields_reach_s, "births": births, "conceptions": conceptions, "deaths": deaths,
 			"gate_hist": gate_hist, "gate_hist_by_cohort": gate_hist_by_cohort, "shorts": shorts_log, "power_samples": power_samples,
 			"adult_rows": adult_rows, "life_line_sols": life_line_sols, "verdicts": V, "wall_us_per_sol": wall_us_s, "steps_per_sol": steps_s, "cost": band_txt.data}
 	return {"verdicts": V, "lines": L, "wall_lines": band_txt.lines, "data": data}
