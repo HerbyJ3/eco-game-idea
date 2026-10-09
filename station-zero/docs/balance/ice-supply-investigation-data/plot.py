@@ -24,3 +24,6 @@ for ax in axes:
     ax.spines[['top', 'right']].set_visible(False)
 fig.savefig(base / 'ice-and-founders.png', dpi=160)
 fig.savefig(base / 'ice-and-founders.svg')
+# Matplotlib emits trailing spaces inside SVG path attributes; newlines preserve their separators.
+svg = base / 'ice-and-founders.svg'
+svg.write_text('\n'.join(line.rstrip() for line in svg.read_text().splitlines()) + '\n')
