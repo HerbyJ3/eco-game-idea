@@ -1,0 +1,1175 @@
+{
+ "art_json_sha256": "d55f54c83ee3e13e23b6e8f20dd08515359552ab2c4ead34f5edc7d27a3eeffe",
+ "entries": {
+  "building.archive.base": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.692623,
+    0.5625,
+    0.872951
+   ],
+   "file": "buildings/archive_base.png",
+   "h": 244,
+   "kind": "archive",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "aed6126d310dc59e47beb23375c97d662acd5b0ab25b88d65f9c6a2de83cc66f",
+   "type": "building_base",
+   "w": 384
+  },
+  "building.archive.door": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.692623,
+    0.5625,
+    0.872951
+   ],
+   "file": "buildings/archive_door.png",
+   "h": 44,
+   "kind": "archive",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "dd05bc08a8575e8b3418a46b30430b73a9a878cbfd939dba4b73b22472685281",
+   "type": "building_door",
+   "w": 48
+  },
+  "building.archive.interior": {
+   "file": "buildings/archive_interior.png",
+   "h": 345,
+   "kind": "archive",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_interior.png",
+   "raw_sha256": "eb1b867cb5f66ef340ff3c557ba47c7265e851065be2d4929014b78792054ad4",
+   "sha256": "dc22744b65480ba1b2b867156a0a621d05a9b1213a72cb53509235bccd1a6daf",
+   "type": "interior",
+   "w": 512
+  },
+  "building.archive.interior_outline": {
+   "file": "buildings/archive_interior_outline.png",
+   "h": 345,
+   "kind": "archive",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_interior.png",
+   "raw_sha256": "eb1b867cb5f66ef340ff3c557ba47c7265e851065be2d4929014b78792054ad4",
+   "sha256": "c80fdb87d9e19330e557a5588c073f5d81af1634e35f0006c01d3558fe5a0868",
+   "type": "interior_outline",
+   "w": 512
+  },
+  "building.archive.mask.accent": {
+   "file": "buildings/archive_mask_accent.png",
+   "h": 244,
+   "kind": "archive",
+   "mask": "accent",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "8a38e86a320b76c602516660e72854da5951077b8b5c68f6e05c3fe5940e8b48",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.archive.mask.ghost": {
+   "file": "buildings/archive_mask_ghost.png",
+   "h": 244,
+   "kind": "archive",
+   "mask": "ghost",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "955c9304f970b33ab8925aa5d08d857c24788be22960bae982e3312cd40727ee",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.archive.mask.gray": {
+   "file": "buildings/archive_mask_gray.png",
+   "h": 244,
+   "kind": "archive",
+   "mask": "gray",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "f0f242a94784be24b96037e70356da64d4e3fbe35271dd01697ad2bfad1434a9",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.archive.mask.outline": {
+   "file": "buildings/archive_mask_outline.png",
+   "h": 244,
+   "kind": "archive",
+   "mask": "outline",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "62260dedd8d50a6fed94992d50a9c05381a4c7ff06c16c0e17ccbaf636243f7c",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.archive.mask.shadow": {
+   "file": "buildings/archive_mask_shadow.png",
+   "h": 244,
+   "kind": "archive",
+   "mask": "shadow",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "d49988389459f3ccf9a78a7200e24758275e3b4fc8a3aa87b13d3b3c4712d39d",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.archive.mask.windows": {
+   "file": "buildings/archive_mask_windows.png",
+   "h": 244,
+   "kind": "archive",
+   "mask": "windows",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/archive_exterior.png",
+   "raw_sha256": "2d06d352888e5602011e19720082f305cf7a57d6b3ed28a5cf861498c7150fb4",
+   "sha256": "e0071f94f3917a8e0e35d36c78f21818daedc34c5c2db0e64b84f61a2e69aa2a",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.comms.base": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.694915,
+    0.565104,
+    0.881356
+   ],
+   "file": "buildings/comms_base.png",
+   "h": 295,
+   "kind": "comms",
+   "pivot": [
+    0.501302,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "cc18e4fe93116f23a3acedf5cfbeb6f752516eefe10a57a03623e090271425c8",
+   "type": "building_base",
+   "w": 384
+  },
+  "building.comms.door": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.694915,
+    0.565104,
+    0.881356
+   ],
+   "file": "buildings/comms_door.png",
+   "h": 55,
+   "kind": "comms",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "fd2c5f6e7d71b725776544fe40c41f88831f7aa9a52c5a10a0a21a516c27ef35",
+   "type": "building_door",
+   "w": 49
+  },
+  "building.comms.interior": {
+   "file": "buildings/comms_interior.png",
+   "h": 343,
+   "kind": "comms",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_interior.png",
+   "raw_sha256": "39857be6fb95240075c46a1c6b3d8a000a2ab2a88f16d0386dd8392f218b1da9",
+   "sha256": "19865614fac3eb1a2a9f291e5e35c117041c268edce78b0ff2ebf663c9aafe86",
+   "type": "interior",
+   "w": 512
+  },
+  "building.comms.interior_outline": {
+   "file": "buildings/comms_interior_outline.png",
+   "h": 343,
+   "kind": "comms",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_interior.png",
+   "raw_sha256": "39857be6fb95240075c46a1c6b3d8a000a2ab2a88f16d0386dd8392f218b1da9",
+   "sha256": "7f82f438392c4cc2e718485610e5e1ed7b27cc4100863166f33c0b5fd8e5875d",
+   "type": "interior_outline",
+   "w": 512
+  },
+  "building.comms.mask.accent": {
+   "file": "buildings/comms_mask_accent.png",
+   "h": 295,
+   "kind": "comms",
+   "mask": "accent",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "2d5e0c399044952259bda396c3abaa15e2bdcd48817fe83e58ad3a5877d078e3",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.comms.mask.ghost": {
+   "file": "buildings/comms_mask_ghost.png",
+   "h": 295,
+   "kind": "comms",
+   "mask": "ghost",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "db30a1ebb3b84473dbf7bcc9bb026bd6649e3c66af98bd04524957294a81c0f2",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.comms.mask.gray": {
+   "file": "buildings/comms_mask_gray.png",
+   "h": 295,
+   "kind": "comms",
+   "mask": "gray",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "8f9d50654914dcaaf14d3071b249eed450910cecce478cc03ac7d4a4c2170a9b",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.comms.mask.outline": {
+   "file": "buildings/comms_mask_outline.png",
+   "h": 295,
+   "kind": "comms",
+   "mask": "outline",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "6db1d61483c5508085e416df824c9f648bc7848520ccb722fc71dacbc4edaf7b",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.comms.mask.shadow": {
+   "file": "buildings/comms_mask_shadow.png",
+   "h": 295,
+   "kind": "comms",
+   "mask": "shadow",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "80636322c98954daa85126c9f33935f5d49c383261e3eb05cf4f4b4889142bd7",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.comms.mask.windows": {
+   "file": "buildings/comms_mask_windows.png",
+   "h": 295,
+   "kind": "comms",
+   "mask": "windows",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/comms_exterior.png",
+   "raw_sha256": "bcd3e3a9aa9dd3cbf95c0f6d1a7bc5a0aebd53c5f2abc095f8ff466961adbba5",
+   "sha256": "fd1ac8331f15c59097e20fa7ab5f2ad669092a34a667a1c5305a9bb3ce1ab982",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.green_room.base": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.692623,
+    0.5625,
+    0.872951
+   ],
+   "file": "buildings/green_room_base.png",
+   "h": 244,
+   "kind": "green_room",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "1d8824160156823ddfe0c6adca4058843ed12fa5097786c9b5e1f6138dcf8f1f",
+   "type": "building_base",
+   "w": 384
+  },
+  "building.green_room.door": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.692623,
+    0.5625,
+    0.872951
+   ],
+   "file": "buildings/green_room_door.png",
+   "h": 44,
+   "kind": "green_room",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "36778c03f7cc922f0332faef4737092ad5ee98624c7cd3a4d71e3000d2bdaa22",
+   "type": "building_door",
+   "w": 48
+  },
+  "building.green_room.interior": {
+   "file": "buildings/green_room_interior.png",
+   "h": 345,
+   "kind": "green_room",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_interior.png",
+   "raw_sha256": "75e9b15a2753b9e3e7953d7d564be4c34073d926d776eaf57204abb063a00582",
+   "sha256": "0a7be2446aab0780bf9ab6e88331415ac401dd4e238c4617a9722dc510ff7a67",
+   "type": "interior",
+   "w": 512
+  },
+  "building.green_room.interior_outline": {
+   "file": "buildings/green_room_interior_outline.png",
+   "h": 345,
+   "kind": "green_room",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_interior.png",
+   "raw_sha256": "75e9b15a2753b9e3e7953d7d564be4c34073d926d776eaf57204abb063a00582",
+   "sha256": "1c4cd26b62db43f2276b30de4eb21757089b7305cb7212c85efbbbe5d2c0c3c2",
+   "type": "interior_outline",
+   "w": 512
+  },
+  "building.green_room.mask.accent": {
+   "file": "buildings/green_room_mask_accent.png",
+   "h": 244,
+   "kind": "green_room",
+   "mask": "accent",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "678fd95839e492f3e8a9c122b3fae5a34e77a317521a32337d9520a6dc748e1e",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.green_room.mask.ghost": {
+   "file": "buildings/green_room_mask_ghost.png",
+   "h": 244,
+   "kind": "green_room",
+   "mask": "ghost",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "276a4fee4aeeb24614ea9f77753daa938ba94678e5ffae3e308f82033e288888",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.green_room.mask.gray": {
+   "file": "buildings/green_room_mask_gray.png",
+   "h": 244,
+   "kind": "green_room",
+   "mask": "gray",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "42d0a2cdd0f9b763cb6fd6765e5a29696878ea26e0f216cb5cbff16e0e1a5432",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.green_room.mask.outline": {
+   "file": "buildings/green_room_mask_outline.png",
+   "h": 244,
+   "kind": "green_room",
+   "mask": "outline",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "6aedd97d506c0c4bf176853b68de6d84d31996126509f73aa995b6defe94c28c",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.green_room.mask.shadow": {
+   "file": "buildings/green_room_mask_shadow.png",
+   "h": 244,
+   "kind": "green_room",
+   "mask": "shadow",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "eac85fcf0b4250901971fecc654a8b11b51beee543392605bcca15d66fbe7fa6",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.green_room.mask.windows": {
+   "file": "buildings/green_room_mask_windows.png",
+   "h": 244,
+   "kind": "green_room",
+   "mask": "windows",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/greenroom_exterior.png",
+   "raw_sha256": "3d28581f426e15cd6804f31fc1e48979a5298badedaf73f7782d0c0f9a71720c",
+   "sha256": "646501434076a681f08798e3a2be903893a6dd18e68c1b38ba560831ebe3726f",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.habitat.base": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.692623,
+    0.5625,
+    0.872951
+   ],
+   "file": "buildings/habitat_base.png",
+   "h": 244,
+   "kind": "habitat",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "a2db4bf0421f0459410848c01c2206ae07eb3d201f8c75dff02d496ac7c2730c",
+   "type": "building_base",
+   "w": 384
+  },
+  "building.habitat.door": {
+   "door_mode": "split",
+   "door_rect": [
+    0.4375,
+    0.692623,
+    0.5625,
+    0.872951
+   ],
+   "file": "buildings/habitat_door.png",
+   "h": 44,
+   "kind": "habitat",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "5014e93762da6700f35ba23de6cc51452df545ef3b554e7d7b93aec88395c469",
+   "type": "building_door",
+   "w": 48
+  },
+  "building.habitat.interior": {
+   "file": "buildings/habitat_interior.png",
+   "h": 345,
+   "kind": "habitat",
+   "pivot": [
+    0.504,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_interior.png",
+   "raw_sha256": "42ed5bcdd3f000645c1b85225e2d4aa2f6750048d8268a15140227a370352329",
+   "sha256": "6b1cfd99fd3cdecda5df53d2e6ed2f54ff9815c516cb68e06564381ad28756a1",
+   "type": "interior",
+   "w": 512
+  },
+  "building.habitat.interior_outline": {
+   "file": "buildings/habitat_interior_outline.png",
+   "h": 345,
+   "kind": "habitat",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_interior.png",
+   "raw_sha256": "42ed5bcdd3f000645c1b85225e2d4aa2f6750048d8268a15140227a370352329",
+   "sha256": "a35a33d2a88f46fe4300bcf47d66ca9a86794f99f0e7dc1ca9e78277512e02eb",
+   "type": "interior_outline",
+   "w": 512
+  },
+  "building.habitat.mask.accent": {
+   "file": "buildings/habitat_mask_accent.png",
+   "h": 244,
+   "kind": "habitat",
+   "mask": "accent",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "0f95fb8d368e64a9d61b957a3fcda691647de499584ec2af8deece3509b89576",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.habitat.mask.ghost": {
+   "file": "buildings/habitat_mask_ghost.png",
+   "h": 244,
+   "kind": "habitat",
+   "mask": "ghost",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "8650cdb008c5eabef3c77ebb73e1e8e57b2715e02058a279792c774099a64ead",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.habitat.mask.gray": {
+   "file": "buildings/habitat_mask_gray.png",
+   "h": 244,
+   "kind": "habitat",
+   "mask": "gray",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "6499d962f9168faf8d8ac6850f7a695242b6df73d78083b496bb9781a26180f4",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.habitat.mask.outline": {
+   "file": "buildings/habitat_mask_outline.png",
+   "h": 244,
+   "kind": "habitat",
+   "mask": "outline",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "128f464caa63d016c2972ccec0314e665c7030005b4e5b79a0c107200e47e9e6",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.habitat.mask.shadow": {
+   "file": "buildings/habitat_mask_shadow.png",
+   "h": 244,
+   "kind": "habitat",
+   "mask": "shadow",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "5dde9be54f4bcc3c4c1b54bea3715c8395084133e669fcb6f0ce94ed2a5623bf",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.habitat.mask.windows": {
+   "file": "buildings/habitat_mask_windows.png",
+   "h": 244,
+   "kind": "habitat",
+   "mask": "windows",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/habitat_exterior.png",
+   "raw_sha256": "8821c50936890544fed89501fe94e1ab2f3aa469768da20f98981dda7538288f",
+   "sha256": "46d68fa2a274d6a79f151f10a57a910b62890de86df01d0cce58795e0cafe6aa",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.reactor.base": {
+   "door_mode": "split",
+   "door_rect": [
+    0.424479,
+    0.747126,
+    0.583333,
+    0.867816
+   ],
+   "file": "buildings/reactor_base.png",
+   "h": 348,
+   "kind": "reactor",
+   "pivot": [
+    0.503906,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "e40d59c905d3fa2db411615d6960ab8e8c72d760085bbbbb8aabde68095fc72b",
+   "type": "building_base",
+   "w": 384
+  },
+  "building.reactor.door": {
+   "door_mode": "split",
+   "door_rect": [
+    0.424479,
+    0.747126,
+    0.583333,
+    0.867816
+   ],
+   "file": "buildings/reactor_door.png",
+   "h": 42,
+   "kind": "reactor",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "0850f4d1c2f6841abf045850e88771965038cd357263d26761ec4932bf072e9e",
+   "type": "building_door",
+   "w": 61
+  },
+  "building.reactor.interior": {
+   "file": "buildings/reactor_interior.png",
+   "h": 359,
+   "kind": "reactor",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_interior.png",
+   "raw_sha256": "1c4a479a2090a851403c6901fa67d27079f2fbf0ec15fbc1e125d423891ebfac",
+   "sha256": "08877ca919c99a19f944c35012842ab266a27d8511fc7f35a78f2d961db3dd68",
+   "type": "interior",
+   "w": 512
+  },
+  "building.reactor.interior_outline": {
+   "file": "buildings/reactor_interior_outline.png",
+   "h": 359,
+   "kind": "reactor",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_interior.png",
+   "raw_sha256": "1c4a479a2090a851403c6901fa67d27079f2fbf0ec15fbc1e125d423891ebfac",
+   "sha256": "a61b5c33520122424df76001d7601e3dd60d9ffbe495f7ee80808cd59c2b79fb",
+   "type": "interior_outline",
+   "w": 512
+  },
+  "building.reactor.mask.accent": {
+   "file": "buildings/reactor_mask_accent.png",
+   "h": 348,
+   "kind": "reactor",
+   "mask": "accent",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "a27a37f9bbdc4bf00cc12c6e5ed3268f889ce5b0c3710b98c017aec2fffff1fc",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.reactor.mask.ghost": {
+   "file": "buildings/reactor_mask_ghost.png",
+   "h": 348,
+   "kind": "reactor",
+   "mask": "ghost",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "a08eab81f0915ae9211b40b66b61089d2e66109c5cbaace237172314068f128a",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.reactor.mask.gray": {
+   "file": "buildings/reactor_mask_gray.png",
+   "h": 348,
+   "kind": "reactor",
+   "mask": "gray",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "f86712c36f23ac6a7333d45dac17697664487a8fcd91cd1d3d5f8a5dcd02e81b",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.reactor.mask.outline": {
+   "file": "buildings/reactor_mask_outline.png",
+   "h": 348,
+   "kind": "reactor",
+   "mask": "outline",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "a91cd16993b5c170ad68c8c4560b4c6b43fe5afb49c6f7cb208929000a8a7996",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.reactor.mask.shadow": {
+   "file": "buildings/reactor_mask_shadow.png",
+   "h": 348,
+   "kind": "reactor",
+   "mask": "shadow",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "46ad19a50b88cf87fd14b2c5dabe34a9e5861edeab0d370be4928c57190e0ac8",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.reactor.mask.windows": {
+   "file": "buildings/reactor_mask_windows.png",
+   "h": 348,
+   "kind": "reactor",
+   "mask": "windows",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/reactor_exterior.png",
+   "raw_sha256": "cbc36877b538c602ff7f41e329a5fc8ee6fc4d07852fe0755ee54684a15135be",
+   "sha256": "b4f44631fe2779645022314967560414d5f2a2fd7a14d3bd874a7ed5d774f829",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.workshop.base": {
+   "door_mode": "rollup",
+   "door_rect": [
+    0.322917,
+    0.6787,
+    0.679688,
+    0.884477
+   ],
+   "file": "buildings/workshop_base.png",
+   "h": 277,
+   "kind": "workshop",
+   "pivot": [
+    0.501302,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "aaa88f48b4fa49288a688972eace692053a2c32e6f27d52b2fe9f6bef5e57566",
+   "type": "building_base",
+   "w": 384
+  },
+  "building.workshop.door": {
+   "door_mode": "rollup",
+   "door_rect": [
+    0.322917,
+    0.6787,
+    0.679688,
+    0.884477
+   ],
+   "file": "buildings/workshop_door.png",
+   "h": 57,
+   "kind": "workshop",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "4fa72b0a0e1ea7b3fab40f84fbe936bf473458558eddc712019593d719718820",
+   "type": "building_door",
+   "w": 137
+  },
+  "building.workshop.interior": {
+   "file": "buildings/workshop_interior.png",
+   "h": 345,
+   "kind": "workshop",
+   "pivot": [
+    0.5,
+    1.0
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_interior.png",
+   "raw_sha256": "513a1574d97e4a20dd51df09bf3825ba2eb4ef1b8456521c3aee6509bcbc343e",
+   "sha256": "c771dcc18ae60bf9c6f6266bdabdbecc5142dcc4d2fc7d587c2c98d7ef847cdf",
+   "type": "interior",
+   "w": 512
+  },
+  "building.workshop.interior_outline": {
+   "file": "buildings/workshop_interior_outline.png",
+   "h": 345,
+   "kind": "workshop",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_interior.png",
+   "raw_sha256": "513a1574d97e4a20dd51df09bf3825ba2eb4ef1b8456521c3aee6509bcbc343e",
+   "sha256": "c80fdb87d9e19330e557a5588c073f5d81af1634e35f0006c01d3558fe5a0868",
+   "type": "interior_outline",
+   "w": 512
+  },
+  "building.workshop.mask.accent": {
+   "file": "buildings/workshop_mask_accent.png",
+   "h": 277,
+   "kind": "workshop",
+   "mask": "accent",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "93e5ac689b696a3f5b24831d20375bf1574c20b3ce6b8bc7fbbb7387bd8b0c9d",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.workshop.mask.ghost": {
+   "file": "buildings/workshop_mask_ghost.png",
+   "h": 277,
+   "kind": "workshop",
+   "mask": "ghost",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "aae4fca6c23904679dff33d604a9b8bcbee80e8272fe7194917b2d5af5a9a7cf",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.workshop.mask.gray": {
+   "file": "buildings/workshop_mask_gray.png",
+   "h": 277,
+   "kind": "workshop",
+   "mask": "gray",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "cae4c470178af76d8e3a98a856006faad99519a5356f830c32b6779429dabb13",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.workshop.mask.outline": {
+   "file": "buildings/workshop_mask_outline.png",
+   "h": 277,
+   "kind": "workshop",
+   "mask": "outline",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "5dcc9111bcce019b1b816ddf9678eba4c6b9a9cfc36180d569b765d986f2a875",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.workshop.mask.shadow": {
+   "file": "buildings/workshop_mask_shadow.png",
+   "h": 277,
+   "kind": "workshop",
+   "mask": "shadow",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "799505707ebf0d759afef59166b2f27b5f671fb1fe1b5615bbb15e744252a7e3",
+   "type": "building_mask",
+   "w": 384
+  },
+  "building.workshop.mask.windows": {
+   "file": "buildings/workshop_mask_windows.png",
+   "h": 277,
+   "kind": "workshop",
+   "mask": "windows",
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/workshop_exterior.png",
+   "raw_sha256": "6c883e689a1fd66b1edbfe6bc6a1b73bb335a22c8c938e586a1203892d59d532",
+   "sha256": "99cd104f4f64c8875fa5aeb712b3b96bd47732e7a535be8a8d6f1bbc7d30eb65",
+   "type": "building_mask",
+   "w": 384
+  },
+  "character.construction": {
+   "file": "characters/construction.png",
+   "h": 512,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_construction_suit.png",
+   "raw_sha256": "2b28ebaf7e83f14e97b0e2cf0f16380940c47ec78261a3073e8056b664ca2b1a",
+   "sha256": "2dbff3f7b9e73927520cbb0c48626b602f42deb36a2762c6bf55b99ef33ef36b",
+   "type": "atlas",
+   "w": 512
+  },
+  "character.eva": {
+   "file": "characters/eva.png",
+   "h": 512,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_eva_suit.png",
+   "raw_sha256": "327c2f2b3e726113a3ba150b1d9cdefbe353520c47d644e030252c01feda33e5",
+   "sha256": "56b33e34b1a0011681371581af8219af37182039138bc86c93206606840eb36e",
+   "type": "atlas",
+   "w": 512
+  },
+  "character.jumpsuit.builder": {
+   "file": "characters/jumpsuit_builder.png",
+   "h": 512,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_jumpsuit.png",
+   "raw_sha256": "2dd39b06190eea502c481fa78e09fee962e5b112fd132daeccfb21816cac9f31",
+   "sha256": "3759e3591f3d5ce07eea3f23cac575f6fcc8036abd8a20e3dc849596aa6f0dc2",
+   "type": "atlas",
+   "w": 512
+  },
+  "character.jumpsuit.curious": {
+   "file": "characters/jumpsuit_curious.png",
+   "h": 512,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_jumpsuit.png",
+   "raw_sha256": "2dd39b06190eea502c481fa78e09fee962e5b112fd132daeccfb21816cac9f31",
+   "sha256": "d68cacf859198ad493ff963e31b12b8347110c737ae411144d21a62b2c38ee00",
+   "type": "atlas",
+   "w": 512
+  },
+  "character.jumpsuit.social": {
+   "file": "characters/jumpsuit_social.png",
+   "h": 512,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_jumpsuit.png",
+   "raw_sha256": "2dd39b06190eea502c481fa78e09fee962e5b112fd132daeccfb21816cac9f31",
+   "sha256": "26f46ba29ed7021f2f16d6e317f3314f60fedc5ae785ebd8f738b037772c5bc9",
+   "type": "atlas",
+   "w": 512
+  },
+  "character.jumpsuit.tender": {
+   "file": "characters/jumpsuit_tender.png",
+   "h": 512,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_jumpsuit.png",
+   "raw_sha256": "2dd39b06190eea502c481fa78e09fee962e5b112fd132daeccfb21816cac9f31",
+   "sha256": "a0d3a74c6370e841d8ffea9ba3a912145daf0c30184399ed4860d85503d5a88f",
+   "type": "atlas",
+   "w": 512
+  },
+  "character.sleeping.builder.0": {
+   "file": "characters/sleeping_builder_0.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "456997f63b2555f3868ad16cf4912a15b0e2898bba1b56766ba6db69b2f0ba12",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.builder.1": {
+   "file": "characters/sleeping_builder_1.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "e21e01e1409abb77977852bc75c95b748cf3e0f55aa75d04d7d67773eb37fe97",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.builder.2": {
+   "file": "characters/sleeping_builder_2.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "4a799d4a2e080023d35bb23afe42a47842d3851492883e605918dd81ca6fc8a0",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.builder.3": {
+   "file": "characters/sleeping_builder_3.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "b032f98015eb3c6dfd9d014b03cb6862309a94966b47c86b3d6b1dbcc3a31c61",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.curious.0": {
+   "file": "characters/sleeping_curious_0.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "a11deaab7198cbe1346f1123f12e6eafb8d0c46a5bbceacdd052a621bc49e3ea",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.curious.1": {
+   "file": "characters/sleeping_curious_1.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "16429d7e8e4489764612167653cc2fa6ebea53f269bd32626ddb21a78719ae60",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.curious.2": {
+   "file": "characters/sleeping_curious_2.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "3596ed423545a5f73ee681d02ced84a7b2501b35526809ec8460df6bb372dab0",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.curious.3": {
+   "file": "characters/sleeping_curious_3.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "5b3964ddb85334e140d941bfbc13e74d42cc2d269b163104fb2cbfe88b3b2dca",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.social.0": {
+   "file": "characters/sleeping_social_0.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "c0e0535505882c375f88a55d10a986801bb3f19ab1229b03212703d73072999e",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.social.1": {
+   "file": "characters/sleeping_social_1.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "c8448547e6228bb5904252be6994f0496501707ef7d60c44220bf42ec17fd4c8",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.social.2": {
+   "file": "characters/sleeping_social_2.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "905b2c6b671fb441bb6ac3b762469083b13411bb9225a595f6a1c2effb511eef",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.social.3": {
+   "file": "characters/sleeping_social_3.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "fd826106f97c0529bef35c64124ad1999f0f20008cb671597a50185ae4e00ff4",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.tender.0": {
+   "file": "characters/sleeping_tender_0.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "5d75888ee4c08b7590b8a05729f700f02a66e3c38a6a0e6b797c5c06931ead84",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.tender.1": {
+   "file": "characters/sleeping_tender_1.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.375904,
+   "sha256": "f5aaaa5a44392b9b5d34a3a75275f305133f41f77ce96ef4b8aa037a93b2ef7e",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.tender.2": {
+   "file": "characters/sleeping_tender_2.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "14627be831cc770b9eba726dca6571658d41f49574a2e8944c3e093198c741c9",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "character.sleeping.tender.3": {
+   "file": "characters/sleeping_tender_3.png",
+   "h": 160,
+   "pivot": [
+    80,
+    80
+   ],
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/sheet_colonist_sleeping.png",
+   "raw_sha256": "db4f5091f4092126f683042069a919c601d722f2e13ee9c761e29329d8f78228",
+   "scale": 0.39196,
+   "sha256": "f628ae25b82eae1bc5ce1e3def62a5290b62df08fbff871f87eb7a727825d14e",
+   "type": "sleeping_pose",
+   "w": 160
+  },
+  "terrain.decal.crater": {
+   "file": "terrain/decal_crater.png",
+   "h": 214,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/terrain_decals.png",
+   "raw_sha256": "ff217b914781bb7a4d0e68ad9e20762c2cb1a2e0a8bfc88c17064849c84c7a22",
+   "sha256": "1e286a90e25867912afe6dd83f648c7cba419ad5dc2d5a4ff1ee26a4ec41dfad",
+   "type": "decal",
+   "w": 256
+  },
+  "terrain.decal.ice": {
+   "file": "terrain/decal_ice.png",
+   "h": 213,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/terrain_decals.png",
+   "raw_sha256": "ff217b914781bb7a4d0e68ad9e20762c2cb1a2e0a8bfc88c17064849c84c7a22",
+   "sha256": "9106e8ba541f0918d066c226371d7ba5daede972b32dcbddce35d3c4483622f8",
+   "type": "decal",
+   "w": 256
+  },
+  "terrain.decal.pit": {
+   "file": "terrain/decal_pit.png",
+   "h": 213,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/terrain_decals.png",
+   "raw_sha256": "ff217b914781bb7a4d0e68ad9e20762c2cb1a2e0a8bfc88c17064849c84c7a22",
+   "sha256": "42d0bf981d334848898e6994b8557e5fc60a146a48d6811019baf6a5c94ed63b",
+   "type": "decal",
+   "w": 256
+  },
+  "terrain.decal.rocks": {
+   "file": "terrain/decal_rocks.png",
+   "h": 214,
+   "placeholder": false,
+   "raw": "../station-zero-handoff/assets/raw/terrain_decals.png",
+   "raw_sha256": "ff217b914781bb7a4d0e68ad9e20762c2cb1a2e0a8bfc88c17064849c84c7a22",
+   "sha256": "54e7865172e9456c393a656168be97c504bb8e33a51e46aa79aba739a4cdc277",
+   "type": "decal",
+   "w": 256
+  }
+ },
+ "pillow_version": "12.3.0",
+ "schema": 1
+}

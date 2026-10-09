@@ -1,0 +1,80 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# age probe: seed=42 sols=300 data_hash=c76d875caa4d74fe; wall 895.5 s
+self-replay: PASS (history entries 1 live / 1 replayed; live-vs-probe clause diffs 0; recomputed-vs-recorded clause diffs 0; final window identical true; world A vs B pop/ice mismatches 0)
+
+age history (live stats.age_history): changes 0, first_settlement_sol <null>, sols_in_age landing 300 settlement 0, age at end landing
+  sol   0  landing    how=landing       cause=<null>  pop=7 family_mars_born=0
+flaps (a change within 40 sols of the previous change): 0; changes: 0; shortest gap between changes: -
+
+samples: 296 taken (sol >= 5, pop > 0); ok 168 (56.8%); first ok sample sol 6
+
+entry clauses (Landing sols only; full = window full, share = ok share, recent = last 3 ok, fam_count/fam_homes = family Mars-born count / distinct birth habitats, dwell)
+  sol 100: Landing; entry clauses failing: ["share", "recent"]; ok in trailing window 29 of 40; fam 50 homes 11; first settlement <null>
+  sol 150: Landing; entry clauses failing: ["share", "recent"]; ok in trailing window 24 of 40; fam 75 homes 14; first settlement <null>
+  Landing sols from sol 44 (earliest full window) to the end: 257; per entry clause: failing sols / sole-blocker sols / last failing sol:
+    full       fails   0  sole blocker   0  last fail sol -
+    share      fails 257  sole blocker  89  last fail sol 300
+    recent     fails 168  sole blocker   0  last fail sol 300
+    fam_count  fails   0  sole blocker   0  last fail sol -
+    fam_homes  fails   0  sole blocker   0  last fail sol -
+    dwell      fails   0  sole blocker   0  last fail sol -
+
+clause failure shares over sampled sols (sol >= 5, pop > 0): failing sols / 296
+  oxygen             fails   1 (0.3%), only failing clause on 0 sols
+  o2_net             fails   0 (0.0%), only failing clause on 0 sols
+  food               fails   1 (0.3%), only failing clause on 0 sols
+  food_net           fails   0 (0.0%), only failing clause on 0 sols
+  power_budget       fails   0 (0.0%), only failing clause on 0 sols
+  none_offline       fails   0 (0.0%), only failing clause on 0 sols
+  no_short           fails   0 (0.0%), only failing clause on 0 sols
+  no_shortage_death  fails   9 (3.0%), only failing clause on 0 sols
+  ice                fails  80 (27.0%), only failing clause on 70 sols
+  calm               fails  46 (15.5%), only failing clause on 36 sols
+  rested             fails  11 (3.7%), only failing clause on 2 sols
+  fam_count<min      fails  14 (4.7%)   (entry clause, evaluated on every sampled sol, not part of ok)
+  fam_homes<min      fails   9 (3.0%)   (entry clause, evaluated on every sampled sol, not part of ok)
+per 50-sol band (sols 1-50, 51-100, ...): sampled sols, not-ok sols, then per clause failing/only-failing
+  band   1- 50: sampled 46 not-ok 20 | oxygen 1/0 food 1/0 calm 17/10 rested 9/2
+  band  51-100: sampled 50 not-ok 14 | calm 14/12 rested 2/0
+  band 101-150: sampled 50 not-ok 17 | ice 11/11 calm 6/6
+  band 151-200: sampled 50 not-ok 24 | ice 16/15 calm 9/8
+  band 201-250: sampled 50 not-ok 17 | no_shortage_death 3/0 ice 17/14
+  band 251-300: sampled 50 not-ok 36 | no_shortage_death 6/0 ice 36/30
+
+ice: boundary minimum 0.00 ice-days at sol 212; within-sol minimum 0.00 ice-days at sol 151; min ice 0.00 at sol 151; sols whose within-sol minimum reached 0 ice: 21
+ice dips (spec open question): sols with within-sol min < 2.0 ice-days: 94; of those the boundary read was ok (dip missed by the sample): 14 (first at sol 154)
+calm: distressed share mean 0.055 max 0.286 (limit 0.10); rested: share mean 0.862 min 0.429 (limit 0.70)
+
+every 10th sol (age after that sol's decision; ice-d = ice in sols of use at the boundary; ice-dmin/icemin = minimum inside the sol; ok40 = ok samples in the trailing window; failed = clauses failing at this sample)
+ sol age  pop  fam homes     ice  ice-d ice-dmin  icemin ok40    ok  calm%  rest%  failed
+  10   L    7    0     0    52.3  30.31    30.31    52.3    3     -   28.6   42.9  calm,rested
+  20   L   12    5     2    59.5  20.10    19.53    57.8    9    ok    8.3   83.3  
+  30   L   19   12     3    73.6  15.71    14.79    69.3   14     -   10.5   78.9  calm
+  40   L   22   15     4    76.5  14.10    14.10    76.5   19    ok    4.5   77.3  
+  50   L   23   16     4    94.8  16.72    16.72    94.8   23    ok    4.3   78.3  
+  60   L   27   20     5    97.9  14.70    14.70    97.9   24    ok    3.7   85.2  
+  70   L   37   30     6    99.7  10.92     9.62    87.8   27     -   10.8   70.3  calm
+  80   L   47   40     8    95.4   8.23     8.23    95.4   30    ok    2.1   89.4  
+  90   L   52   45    10    98.7   7.70     6.63    85.0   31    ok    9.6   84.6  
+ 100   L   57   50    11   104.6   7.44     7.08    99.3   29     -   12.3   82.5  calm
+ 110   L   62   55    12   154.0  10.08     9.58   146.5   30    ok    4.8   83.9  
+ 120   L   72   65    13   101.4   5.71     5.23    92.8   29     -   13.9   70.8  calm
+ 130   L   77   70    13    58.3   3.07     3.07    58.3   31    ok    7.8   77.9  
+ 140   L   77   70    13    36.4   1.92     1.92    36.4   33     -    6.5   88.3  ice
+ 150   L   82   75    14     5.7   0.28     0.24     4.9   24     -    2.4   92.7  ice
+ 160   L   87   80    15    86.4   4.03     4.03    86.4   24    ok    2.3   94.3  
+ 170   L   92   85    16    86.1   3.79     3.48    79.1   21    ok    6.5   82.6  
+ 180   L  102   95    18    66.1   2.63     1.92    48.3   21    ok    9.8   82.4  
+ 190   L  107  100    18    50.7   1.92     1.48    38.9   24     -    3.7   88.8  ice
+ 200   L  107  100    18   101.2   3.84     2.35    62.0   19    ok    8.4   87.9  
+ 210   L  122  115    19    36.0   1.20     1.20    36.0   21     -    2.5   91.0  ice
+ 220   L  122  113    19   100.9   3.35     2.83    85.3   16    ok    4.9   87.7  
+ 230   L  127  118    20   178.7   5.71     5.59   175.0   23    ok    2.4   89.0  
+ 240   L  137  128    21    87.0   2.58     2.58    87.0   31    ok    0.0   92.0  
+ 250   L  142  133    21    53.1   1.52     0.76    26.5   24     -    2.1   91.5  ice
+ 260   L  147  135    21    39.4   1.09     0.42    15.0   22     -    0.7   94.6  ice
+ 270   L  147  135    21   100.8   2.78     2.78   100.8   22    ok    1.4   94.6  
+ 280   L  157  145    23    26.4   0.68     0.33    12.9   14     -    1.3   91.1  ice
+ 290   L  162  150    25    23.4   0.59     0.00     0.0   14     -    4.3   88.3  ice
+ 300   L  164  152    26     0.0   0.00     0.00     0.0   14     -    0.0   95.1  no_shortage_death,ice

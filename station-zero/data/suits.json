@@ -1,0 +1,13 @@
+{
+  "tank_h": 36,
+  "eva_speed_px_h": 16,
+  "fill_colony_o2": 1,
+  "return_margin_h": 2.5,
+  "trip_filter": 0.85,
+  "trip_overhead_h": 6,
+  "work_speed_construction_px_h": 6,
+  "work_speed_mining_px_h": 4,
+  "waypoint_reach_px": 0.8,
+  "low_air_log_repeat_h": 3,
+  "footprint": { "spacing_px": 2.2, "side_offset_px": 0.7, "fade_sols": 2.5, "cap": 2200 }
+}

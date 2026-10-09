@@ -1,0 +1,60 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# council probe: seed=7 sols=300 tag=lean_0.10 params={ "council.dome.lean.base": 0.1 } data_hash=849eeb1222958eca digest=a8893921a3d618fe wall 86.7 s
+pop_end 72 max_pop 72 births 65 deaths { "air": 0, "thirst": 0, "hunger": 0, "suffocated_outside": 0, "other": 0 }
+history [{ "sol": 0, "age": "landing", "how": "landing", "pop": 7 }, { "sol": 58, "age": "settlement", "how": "settled", "pop": 22 }, { "sol": 95, "age": "council", "how": "council", "pop": 32 }]
+projected ["L", "S"] at sols [0, 58] (changes 1); Task 3 first settle 58 changes 1
+xcheck { "trust_maxdiff": 0.0, "chosen_maxdiff": 0.0, "len_trust_by_sol": 301, "len_chosen_by_sol": 301, "len_pop_by_sol": 301, "rows": 300, "settlement_clause_mismatch": 0 }
+milestones { "30": { "pop": 12, "voices": 7, "trust": 1.0, "chosen": 0.0, "age": "landing", "cn": "-" }, "60": { "pop": 22, "voices": 8, "trust": 0.875, "chosen": 0.0, "age": "settlement", "cn": "-" }, "100": { "pop": 32, "voices": 22, "trust": 0.86363636363636, "chosen": 0.72727272727273, "age": "council", "cn": "C" }, "150": { "pop": 47, "voices": 37, "trust": 0.83783783783784, "chosen": 0.78378378378378, "age": "council", "cn": "P" }, "200": { "pop": 47, "voices": 47, "trust": 0.91489361702128, "chosen": 0.91489361702128, "age": "council", "cn": "P" }, "250": { "pop": 52, "voices": 52, "trust": 0.96153846153846, "chosen": 0.96153846153846, "age": "council", "cn": "P" }, "300": { "pop": 72, "voices": 52, "trust": 0.96153846153846, "chosen": 0.96153846153846, "age": "council", "cn": "P" } }
+entries [{ "sol": 95, "how": "council", "onset": { "c1": 88, "c2": 20, "c3": 95, "c4": 63 }, "last": ["chosen"], "trust": 0.86363636363636, "chosen": 0.72727272727273, "voices": 22, "pop": 32, "s": 58, "wait_after_settled": 7 }] splits [] fallbacks_from_council [] changes 1 c2 { "min_gap_council_changes": 37, "min_entry_after_settlement": 37, "ok": true }
+discrim { "from_sol": 60, "trust_min": 0.64285714285714, "trust_max": 0.96153846153846, "chosen_min": 0.0, "chosen_max": 0.96153846153846, "leak_end": 0.73789173789174, "leak_mean": 0.60035035017511, "chosen_pairs_end": 351, "mars_unrelated_end": 259, "turned_end": 74, "turned_max": 100, "friend_pairs_end": 436, "min_web_after_settled": 0.68181818181818, "min_chosen_after_settled": 0.51851851851852, "settled_rows": 213, "min_web_after_entry": 0.68181818181818 }
+sessions 41 proposals 1 pledge_sol 110
+  proposal { "index": 0, "raised_sol": 100, "proposer_id": 13, "again": false, "outcome": "pledged", "outcome_sol": 110, "reason": "personal", "hard": <null>, "votes": 2, "vote_sols": [105, 110], "terms_at_outcome": { "mean_lean": 0.18945474747475, "personal": 0.02327676767677, "size": 0.0, "means": 0.04572343434343, "hard": 0.0, "child": 0.02045454545455 } }
+  meeting { "sol": 100, "vote": false, "present": 9, "voices": 22, "yes": 14, "no": 0, "hard": false, "building": 2 }
+  meeting { "sol": 105, "vote": true, "present": 8, "voices": 22, "yes": 17, "no": 0, "hard": false, "building": 2, "lockstep": false, "divided": false, "amb_yes": 0.48025359477124, "amb_no": -1.0, "cau_yes": 0.39589803921569, "cau_no": -1.0, "trait_ok": false, "signdiff_share": 0.04545454545455, "personal_sd": 0.17747292773137, "mean_lean": 0.21555083874101, "t_personal": 0.02327676767677, "t_size": 0.0, "t_means": 0.04454679833697, "t_hard": 0.0, "t_child": 0.04772727272727, "proposal": 0 }
+  meeting { "sol": 110, "vote": true, "present": 6, "voices": 22, "yes": 17, "no": 0, "hard": false, "building": 13, "lockstep": false, "divided": false, "amb_yes": 0.48025359477124, "amb_no": -1.0, "cau_yes": 0.39589803921569, "cau_no": -1.0, "trait_ok": false, "signdiff_share": 0.09090909090909, "personal_sd": 0.17747292773137, "mean_lean": 0.18945474747475, "t_personal": 0.02327676767677, "t_size": 0.0, "t_means": 0.04572343434343, "t_hard": 0.0, "t_child": 0.02045454545455, "proposal": 0 }
+  meeting { "sol": 115, "vote": false, "present": 7, "voices": 25, "yes": 17, "no": 0, "hard": false, "building": 2 }
+  meeting { "sol": 120, "vote": false, "present": 10, "voices": 27, "yes": 17, "no": 0, "hard": false, "building": 6 }
+  meeting { "sol": 125, "vote": false, "present": 10, "voices": 27, "yes": 15, "no": 0, "hard": false, "building": 2 }
+  meeting { "sol": 130, "vote": false, "present": 9, "voices": 32, "yes": 13, "no": 0, "hard": false, "building": 2 }
+  meeting { "sol": 135, "vote": false, "present": 8, "voices": 32, "yes": 17, "no": 0, "hard": false, "building": 2 }
+  meeting { "sol": 140, "vote": false, "present": 8, "voices": 32, "yes": 16, "no": 0, "hard": false, "building": 12 }
+  meeting { "sol": 145, "vote": false, "present": 8, "voices": 37, "yes": 16, "no": 0, "hard": false, "building": 12 }
+  meeting { "sol": 150, "vote": false, "present": 9, "voices": 37, "yes": 14, "no": 1, "hard": false, "building": 11 }
+  meeting { "sol": 155, "vote": false, "present": 10, "voices": 37, "yes": 12, "no": 1, "hard": false, "building": 12 }
+  meeting { "sol": 160, "vote": false, "present": 12, "voices": 37, "yes": 14, "no": 0, "hard": false, "building": 12 }
+  meeting { "sol": 165, "vote": false, "present": 15, "voices": 37, "yes": 13, "no": 1, "hard": false, "building": 8 }
+  meeting { "sol": 170, "vote": false, "present": 13, "voices": 42, "yes": 16, "no": 1, "hard": false, "building": 8 }
+  meeting { "sol": 175, "vote": false, "present": 14, "voices": 47, "yes": 18, "no": 1, "hard": false, "building": 8 }
+  meeting { "sol": 180, "vote": false, "present": 17, "voices": 47, "yes": 18, "no": 1, "hard": false, "building": 8 }
+  meeting { "sol": 185, "vote": false, "present": 11, "voices": 47, "yes": 19, "no": 1, "hard": false, "building": 7 }
+  meeting { "sol": 190, "vote": false, "present": 12, "voices": 47, "yes": 17, "no": 1, "hard": false, "building": 8 }
+  meeting { "sol": 195, "vote": false, "present": 18, "voices": 47, "yes": 17, "no": 0, "hard": false, "building": 8 }
+  meeting { "sol": 200, "vote": false, "present": 18, "voices": 47, "yes": 17, "no": 2, "hard": false, "building": 8 }
+  meeting { "sol": 205, "vote": false, "present": 17, "voices": 47, "yes": 18, "no": 2, "hard": false, "building": 8 }
+  meeting { "sol": 210, "vote": false, "present": 10, "voices": 47, "yes": 20, "no": 0, "hard": false, "building": 15 }
+  meeting { "sol": 215, "vote": false, "present": 12, "voices": 47, "yes": 20, "no": 0, "hard": false, "building": 15 }
+  meeting { "sol": 220, "vote": false, "present": 11, "voices": 47, "yes": 16, "no": 0, "hard": false, "building": 8 }
+  meeting { "sol": 225, "vote": false, "present": 10, "voices": 47, "yes": 15, "no": 1, "hard": false, "building": 8 }
+  meeting { "sol": 230, "vote": false, "present": 13, "voices": 47, "yes": 16, "no": 2, "hard": false, "building": 15 }
+  meeting { "sol": 235, "vote": false, "present": 20, "voices": 47, "yes": 16, "no": 1, "hard": false, "building": 15 }
+  meeting { "sol": 240, "vote": false, "present": 18, "voices": 47, "yes": 15, "no": 2, "hard": false, "building": 15 }
+  meeting { "sol": 245, "vote": false, "present": 21, "voices": 52, "yes": 15, "no": 1, "hard": false, "building": 12 }
+  meeting { "sol": 250, "vote": false, "present": 20, "voices": 52, "yes": 15, "no": 1, "hard": false, "building": 12 }
+  meeting { "sol": 255, "vote": false, "present": 21, "voices": 52, "yes": 16, "no": 1, "hard": false, "building": 15 }
+  meeting { "sol": 260, "vote": false, "present": 21, "voices": 52, "yes": 16, "no": 1, "hard": false, "building": 15 }
+  meeting { "sol": 265, "vote": false, "present": 22, "voices": 52, "yes": 17, "no": 0, "hard": false, "building": 15 }
+  meeting { "sol": 270, "vote": false, "present": 22, "voices": 52, "yes": 17, "no": 0, "hard": false, "building": 15 }
+  meeting { "sol": 275, "vote": false, "present": 18, "voices": 52, "yes": 17, "no": 0, "hard": false, "building": 15 }
+  meeting { "sol": 280, "vote": false, "present": 19, "voices": 52, "yes": 17, "no": 0, "hard": false, "building": 12 }
+  meeting { "sol": 285, "vote": false, "present": 17, "voices": 52, "yes": 17, "no": 0, "hard": false, "building": 12 }
+  meeting { "sol": 290, "vote": false, "present": 15, "voices": 52, "yes": 20, "no": 0, "hard": false, "building": 2 }
+  meeting { "sol": 295, "vote": false, "present": 13, "voices": 52, "yes": 19, "no": 0, "hard": false, "building": 15 }
+  meeting { "sol": 300, "vote": false, "present": 11, "voices": 52, "yes": 23, "no": 0, "hard": false, "building": 2 }
+raise_timing [{ "entry": 95, "first_raise_after": 5 }]
+gather { "all60": { "n": 241, "min": 3.0, "p10": 5.0, "p25": 7.0, "median": 9.0, "mean": 10.7136929460581, "p75": 15.0, "p90": 18.0, "p95": 20.0, "max": 22.0 }, "all60_share": { "n": 241, "min": 0.13461538461538, "p10": 0.1875, "p25": 0.22727272727273, "median": 0.27777777777778, "mean": 0.28288921348393, "p75": 0.33333333333333, "p90": 0.38297872340426, "p95": 0.40384615384615, "max": 0.42857142857143 }, "council": { "n": 206, "min": 3.0, "p10": 7.0, "p25": 8.0, "median": 11.0, "mean": 11.6504854368932, "p75": 15.0, "p90": 18.0, "p95": 20.0, "max": 22.0 }, "council_share": { "n": 206, "min": 0.13461538461538, "p10": 0.17307692307692, "p25": 0.21875, "median": 0.27149877149877, "mean": 0.27372274412439, "p75": 0.32692307692308, "p90": 0.38297872340426, "p95": 0.38461538461538, "max": 0.42553191489362 }, "eligible": 41, "eligible_unheld": 0, "unheld_share": 0.0, "unheld_sols": [], "council_sols": 205, "meetings_present": { "n": 41, "min": 6.0, "p10": 8.0, "p25": 10.0, "median": 13.0, "mean": 13.7317073170732, "p75": 18.0, "p90": 21.0, "p95": 21.0, "max": 22.0 } }
+lines { "by_key": { "proposal": 1, "pledge": 1, "after_pledge": 1 }, "dropped": 0, "council_lines": 3, "council_lines_no_circles": 3, "council_sols": 205, "per5": 0.07317073170732, "per5_no_circles": 0.07317073170732, "log_total": 458, "rel_logged": 59, "council_logged": 3, "share": 0.1353711790393, "share_council": 0.00655021834061, "flag": 0.15, "by_kind": { "founders_landed": 1, "age_began": 3, "ground_broken": 20, "waiting_for_builders": 28, "exhausted": 242, "building_done": 19, "rel_close_crew": 1, "born": 65, "rel_drifted": 3, "rel_friends": 5, "rel_found_friend": 42, "ice_found": 9, "ice_dry": 9, "council_proposal": 1, "council_pledge": 1, "rel_close": 8, "council_after_pledge": 1 }, "log_size_end": 458 }
+  line sol 100 council_proposal: Ixvi-94 spoke of a dome at the meeting in the habitat: a roof of sky, and streets without suits.
+  line sol 110 council_pledge: The council has agreed to build a dome. Ixvi-94 spoke for it first, and tonight, in the habitat, Jezero promised to build it together, because its bolder hearts would not wait.
+  line sol 140 council_after_pledge: The council still meets most evenings. With the dome agreed, the talk is of smaller things.
+cost { "bands": { "b70": { "steps": 3879, "step_us": 3834527, "mod_us": 55523 }, "b120": { "steps": 0, "step_us": 0, "mod_us": 0 }, "all": { "steps": 147959, "step_us": 84658256, "mod_us": 1162435 } }, "max_pop": 72, "on_sol_us": { "all": { "n": 300, "min": 228.0, "p10": 304.0, "p25": 492.0, "median": 994.0, "mean": 1328.09, "p75": 1789.0, "p90": 2925.0, "p95": 3118.0, "max": 5467.0 }, "pop60_80": { "n": 8, "min": 2631.0, "p10": 2631.0, "p25": 2819.0, "median": 2888.0, "mean": 2996.0, "p75": 3010.0, "p90": 4000.0, "p95": 4000.0, "max": 4000.0 }, "pop_gt120": { "n": 0 }, "peak90": { "n": 5, "min": 2631.0, "p10": 2631.0, "p25": 2819.0, "median": 2846.0, "mean": 3049.2, "p75": 2950.0, "p90": 4000.0, "p95": 4000.0, "max": 4000.0 } } }

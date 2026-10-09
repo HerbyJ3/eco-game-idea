@@ -1,0 +1,17 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Station Zero"
+run/main_scene="res://view/main.tscn"
+config/features=PackedStringArray("4.5")
+
+[autoload]
+
+Sim="*res://view/sim_host.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720

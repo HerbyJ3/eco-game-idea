@@ -1,0 +1,49 @@
+{
+  "dims": ["drive", "curiosity", "sociability", "care", "restless", "steady"],
+  "element": {
+    "fire":  { "drive": 1, "restless": 0.6 },
+    "earth": { "steady": 1, "care": 0.4, "drive": 0.3 },
+    "air":   { "curiosity": 1, "sociability": 0.6, "restless": 0.3 },
+    "water": { "care": 1, "sociability": 0.7, "steady": 0.2 }
+  },
+  "modality": {
+    "cardinal": { "drive": 0.4, "restless": 0.2 },
+    "fixed":    { "steady": 0.6, "restless": -0.4 },
+    "mutable":  { "restless": 0.5, "curiosity": 0.3, "steady": -0.3 }
+  },
+  "modality_scale": 0.6,
+  "boost_dims": {
+    "inner": ["care", "sociability"],
+    "outer": ["restless", "steady"],
+    "drive": ["drive"],
+    "curiosity": ["curiosity"]
+  },
+  "placements": {
+    "mars": [
+      { "key": "sun",    "weight": 0.35, "inner": 1.0, "outer": 1.0, "drive": 1.0, "curiosity": 1.0 },
+      { "key": "deimos", "weight": 0.20, "inner": 1.5, "outer": 0.8, "drive": 1.0, "curiosity": 1.0 },
+      { "key": "phobos", "weight": 0.15, "inner": 0.8, "outer": 1.4, "drive": 1.4, "curiosity": 1.0 },
+      { "key": "rise",   "weight": 0.20, "inner": 0.8, "outer": 1.6, "drive": 1.0, "curiosity": 1.0 },
+      { "key": "earth",  "weight": 0.10, "inner": 1.0, "outer": 1.0, "drive": 1.0, "curiosity": 1.8 }
+    ],
+    "earth": [
+      { "key": "sun",  "weight": 0.5, "inner": 1.0, "outer": 1.0, "drive": 1.0, "curiosity": 1.0 },
+      { "key": "moon", "weight": 0.3, "inner": 1.4, "outer": 0.8, "drive": 1.0, "curiosity": 1.0 },
+      { "key": "rise", "weight": 0.2, "inner": 0.8, "outer": 1.6, "drive": 1.0, "curiosity": 1.0 }
+    ]
+  },
+  "trait_offset": 0.3,
+  "trait_scale": 1.5,
+  "roles": { "drive": "builder", "curiosity": "curious", "sociability": "social", "care": "tender" },
+  "role_order": ["drive", "curiosity", "sociability", "care"],
+  "role_weights": { "drive": 0.88, "curiosity": 1.0, "sociability": 1.16, "care": 0.97 },
+  "adjectives": { "drive": "driven", "curiosity": "inquisitive", "sociability": "warm", "care": "nurturing", "restless": "restless", "steady": "steady" },
+  "never_paired": [["restless", "steady"]],
+  "founders": {
+    "count": 7,
+    "min_age_earth_years": 24,
+    "max_age_earth_years": 45,
+    "earth_lon_min": -120,
+    "earth_lon_max": 140
+  }
+}

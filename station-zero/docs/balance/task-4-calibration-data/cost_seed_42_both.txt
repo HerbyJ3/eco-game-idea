@@ -1,0 +1,14 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# cost: seed=42 sols=300 pull=both max pop 154; A = module on, B = module off (lockstep, A timed first each step); pop diverged on 131240 steps
+tick cost (Relationships.last_tick_ms x 1000, us) by population band:
+  pop<=40    ticks  1431  median      377 us  p95      868  max     3086  stored pairs median 83 max 355
+  pop41-80   ticks  1304  median     1620 us  p95     2575  max     5220  stored pairs median 667 max 1137
+  pop81-120  ticks  1172  median     3036 us  p95     4617  max    10931  stored pairs median 1497 max 1924
+  pop>120    ticks  3490  median     5474 us  p95     9055  max    19753  stored pairs median 2950 max 5228
+step cost (us per World.step), A on vs B off:
+  pop<=40    steps  28639  on: median     239 mean    278.3   off: median     219 mean    226.6   mean difference    51.6 us per step (22.8%)
+  pop41-80   steps  26080  on: median     655 mean    797.9   off: median     523 mean    568.3   mean difference   229.6 us per step (40.4%)
+  pop81-120  steps  23440  on: median    1152 mean   1418.0   off: median     850 mean    944.2   mean difference   473.8 us per step (50.2%)
+  pop>120    steps  69800  on: median    1577 mean   2063.5   off: median    1650 mean   1822.3   mean difference   241.2 us per step (13.2%)
+log at sol 300: module on size 500 oldest entry sol 151; module off size 500 oldest entry sol 193 (cap 500)

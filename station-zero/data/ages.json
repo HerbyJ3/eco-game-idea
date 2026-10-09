@@ -1,0 +1,57 @@
+{
+  "landing": {
+    "name": "Landing",
+    "log_start": "The founders have landed at Jezero. For now, air and water and warmth are all there is to think about.",
+    "log_fall_back": "Hard days have come back to Jezero. The colony pulls close and gets on with it."
+  },
+  "settlement": {
+    "name": "Settlement",
+    "log_enter": "Nobody is only surviving now. There are families here, and meals shared, and a place to come home to.",
+    "log_enter_again": "The hard stretch has passed. Meals, work and sleep keep their old order."
+  },
+  "cause_lines": {
+    "ice": "Water is on everyone's mind again.",
+    "food": "Meals are thin, and the larders are watched.",
+    "oxygen": "The air is thin, and every breath is counted.",
+    "power": "The lights flicker, and the reactors are stretched.",
+    "death": "Too many have been lost, and the colony is grieving.",
+    "unrest": "People are worn down and keep close to home."
+  },
+  "season_phrases": [
+    "Spring is rising over the delta.",
+    "High summer lies over the delta.",
+    "Autumn light is lengthening over the delta.",
+    "Winter has settled over the delta."
+  ],
+  "sample": {
+    "from_sol": 5,
+    "window_sols": 40,
+    "o2_min_fraction": 0.5,
+    "food_min_fraction": 0.5,
+    "net_above": 0.0,
+    "ice_min_sols": 2.0,
+    "shortage_causes": ["air", "thirst", "hunger"],
+    "distress_share_max": 0.2,
+    "rested_share_min": 0.7
+  },
+  "entry": {
+    "ok_share": 0.9,
+    "recent_ok_sols": 3,
+    "mars_born_min": 5,
+    "mars_born_homes_min": 2
+  },
+  "exit": {
+    "ok_share_below": 0.6,
+    "recent_sols": 5
+  },
+  "min_dwell_sols": 20,
+  "hud": {
+    "chapters_shown": 3,
+    "low_word": "running low"
+  },
+  "balance": {
+    "settle_sol_min": 40,
+    "settle_sol_max": 150,
+    "max_age_changes": 4
+  }
+}

@@ -1,0 +1,181 @@
+extends RefCounted
+## PARKED (not a test: the .txt suffix keeps run_tests.gd away). Task 6a spec docs/specs/emotions.md section 13 test 32 (selection
+## rules, view model, pure; revision 3), written at tests-first step 3 and to be moved to tests/test_view_selection.gd (rename,
+## delete this header block) at the view step (plan step 8). It is parked because spec 7.1 names the behaviour but not the
+## functions: "a new pure function in view/model/ takes the tap in world coordinates, the per-being records and the roof cuts".
+##
+## API ASSUMED (the implementer should match or tell the test author; each is the simplest reading of 7.1 and 9.1):
+##  - res://view/model/being_hit.gd, static `pick(world_pt: Vector2, records: Dictionary, cut_of: Callable, zoom: float, cfg:
+##    Dictionary) -> int`: the nearest colonist id or 0. `records` maps id -> {pos: Vector2 (feet), height_px: float, visible:
+##    bool, inside: bool, building_id: int}; `cut_of(building_id) -> float` is Selection.cut(b, zoom); `cfg` is
+##    SimData.moods().selection ({tap_radius_px, open_cut_min, ...}). Distance is measured to pos raised by half height_px, within
+##    tap_radius_px / zoom world units; ties go to the lowest id; an inside record counts only when cut_of >= open_cut_min.
+##  - Selection (view/model/selection.gd) gains `selected_being := 0` and `tap(world_pt, world, records := {}, zoom := 1.0)`:
+##    the colonist test runs before the building loop. `deselect()` clears selected_being, selected and peek.
+##  - ViewModel.follow target for a colonist: `follow_target_for_selection()` -> Vector2 (record position, or the footprint centre
+##    of its building when inside a closed roof).
+##  - res://view/model/selection_outline.gd, static `ring(alpha: Image, outline_px: int) -> Image`: a one-pixel ring mask around
+##    the opaque pixels of a sprite.
+##  - Log tap: ViewModel/main static `log_entry_at(y: float, line_h: float, entries: Array, shown: int) -> Variant` returning the
+##    entry under a tap at height y of the one-label log (the last `shown` entries), or null.
+## Tests below use only these; any rename is a mechanical edit.
+
+const BeingHit = preload("res://view/model/being_hit.gd")
+const Selection = preload("res://view/model/selection.gd")
+
+
+func _abort_msg(t) -> String:
+	return "%s: aborted before its last line (a runtime error in the code under test?)" % t._current
+
+
+func _art() -> Dictionary:
+	return SimData.load_json("art.json")
+
+
+func _cfg() -> Dictionary:
+	return SimData.load_json("mood.json").selection
+
+
+func _rec(x: float, y: float, inside: bool, bid: int = 0, visible: bool = true) -> Dictionary:
+	return {"pos": Vector2(x, y), "height_px": 20.0, "visible": visible, "inside": inside, "building_id": bid}
+
+
+func _world_with_building() -> Variant:
+	var w = SimWorld.new(1, {"blank": true})
+	w.add_building("habitat", 40, 0)
+	return w
+
+
+func test_t32a_a_colonist_outside_wins_over_the_building_under_it(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var w = _world_with_building()
+	var sel = Selection.new(_art())
+	var b = w.buildings.get_building(1)
+	var tile := float(SimData.buildings().tile_px)
+	var foot := Rect2(b.tx * tile, b.ty * tile, b.tw * tile, b.th * tile)
+	var c := foot.get_center()
+	var recs := {7: _rec(c.x, c.y + 10.0, false)}
+	sel.tap(c + Vector2(0, 0), w, recs, 1.0)
+	t.eq(sel.selected_being, 7, "the colonist is selected")
+	t.eq(sel.selected, 0, "and not the building under it")
+	t.check(not sel.peek, "the roof is not toggled")
+	t._failures.erase(_abort_msg(t))
+
+
+func test_t32b_the_three_tap_path_at_zoom_1(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var w = _world_with_building()
+	var sel = Selection.new(_art())
+	var b = w.buildings.get_building(1)
+	var tile := float(SimData.buildings().tile_px)
+	var c := Rect2(b.tx * tile, b.ty * tile, b.tw * tile, b.th * tile).get_center()
+	var recs := {7: _rec(c.x, c.y, true, 1)}
+	sel.tap(c, w, recs, 1.0)
+	t.eq(sel.selected, 1, "tap 1: the building is selected")
+	t.eq(sel.selected_being, 0, "an inside colonist under a closed roof cannot be hit")
+	sel.tap(c, w, recs, 1.0)
+	t.check(sel.peek, "tap 2: the roof opens")
+	sel.peek_cut = 1.0
+	sel.tap(c, w, recs, 1.0)
+	t.eq(sel.selected_being, 7, "tap 3: the colonist in the open interior is selected")
+	t.eq(sel.selected, 1, "the building stays selected")
+	t.check(sel.peek, "and its roof stays open under the player's finger")
+	t._failures.erase(_abort_msg(t))
+
+
+func test_t32c_all_roofs_cut_open_one_tap_selects_an_inside_colonist(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var w = _world_with_building()
+	var sel = Selection.new(_art())
+	var b = w.buildings.get_building(1)
+	var tile := float(SimData.buildings().tile_px)
+	var c := Rect2(b.tx * tile, b.ty * tile, b.tw * tile, b.th * tile).get_center()
+	var recs := {7: _rec(c.x, c.y, true, 1)}
+	sel.tap(c, w, recs, 5.4)
+	t.eq(sel.selected_being, 7, "at zoom 5.4 one tap selects the inside colonist")
+	t._failures.erase(_abort_msg(t))
+
+
+func test_t32d_hit_test_radius_nearest_and_ties(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var c := _cfg()
+	var r := float(c.tap_radius_px)
+	var recs := {3: _rec(100.0, 100.0, false), 5: _rec(100.0 + 4.0, 100.0, false), 9: _rec(300.0, 300.0, false)}
+	var cut_of := func(_b: int) -> float: return 0.0
+	var pt := Vector2(100.0, 100.0 - 10.0)
+	t.eq(BeingHit.pick(pt, recs, cut_of, 1.0, c), 3, "nearest wins")
+	t.eq(BeingHit.pick(Vector2(102.0, 90.0), recs, cut_of, 1.0, c), 3, "a tie goes to the lowest id")
+	t.eq(BeingHit.pick(Vector2(100.0 + r + 5.0, 90.0), {3: _rec(100.0, 100.0, false)}, cut_of, 1.0, c), 0, "outside tap_radius_px: nothing")
+	t.eq(BeingHit.pick(Vector2(100.0 + r * 0.9, 90.0), {3: _rec(100.0, 100.0, false)}, cut_of, 4.0, c), 0, "the radius is divided by the zoom")
+	t.eq(BeingHit.pick(pt, {3: _rec(100.0, 100.0, false, 0, false)}, cut_of, 1.0, c), 0, "an invisible record cannot be hit")
+	var below := func(_b: int) -> float: return float(c.open_cut_min) - 0.01
+	var above := func(_b: int) -> float: return float(c.open_cut_min)
+	t.eq(BeingHit.pick(pt, {3: _rec(100.0, 100.0, true, 1)}, below, 1.0, c), 0, "inside a roof cut below open_cut_min: no hit")
+	t.eq(BeingHit.pick(pt, {3: _rec(100.0, 100.0, true, 1)}, above, 1.0, c), 3, "at open_cut_min: hit")
+	t._failures.erase(_abort_msg(t))
+
+
+func test_t32e_closing_rules(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var w = _world_with_building()
+	var sel = Selection.new(_art())
+	var b = w.buildings.get_building(1)
+	var tile := float(SimData.buildings().tile_px)
+	var foot := Rect2(b.tx * tile, b.ty * tile, b.tw * tile, b.th * tile)
+	var c := foot.get_center()
+	var empty := foot.position - Vector2(50, 50)
+	sel.selected_being = 7
+	sel.tap(c, w, {}, 1.0)
+	t.eq(sel.selected_being, 0, "a tap on a building while a colonist is selected closes the selection")
+	t.eq(sel.selected, 0, "and is consumed: the building is not selected or toggled")
+	sel.tap(c, w, {}, 1.0)
+	t.eq(sel.selected, 1, "the next tap acts as normal")
+	sel.selected_being = 7
+	sel.tap(empty, w, {}, 1.0)
+	t.eq(sel.selected_being, 0, "a tap on empty ground clears the colonist")
+	sel.selected_being = 7
+	sel.selected = 1
+	sel.peek = true
+	sel.deselect()
+	t.check(sel.selected_being == 0 and sel.selected == 0 and not sel.peek, "deselect (Esc) clears the colonist, the building and peek")
+	# Selecting a colonist outside any open roof clears a selected building.
+	sel.selected = 1
+	sel.tap(Vector2(500, 500), w, {7: _rec(500.0, 510.0, false)}, 1.0)
+	t.eq(sel.selected_being, 7, "a colonist outside is selected")
+	t.eq(sel.selected, 0, "and a selected building is cleared")
+	t._failures.erase(_abort_msg(t))
+
+
+func test_t32f_follow_the_selected_colonist(t) -> void:
+	t._failures.append(_abort_msg(t))
+	# ViewModel.follow target for a colonist: its record position; the footprint centre when it is inside a closed building.
+	# Needs a ViewModel on a staged world (see tests/test_view_model.gd for the construction); the call name is assumed.
+	t.check(false, "parked: write against the ViewModel at the view step (follow_selected with a colonist)")
+	t._failures.erase(_abort_msg(t))
+
+
+func test_t32g_the_outline_is_built_from_the_sprite_alpha(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var img := Image.create(9, 9, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for x in range(3, 6):
+		for y in range(3, 6):
+			img.set_pixel(x, y, Color(1, 1, 1, 1))
+	var ring: Image = load("res://view/model/selection_outline.gd").ring(img, 1)
+	t.check(ring.get_pixel(2, 4).a > 0.0 and ring.get_pixel(6, 4).a > 0.0, "a one-pixel ring appears beside the opaque block")
+	t.check(ring.get_pixel(4, 4).a == 0.0, "and not on the sprite itself")
+	t.check(ring.get_pixel(0, 0).a == 0.0, "nor far away")
+	t._failures.erase(_abort_msg(t))
+
+
+func test_t32h_a_log_line_maps_to_its_being_and_a_dead_being_opens_the_died_beat(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var entries := [{"text": "a", "being_id": 4}, {"text": "b"}, {"text": "c", "being_id": 9}]
+	var load_main = load("res://view/main.gd")
+	t.check(load_main != null, "main.gd loads")
+	var e = load_main.call("log_entry_at", 2.0 * 18.0 + 3.0, 18.0, entries, 3)
+	t.check(e != null and int(e.being_id) == 9, "a tap on the third line of three reads its entry's being_id")
+	var none = load_main.call("log_entry_at", 1.0 * 18.0 + 3.0, 18.0, entries, 3)
+	t.check(none == null or not none.has("being_id"), "a line without a being_id is not a target")
+	t.check(false, "parked: a dead being opens the died beat (text.panel.died) - write against the view at step 8")
+	t._failures.erase(_abort_msg(t))

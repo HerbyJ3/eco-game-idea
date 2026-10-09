@@ -1,0 +1,6 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# hash run: seed=1234 sols=300 pull=shipped overrides={  }
+table_sha256 4ca29abfc48189f8
+digest 166b03249593a323 pop_end 142
+T10 PASS first settlement sol 65 (40..150), age_changes 1 (<=4), min gap between consecutive history entries 65 (>=20), history 2 entries (changes+1 = 2); report: sols_in_age landing 65 settlement 235, age at end settlement, changes [sol 65 settled], fall back causes [none], not-ok sols 11 (by group, a sol can fail several: ice 0, food 1, oxygen 1, power 0, death 0, unrest 10)

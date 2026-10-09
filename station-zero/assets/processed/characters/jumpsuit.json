@@ -1,0 +1,90 @@
+{
+ "cell_px": 128,
+ "frames": {
+  "carry": {
+   "col": 3,
+   "lamp_anchor_px": null,
+   "row": 3
+  },
+  "idle_front": {
+   "col": 0,
+   "lamp_anchor_px": null,
+   "row": 3
+  },
+  "idle_side": {
+   "col": 1,
+   "lamp_anchor_px": null,
+   "row": 3
+  },
+  "talk": {
+   "col": 2,
+   "lamp_anchor_px": null,
+   "row": 3
+  },
+  "walk_back_0": {
+   "col": 0,
+   "lamp_anchor_px": null,
+   "row": 1
+  },
+  "walk_back_1": {
+   "col": 1,
+   "lamp_anchor_px": null,
+   "row": 1
+  },
+  "walk_back_2": {
+   "col": 2,
+   "lamp_anchor_px": null,
+   "row": 1
+  },
+  "walk_back_3": {
+   "col": 3,
+   "lamp_anchor_px": null,
+   "row": 1
+  },
+  "walk_front_0": {
+   "col": 0,
+   "lamp_anchor_px": null,
+   "row": 0
+  },
+  "walk_front_1": {
+   "col": 1,
+   "lamp_anchor_px": null,
+   "row": 0
+  },
+  "walk_front_2": {
+   "col": 2,
+   "lamp_anchor_px": null,
+   "row": 0
+  },
+  "walk_front_3": {
+   "col": 3,
+   "lamp_anchor_px": null,
+   "row": 0
+  },
+  "walk_side_0": {
+   "col": 0,
+   "lamp_anchor_px": null,
+   "row": 2
+  },
+  "walk_side_1": {
+   "col": 1,
+   "lamp_anchor_px": null,
+   "row": 2
+  },
+  "walk_side_2": {
+   "col": 2,
+   "lamp_anchor_px": null,
+   "row": 2
+  },
+  "walk_side_3": {
+   "col": 3,
+   "lamp_anchor_px": null,
+   "row": 2
+  }
+ },
+ "pivot_px": [
+  64,
+  120
+ ],
+ "scale": 0.489083
+}

@@ -1,0 +1,15 @@
+seed 42 step 5000 sol 10 pop 7 pairs 21 digest cefa93096a91506f
+seed 42 step 10000 sol 20 pop 12 pairs 38 digest 9b9c213df1379a79
+seed 42 step 15000 sol 30 pop 20 pairs 107 digest e48037f31f23ce28
+seed 42 step 20000 sol 40 pop 22 pairs 145 digest ccacc6d0d8335687
+seed 42 step 25000 sol 50 pop 24 pairs 165 digest bcea7be855ac35b6
+seed 42 step 30000 sol 60 pop 28 pairs 174 digest 6ea0b9f436040a99
+seed 42 step 35000 sol 70 pop 37 pairs 263 digest cf20449865ce264b
+seed 42 step 40000 sol 81 pop 47 pairs 389 digest 5d099f5ba09a5969
+seed 42 step 45000 sol 91 pop 52 pairs 566 digest 0c7efc338c85da51
+seed 42 step 50000 sol 101 pop 57 pairs 732 digest af40d3a26078c71f
+seed 42 step 55000 sol 111 pop 62 pairs 825 digest c64e7490c7fa47f5
+seed 42 step 60000 sol 121 pop 72 pairs 935 digest 3764902e50502469
+padded tick 200 pairs 5278 digest 8f5521f274f25dc6
+padded tick 400 pairs 3891 digest a63c12c282d8df1a
+padded tick 600 pairs 2647 digest 1512ca1dc2d44716
