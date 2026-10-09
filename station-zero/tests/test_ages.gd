@@ -1576,6 +1576,8 @@ func test_t17_on_sol_changes_nothing_but_ages(t) -> void:
 
 func _birth_world(seed_in: int, beings_n: int) -> Variant:
 	var w = SimWorld.new(seed_in, {"blank": true})
+	# This fixture checks lineage/newborn metadata, independently of the gestation timer.
+	w.lifecycle.cfg.pregnancy_months = 0
 	w.add_building("reactor", 0, 60)
 	w.add_building("green_room", 20, 60)
 	w.add_building("workshop", 0, 120)
@@ -1648,23 +1650,15 @@ func test_t17_empty_here_guard_makes_no_extra_draw(t) -> void:
 	_edit(SimData.colony().birth, "base_chance", 2.0)
 	_edit(SimData.colony().birth, "min_beings_small_colony", 0)
 	var w = _birth_world(5, 0)
-	var hab: int = _habs(w)[0]
 	t.eq(w.beings.size(), 0, "no beings: `here` is empty")
 	_force_birth_check(w)
 	var ref := SimRng.new(0)
 	ref._rng.state = w.rng._rng.state
-	ref.chance(w.colony.birth_chance([]))
-	t.eq(ref.pick([]), null, "SimRng.pick on an empty array returns null")
-	Being.make_name(ref)
-	ref.randf_range(70.0, 100.0)
-	ref.randf_range(0.0, 2.0)
 	var tail := ref.randf()
 	w.step()
-	t.eq(w.beings.size(), 1, "a newborn arrived in the empty habitat")
-	if w.beings.size() == 1:
-		t.eq(w.beings[0].parent_id, 0, "empty `here`: parent_id 0 (the guard)")
-		t.eq(w.beings[0].birth_building_id, hab, "birth_building_id still the habitat")
-		t.eq(w.rng.randf(), tail, "and no extra draw")
+	t.eq(w.beings.size(), 0, "no pregnancy or birth without an adult parent")
+	t.eq(w.lifecycle.pregnancies.size(), 0, "no pending pregnancy")
+	t.eq(w.rng.randf(), tail, "the empty-candidate guard consumes no draws")
 	_restore()
 	_end(t)
 

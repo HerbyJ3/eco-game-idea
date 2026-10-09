@@ -1792,7 +1792,11 @@ func test_t18c_same_tick_events_second_one_sees_the_first(t) -> void:
 func test_t18d_no_found_friend_line_names_a_known_being_first(t) -> void:
 	if not _api(t):
 		return
-	var w = SimWorld.new(42)
+	# Two adults sharing a viable room generate new friendships without relying on instant newborns.
+	var w = _world(42)
+	_being(w, HAB1)
+	_being(w, HAB1)
+	w.colony.ice = 10000.0
 	_run_sols(w, 60)
 	var seen := {}
 	var checked := 0

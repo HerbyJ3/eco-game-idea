@@ -1,5 +1,7 @@
 # Spec: council and diplomacy (Task 5): gatherings, proposals, support, the decision to build a dome (revision 6)
 
+Lifecycle update: the owner requires nine-month pregnancy and human calendar-year growth. [lifecycle.md](lifecycle.md) replaces the old forty-sol voice rule. Historical calibration and hash claims below predate that change.
+
 Source of truth: HANDOFF.md sections 1, 2, 4, 7, 8, 9, 10. Plan and open questions Q1 to Q10, lonely-run placement: `docs/tasks/task-5-plan.md`. Format, `age_history` and the Task 5 gate: `docs/specs/ages.md` (sections 2, 3, 6, 7, 8.2, 12, 18 item 5). Social inputs: `docs/specs/relationships.md` (sections 7, 8, 11, 17 "Run 2 findings" and "Round 4 reviews", 18, 19; known issues K1 to K3). Measurements read: `docs/balance/task-4-calibration.md` (trust readings per seed, item 2; kin newborn waits, item 8), `docs/balance/task-4-log.md` (30-sol tables, Task 4 table hashes). Sim facts read: `sim/world.gd` (phase order of `step()`, sol block, `_init_stats`), `sim/ages.gd` (`decide`, `on_sol`, `_record`), `sim/relationships.gd` (`pairs` with the `kin` and `crew` flags, `present`, `ticks`, `friend_count`, `_reading`, `pull`, `begin`, `_births`), `sim/being.gd` (`parent_id`, `born_t`, `_restless_travel`, `is_inside`), `sim/persona.gd` (trait formula), `sim/buildings.gd`, `sim/powers.gd` (only the Good fortune multiplier exists), `tests/balance_lib.gd` (the `age` column prints `S` only for `settlement`, line 109), `data/*.json` (`relationships.seed`, `relationships.lines`, `persona`, `buildings`).
 
 Locked decisions respected:
@@ -26,7 +28,7 @@ Six questions (O6 is new in revision 5, and is the only one open; O1 to O5 are a
 
 **O1. The Council gate: what has to be true before the colony is called a Council?** (plan Q1; ages.md 18 item 5, still open)
 - (a) **Recommended: Settlement held 30 sols, and trust among grown colonists measured two ways.**
-  - "Voices" are the founders and the Mars-born at least 40 sols old.
+  - "Voices" are living adults under the shared human lifecycle (eighteenth birthday onward).
   - The web must hold most of the voices: at least one half, on 16 of the last 20 sols including the last 3.
   - Most voices must have a friend they chose: at least one half have a voice friend who is neither kin nor crew, on the same 16-of-20 rule.
   - At least 12 voices.
@@ -79,7 +81,7 @@ Options (A is the lead's recommendation):
 Dissent and lens notes are in section 17. The reviewer round on these options is requested in section 16 and has not run: the weighing there is the lead's own reading of the three lenses, not reviewer output. **Until you answer, the spec is written to the shipped rule (C).** The text for (A) is in 5.8 as a pending block.
 
 ## 0. The design in one paragraph
-Once a sol, the colony asks how far its grown members know one another. Of the voices (founders and Mars-born at least 40 sols old), it asks what share stands in one web of friends, and what share has a friend they chose rather than were born or shipped with. A colony that has been settled for a while and passes both becomes a **Council**: it begins to meet. Every voice holds a private **stance** on the colony's one big question, a dome. Personality sets the stance: driven, curious and restless people lean toward building, and steady and caring people lean toward waiting. The colony's days weigh by temperament: crowding and stone in store stir the ambitious, hardship weighs on the cautious, and new parents want room for their children. Friends then pull each other's stances together once a sol, so camps form along friendships. That is diplomacy without dialogue. The council **meets** where the most voices gather in one room. At a meeting a named person who wants the dome raises it. At later meetings the colony is divided (each speaker gives a reason), sets the dome aside (naming who spoke for waiting, or what runs short), or **pledges** to build it together when most voices want it at two meetings in a row. The player reads a few named lines and a pinned chapter, never a number. In the shipped state nothing beings do changes, so every earlier hash reproduces.
+Once a sol, the colony asks how far its grown members know one another. Of the voices (living colonists aged eighteen calendar years or more), it asks what share stands in one web of friends, and what share has a friend they chose rather than were born or shipped with. A colony that has been settled for a while and passes both becomes a **Council**: it begins to meet. Every voice holds a private **stance** on the colony's one big question, a dome. Personality sets the stance: driven, curious and restless people lean toward building, and steady and caring people lean toward waiting. The colony's days weigh by temperament: crowding and stone in store stir the ambitious, hardship weighs on the cautious, and new parents want room for their children. Friends then pull each other's stances together once a sol, so camps form along friendships. That is diplomacy without dialogue. The council **meets** where the most voices gather in one room. At a meeting a named person who wants the dome raises it. At later meetings the colony is divided (each speaker gives a reason), sets the dome aside (naming who spoke for waiting, or what runs short), or **pledges** to build it together when most voices want it at two meetings in a row. The player reads a few named lines and a pinned chapter, never a number. In the shipped state nothing beings do changes, so every earlier hash reproduces.
 
 ## 1. Purpose
 HANDOFF 7 describes the Council as "gatherings, arguments, factions by personality". The colony moves on when "a dome proposal wins enough support and the colony commits to build it together". Task 5 turns the Task 4 friendship web into a forum: the age that follows Settlement. It gives the colony's people a way to want something together, disagree about it in camps their personalities explain, and decide. As with ages and relationships, nothing counts toward anything on screen. The decision happens when the people get there.
@@ -87,7 +89,7 @@ HANDOFF 7 describes the Council as "gatherings, arguments, factions by personali
 ## 2. Terms
 | Term | Meaning |
 | --- | --- |
-| voice | a living being that is `earth_born`, or whose age `t - born_t` is at least `voice.min_age_sols` x `sol_h` |
+| voice | a living adult under `Lifecycle.is_adult`, using `data/lifecycle.json` (eighteenth birthday by default) |
 | voice web | the graph of voices joined by `friends` pairs whose two ends are both voices (kin and crew pairs count) |
 | trust | the share of voices in the largest connected part of the voice web; 0.0 when there are no voices |
 | lineage | the module's own record `parent_of` (being id to `parent_id`), written for every living being at creation and at every sol boundary and never pruned. It is needed because `SimWorld._kill` erases dead beings, so a live `parent_id` chain breaks at the first dead parent |
@@ -143,7 +145,7 @@ HANDOFF 7 describes the Council as "gatherings, arguments, factions by personali
 
 ## 5. Rules
 ### 5.1 Voices
-A being is a voice if it is `earth_born` or `t - born_t >= voice.min_age_sols x sol_h - STEP_EPS` (40 sols, E). The reason for 40 is that the measured median wait from birth to a first grown friendship is 25 to 29 sols (task-4-calibration item 8), so by 40 sols most Mars-born have had the chance to join the web. A newborn has no say in the dome and does not count against trust. Voices are recomputed at every sol boundary; nothing is stored on the being.
+A living being is a voice from its eighteenth calendar birthday, using the shared `Lifecycle.is_adult` rule and the configured adult age in `data/lifecycle.json`. Founders already have adult birth records. This replaces the earlier forty-sol approximation; see [lifecycle.md](lifecycle.md). A newborn has no say in the dome and does not count against trust. Voices are recomputed at every sol boundary; nothing is stored on the being.
 
 ### 5.2 The trust readings (once a sol, in Settlement and Council; not in Landing; revision 6)
 **Landing skip (revision 6, remedy 1 of 11.1 built).** In Landing, `on_sol` skips `_readings` (this section) and `_lean_stance` (5.6). `trust_by_sol` and `chosen_by_sol` still get one entry per sol, carrying the last value forward (the founder reading 1.0 and 0.0 if none yet), so their lengths still equal `pop_by_sol`. Entry windows (`trust_win`, `chosen_win`) are not pushed in Landing. The hard window is kept. Safety rests on `entry.settled_sols` (30) >= `trust.window_sols` (20): every reading the gate uses is then taken in the current Settlement term (sanity rule in test 17c). If either value changes so that the inequality fails, the skip is wrong.
@@ -643,7 +645,7 @@ The probe (`tools/council_probe.gd`, step 6) fixed several definitions where thi
 
 ## 13. Tests (`tests/test_council.gd`, written first, red; no test with zero checks)
 Staging: a blank world with a reactor, two habitats, a workshop and a green room. Beings are added with `add_being`, with traits overwritten and `born_t`, `earth_born` and `parent_id` set. Friendships are made with `relationships.debug_set_bond`, with `kin` and `crew` flags set directly on the staged pair. `present` is set by a relationship tick. Boundaries are driven by setting `world.t` and calling the hooks.
-1. **Voices.** An Earth-born is a voice at once; a Mars-born at 39.9 sols is not, at 40 is; the dead are not.
+1. **Voices.** Adult founders are voices at once; a Mars-born before its eighteenth birthday is not, at that birthday is; the dead are not.
 2. **Readings.** Staged voice webs:
    - one part of 6 of 10 voices reads 0.6; two islands; a non-voice bridge does not join two voice parts; kin and crew pairs count for the web;
    - chosen share: a voice whose only friends are kin or crew is not counted, and one chosen voice friend counts at `chosen_friends_min` 1 but not at 2;
@@ -746,7 +748,6 @@ Staging: a blank world with a reactor, two habitats, a workshop and a green room
 | council.dome.text.proposal / proposal_again / divided / set_aside / set_aside_hard / set_aside_long / pledge / pledge_divided / pledge_why_personal / aftermath_round / aftermath_still / after_pledge | text with {a}, {b}, {place}, {ra}, {rb}, {why}, {clause} | 7.2, 7.3 | lead, feel 1 and 3, clarity M3 and S3 |
 | council.dome.text.reason.yes.size / means / child / personal / friends | clause | 7.3 | lead, feel 6, clarity S2 |
 | council.dome.text.reason.no.means / hard / personal / friends | clause | 7.3 | lead, feel 6, clarity S2 |
-| council.voice.min_age_sols | sols | 40 | lead, E |
 | council.trust.window_sols | readings | 20 | lead, E |
 | council.entry.settled_sols | sols since the latest Settlement entry | 30 | lead, E |
 | council.entry.trust_share_min | share of voices | 0.5 | lead, E |
@@ -869,7 +870,6 @@ council.dome.lean.means_centre
 council.dome.cond.size_from
 council.dome.cond.size_span
 council.dome.cond.child_sols
-council.voice.min_age_sols
 council.trust.window_sols
 council.entry.settled_sols
 council.entry.trust_share_min

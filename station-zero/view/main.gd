@@ -341,6 +341,7 @@ func _site_text(w: SimWorld) -> String:
 
 
 func _beings_text(w: SimWorld) -> String:
+	var life := w.lifecycle.counts(w.beings, w.t)
 	var n := {}
 	for b in w.beings:
 		var key: String = b.state
@@ -350,7 +351,9 @@ func _beings_text(w: SimWorld) -> String:
 	var parts: PackedStringArray = []
 	for s in STATES:
 		parts.append("%s %d" % [s, int(n.get(s, 0))])
-	return "Beings: " + "  ".join(parts)
+	return "Beings: " + "  ".join(parts) + "\n" \
+			+ "Babies %d  toddlers %d  children %d  teens %d  adults %d  pregnancies %d" % [
+			life.baby, life.toddler, life.child, life.teen, life.adult, w.lifecycle.pregnancies.size()]
 
 
 func _log_text(w: SimWorld) -> String:

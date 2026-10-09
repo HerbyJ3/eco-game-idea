@@ -76,9 +76,6 @@
    "child_sols": 20
   }
  },
- "voice": {
-  "min_age_sols": 40
- },
  "trust": {
   "window_sols": 20
  },

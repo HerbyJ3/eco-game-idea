@@ -57,7 +57,7 @@ func is_voice(world: SimWorld, id: int) -> bool:
 
 
 func _is_voice_b(world: SimWorld, b) -> bool:
-	return b.earth_born or world.t - b.born_t >= float(cfg.voice.min_age_sols) * world.clock.sol_h - SimWorld.STEP_EPS
+	return world.lifecycle.is_adult(b, world.t)
 
 
 func _lin(id: int) -> Array:

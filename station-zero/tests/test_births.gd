@@ -64,6 +64,9 @@ var _draws := 0
 ## Ids: reactors 1..R, green room R+1, workshop R+2, habitats R+3.. in creation order.
 func _world(seed_in: int, online: int = 1, offline: int = 0, reactors: int = 1) -> SimWorld:
 	var w := SimWorld.new(seed_in, {"blank": true})
+	# Accelerate delivery only in tests of gates, cooldowns, RNG ordering and newborn fields.
+	# The default nine-month scheduler is covered by test_lifecycle.gd.
+	w.lifecycle.cfg.pregnancy_months = 0
 	for r in reactors:
 		w.add_building("reactor", 40 * r, 60)
 	w.add_building("green_room", 20, 60)
@@ -756,6 +759,7 @@ func test_newborn_fields(t) -> void:
 ## Odd widths put the centre on a half tile, so a rounded or left-edge longitude is caught by the sign boundaries.
 func test_newborn_persona_from_mars_chart(t) -> void:
 	var w := SimWorld.new(92, {"blank": true})
+	w.lifecycle.cfg.pregnancy_months = 0
 	w.add_building("reactor", 0, 60)
 	w.add_building("reactor", 40, 60)
 	w.add_building("green_room", 20, 60)

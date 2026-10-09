@@ -27,7 +27,7 @@ var dt := 0.0
 ## The world rect the camera sees.
 var view_rect := Rect2()
 var tile_px := 1.0
-## False below `art.lod.detail_min_zoom`: far zoom skips door leaves, halos, ground strips, pads, being shadows and lamp glows.
+## False below `art.lod.detail_min_zoom`: far zoom skips door leaves, halos, ground strips, being shadows and lamp glows.
 var detail := true
 ## Soft round gradient (white in the middle, clear at the edge), for glows.
 var glow: Texture2D

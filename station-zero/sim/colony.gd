@@ -129,7 +129,7 @@ func birth_capacity() -> int:
 
 ## Every birth gate except the chance, for a habitat whose `here` beings (inside, sleepers included)
 ## are given. Uses the live population.
-func birth_gates_ok(habitat_id: int, here: Array, t: float) -> bool:
+func birth_gates_ok(habitat_id: int, here: Array, t: float, pending_births: int = 0) -> bool:
 	var bc: Dictionary = cfg.birth
 	var need := int(bc.min_beings_small_colony) if pop() < int(bc.small_colony_below) else int(bc.min_beings)
 	if here.size() < need:
@@ -138,7 +138,7 @@ func birth_gates_ok(habitat_id: int, here: Array, t: float) -> bool:
 			and oxygen > float(bc.gate_oxygen_above) and o2_net() > float(bc.gate_o2_net_above) \
 			and food_net() > float(bc.gate_food_net_above)):
 		return false
-	if pop() >= birth_capacity():
+	if pop() + pending_births >= birth_capacity():
 		return false
 	return birth_cooldown_over(habitat_id, t)
 

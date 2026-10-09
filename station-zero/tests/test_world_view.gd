@@ -652,7 +652,7 @@ func _grid30() -> SimWorld:
 
 
 ## Draw records of the entities layer that belong to buildings (base, door leaves, offline dim, interior), plus the
-## pad style boxes and the visible finished count.
+## style boxes and the visible finished count.
 func _entity_building_draws(view: Node2D) -> Dictionary:
 	view.ctx.record = true
 	view.ctx.log.clear()
@@ -692,16 +692,49 @@ func test_far_zoom_lod_draws_base_only(t) -> void:
 		if String(e.id).ends_with(".door"):
 			door_far += 1
 	t.eq(door_far, 0, "far: no door leaves")
-	# Near: unchanged, base + door leaves (2 halves, 1 for the rollup) + pad per building.
+	# Near: base + door leaves (2 halves, 1 for the rollup), with no rectangle behind the artwork.
 	view.set_camera(2.0, Vector2(42.0, 40.0))
 	_frames(view, 3)
 	t.check(view.ctx.detail, "the context is in detail mode at zoom 2")
 	var near := _entity_building_draws(view)
 	t.check(int(near.visible) >= 1, "near view sees a building (%d)" % int(near.visible))
-	t.eq(int(near.boxes), int(near.visible), "near: one pad per finished building")
+	t.eq(int(near.boxes), 0, "near: no translucent foundation rectangles")
 	t.check(int(near.textured) >= 3 * int(near.visible) - int(near.visible) and int(near.textured) <= 3 * int(near.visible),
 			"near: base plus door leaves per building (%d for %d)" % [int(near.textured), int(near.visible)])
-	# Pinned from the pre-LOD code (6 visible buildings: 6 pads, 6 bases, 10 door leaf halves).
+	# Six visible buildings: 6 bases and 10 door leaf halves.
 	t.eq(int(near.textured), 16, "near: building draw count unchanged from before the LOD")
-	t.eq(int(near.cmds), 22, "near: entities layer command count unchanged from before the LOD")
+	t.eq(int(near.cmds), 16, "near: only the building artwork and doors are drawn")
+	_free(pair)
+
+
+func test_open_interior_removes_exterior_shadow(t) -> void:
+	var w := SimWorld.new(42, {"blank": true})
+	var b := w.buildings.add("reactor", 0, 0, 1.0, 12, 10)
+	_set_hour(w, 12.0)
+	var pair := _make(w)
+	var view: Node2D = pair[1]
+	view.set_camera(2.0, Vector2(48, 40))
+	_frames(view, 3)
+	var closed := Recorder.new()
+	view.draw_layer(closed, "shadows")
+	t.eq(closed.cmds.size(), 1, "closed reactor casts its exterior shadow")
+	var closed_alpha: float = closed.cmds[0].alpha
+	view.vm.selection.selected = b.id
+	view.vm.selection.peek = true
+	_frames(view, 1, float(view.ctx.art.selection.roof_fade_s) * 0.5)
+	var cut: float = view._buildings.roof_cut(view.ctx, b)
+	t.check(cut > 0.0 and cut < 1.0, "roof is partway open")
+	var fading := Recorder.new()
+	view.draw_layer(fading, "shadows")
+	t.eq(fading.cmds.size(), 1, "shadow remains during the transition")
+	t.near(float(fading.cmds[0].alpha), closed_alpha * (1.0 - cut), 1e-5, "roof and shadow fade together")
+	_frames(view, 30)
+	var opened := Recorder.new()
+	view.draw_layer(opened, "shadows")
+	t.eq(opened.cmds.size(), 0, "open interior has no exterior silhouette around it")
+	view.vm.selection.deselect()
+	_frames(view, 30)
+	var restored := Recorder.new()
+	view.draw_layer(restored, "shadows")
+	t.eq(restored.cmds.size(), 1, "closing the roof restores its normal shadow")
 	_free(pair)

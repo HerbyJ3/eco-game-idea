@@ -11,6 +11,7 @@ var buildings: Buildings
 var powers: Powers
 var beings: Array[Being] = []
 var colony: Colony
+var lifecycle: Lifecycle
 ## Age system (spec ages.md); announce only. `ages_enabled` false skips the sol hook (test seam).
 var ages: Ages
 var ages_enabled := true
@@ -80,6 +81,7 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	powers = Powers.new(buildings)
 	buildings.powers = powers
 	colony = Colony.new(beings, buildings, rng, clock.sol_h)
+	lifecycle = Lifecycle.new()
 	resources = Resources.new(buildings, rng)
 	ages = Ages.new()
 	relationships = Relationships.new()
@@ -181,7 +183,7 @@ func set_offline(building_id: int, offline: bool) -> void:
 	b.offline_since = t if offline else null
 
 
-## Test seam: a neutral-persona being placed in a building, energy drawn from the world rng.
+## Test seam: a neutral-persona adult placed in a building, energy drawn from the world rng.
 func add_being(building_id: int, role: String = "builder") -> Being:
 	var b := Being.new()
 	b.id = _next_being_id
@@ -189,7 +191,7 @@ func add_being(building_id: int, role: String = "builder") -> Being:
 	b.persona = Being.flat_persona(role)
 	b.role = role
 	b.name = Being.make_name(rng)
-	b.born_t = t
+	b.born_t = lifecycle.add_months(t, -int(lifecycle.cfg.adult_age_years) * Lifecycle.MONTHS_PER_YEAR)
 	var e: Array = SimData.beings().energy.start
 	b.energy = rng.randf_range(float(e[0]), float(e[1]))
 	b.building_id = building_id
@@ -199,6 +201,7 @@ func add_being(building_id: int, role: String = "builder") -> Being:
 
 func _kill(b: Being, cause: String) -> void:
 	beings.erase(b)
+	lifecycle.remove_being(b.id)
 	var key := cause.replace(" ", "_")
 	stats.deaths[key] = int(stats.deaths.get(key, 0)) + 1
 	var shortage := cause in ["air", "thirst", "hunger"]
@@ -461,7 +464,7 @@ func start_site(kind: String, spot: Dictionary = {}) -> bool:
 ## A builder is ready when one is inside (a sleeper counts) an online workshop.
 func _builder_ready() -> bool:
 	for b in beings:
-		if b.role != "builder" or not b.is_inside():
+		if b.role != "builder" or not b.is_inside() or not lifecycle.is_adult(b, t):
 			continue
 		var home := buildings.get_building(b.building_id)
 		if home != null and home.kind == "workshop" and home.online():
@@ -529,9 +532,10 @@ func _construction_progress() -> void:
 
 # ---------------------------------------------------------------- births (spec 10.1)
 
-## Phase 7: every birth.check_interval_h, finished habitats in ascending id, each judged with the
-## live population. Draw order: chance, pick(here), name, energy, wait_h.
+## Phase 7: deliver due pregnancies, then check adult conception eligibility every check_interval_h.
+## Pending pregnancies reserve population capacity. Newborn draws happen at delivery, not conception.
 func _birth_phase() -> void:
+	_deliver_births()
 	if not colony.birth_check_due(fixed_step):
 		return
 	for hb in buildings.list.duplicate():
@@ -539,14 +543,40 @@ func _birth_phase() -> void:
 			continue
 		var here: Array = []
 		for b in beings:
-			if b.building_id == hb.id and b.is_inside():
+			if b.building_id == hb.id and b.is_inside() and lifecycle.can_conceive(b, t):
 				here.append(b)
-		if not colony.birth_gates_ok(hb.id, here, t):
+		if here.is_empty() or not colony.birth_gates_ok(hb.id, here, t, lifecycle.pregnancies.size()):
+			continue
+		if not lifecycle.conception_cooldown_over(hb.id, t, colony.birth_cooldown_h()):
 			continue
 		if not rng.chance(colony.birth_chance(here)):
 			continue
-		var parent: Being = rng.pick(here)  # the parent; null (and no draw) if `here` were empty
-		_create_newborn(hb, parent)
+		var parent: Being = rng.pick(here)
+		lifecycle.conceive(parent, hb.id, t)
+		# Zero gestation is an explicit fixture for tests of the independent birth gates and newborn fields.
+		if int(lifecycle.cfg.pregnancy_months) == 0:
+			_deliver_births()
+		else:
+			_log("pregnant", "%s is expecting a baby." % parent.name,
+					{"being_id": parent.id, "building_id": hb.id})
+
+
+func _deliver_births() -> void:
+	for record in lifecycle.due(t):
+		var parent: Being = null
+		for b in beings:
+			if b.id == int(record.parent_id):
+				parent = b
+				break
+		var home := buildings.get_building(int(record.building_id))
+		if parent == null or home == null:
+			lifecycle.pregnancies.erase(record.parent_id)
+			continue
+		# Respect the existing per-home postpartum cooldown when several dates converge at month-end.
+		if not colony.birth_cooldown_over(home.id, t):
+			continue
+		lifecycle.pregnancies.erase(record.parent_id)
+		_create_newborn(home, parent)
 
 
 func _create_newborn(hb: Buildings.Building, parent: Being = null) -> void:

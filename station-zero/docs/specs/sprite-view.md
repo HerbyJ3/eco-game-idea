@@ -119,10 +119,10 @@ On **every** run the pipeline checks every raw named in `art.kinds.*` and `art.o
 View model = plain data in, plain data out; no Node, no sim write. Contract names below are the units tests call. Module split suggestion (file names are the engineer's call): `fit`, `light`, `doors`, `construction`, `facing_pose`, `footprints`, `interior_slots`, `selection`, `camera`, `particles`, `zsort`.
 
 ### 4.1 Fit rule (owner decision)
-`fit_sprite(footprint, sprite_size, pivot_norm)`. Footprint rect F = `(tx x 8, ty x 8, tw x 8, th x 8)` px, expanded by `fit.box_pad_px` 0. Scale `s = min(F.w / sprite.w, F.h / sprite.h)` (one scale for both axes, never stretched). Size = `(sprite.w x s, sprite.h x s)`. Place the pivot at `(F.x + F.w/2, F.y + F.h)` (bottom edge centre = the sim door point). If `fit.clamp_inside` is true, shift horizontally so the sprite stays inside F (the door x may differ from 0.5 by under 1%). Result: the sprite never leaves F (tolerance `fit.epsilon_px` 0.001) and its door x equals the sim door x within the clamp. Leftover space (top, or both sides) is the foundation pad: F filled with `fit.pad_color` `#6f6157` at alpha 0.6, corner radius 2 px, drawn under shadows. Example: habitat 13x9 tiles is F 104x72; sprite 384x244 gives s = min(0.2708, 0.2951) = 0.2708, drawn 104x66, 6 px of pad above.
-Side effects to check on shots s02, s07 and s08: (1) a 10x10 footprint (80x80) draws the same sprite at 80x51, so the pad is about 29 px tall, 36% of the footprint; (2) the drawn door sits about 8 px (world) above the sim door line, because the door rect's bottom is at about 0.87 of the sprite height and the apron fills the rest; beings leaving the door appear on the apron, not inside the door frame.
+`fit_sprite(footprint, sprite_size, pivot_norm)`. Footprint rect F = `(tx x 8, ty x 8, tw x 8, th x 8)` px, expanded by `fit.box_pad_px` 0. Scale `s = min(F.w / sprite.w, F.h / sprite.h)` (one scale for both axes, never stretched). Size = `(sprite.w x s, sprite.h x s)`. Place the pivot at `(F.x + F.w/2, F.y + F.h)` (bottom edge centre = the sim door point). If `fit.clamp_inside` is true, shift horizontally so the sprite stays inside F (the door x may differ from 0.5 by under 1%). Result: the sprite never leaves F (tolerance `fit.epsilon_px` 0.001) and its door x equals the sim door x within the clamp. Leftover space (top, or both sides) shows the terrain; finished buildings have no generic translucent foundation rectangle. Example: habitat 13x9 tiles is F 104x72; sprite 384x244 gives s = min(0.2708, 0.2951) = 0.2708, drawn 104x66, with 6 px of exposed terrain above. The legacy `fit.pad_*` configuration fields are unused by the renderer.
+Side effects to check on shots s02, s07 and s08: (1) a 10x10 footprint (80x80) draws the same sprite at 80x51, leaving about 29 px of visible terrain above; (2) the drawn door sits about 8 px (world) above the sim door line, because the door rect's bottom is at about 0.87 of the sprite height and the apron fills the rest; beings leaving the door appear on the apron, not inside the door frame.
 The same transform draws all of `base`, the masks, ghost, gray, outline and shadow, and the door rect: `door_world = origin + door_rect x size`. The footprint rect stays the logic rectangle (tap hit test, site stakes, work area).
-Interiors fit inside the **exterior sprite rect** with the same rule (pivot `(interiors.<kind>.door[0], 1.0)` at the exterior sprite's bottom centre). Aspect ratios differ, so the interior may leave a pad strip; interior slots (normalized to the interior image) transform with it.
+Interiors fit inside the **exterior sprite rect** with the same rule (pivot `(interiors.<kind>.door[0], 1.0)` at the exterior sprite's bottom centre). Aspect ratios differ, so the interior may leave exposed terrain around it; interior slots (normalized to the interior image) transform with it.
 Sim sizes are 10..14 x 8..10 tiles (aspect 1.0 to 1.75) against a roughly 1.57 art aspect: the limiting side changes with the rect; this replaces the "stretch up to 25%" resolution of plan A4.
 
 ### 4.2 Facing (A7)
@@ -172,7 +172,7 @@ Full-screen multiply tint layers, in this order: day `#ffe6cc` at alpha 0.18 x L
 | 21 | 0.8 | 0.2 | 0.64 |
 | 21.5 | 1 | 0 | 0 |
 | 23 | 1 | 0 | 0 |
-Shadow vector: `dx = clamp((h - 12)/6, -1.4, 1.4) x 9` px, `dy = -6` px, alpha `0.32 x L`. Building shadow = the shadow mask drawn at offset `(dx, dy x 0.6)` and alpha `shadow.alpha x L x 1.4`; corridor shadow offset scaled 0.4, colour `#320e04`. At h = 12 dx is 0; at 6 it is -9; at 18 it is +9; at 4 it is -12.0 (not yet clamped: -1.333 x 9); at 3 it clamps to -12.6 (-1.4 x 9).
+Shadow vector: `dx = clamp((h - 12)/6, -1.4, 1.4) x 9` px, `dy = -6` px, alpha `0.32 x L`. Building shadow = the shadow mask drawn at offset `(dx, dy x 0.6)` and alpha `shadow.alpha x L x 1.4 x (1 - cut)`, where `cut` is the effective roof cut of a finished building with an available interior. The exterior shadow fades with the roof, leaving no roof silhouette around a fully open interior. Corridor shadow offset scaled 0.4, colour `#320e04`. At h = 12 dx is 0; at 6 it is -9; at 18 it is +9; at 4 it is -12.0 (not yet clamped: -1.333 x 9); at 3 it clamps to -12.6 (-1.4 x 9).
 
 ### 5.2 Doors (proto L1040-1060)
 `door_open` per building, 0..1, per real frame: `open += (want - open) x min(1, dt x door.ease_rate_per_s)` with `dt` the real frame time clamped to `door.max_dt_s` 0.1 and ease rate 4 per s. Independent of sim speed and of pause. `want` = 1 when any being satisfies: (a) state `to_door`, `suit_up` true, `suit_kind()` is `none` inside but the being has `mine_intent` or `mine` (miner) and `building_id` = this building (suiting up inside; builders suit up too but at the tunnel end, so a `to_door` + `suit_up` being with a `job` is excluded); or (b) outside with `suit_kind() == "eva"` and `building_id` = this building (the building it left from, which stays set outside), and distance from its position to this building's `door(tile_px)` below `door.radius_px` 18 (leaving or returning, including a turn-back and a haul). The rule never reads `mine`, which is nulled at the end of the return trip. Builders have `suit_kind() == "construction"` and leave by the tunnel hatch, not the door, so they never open it. Only finished buildings (`built == 1`) animate doors; offline buildings still animate (doors are manual).
@@ -234,7 +234,7 @@ Back to front (world space unless noted):
 | L3 | tunnels (finished and growing, with dashed unfinished paths), tunnel shadows |
 | L4 | beings in `transit` (jumpsuit), y-sorted; they emerge from under buildings |
 | L5 | building shadows (shadow masks) |
-| L6 | **y-sorted entities**: foundation pads, sites, finished buildings (exterior or interior with open roof, door leaves, offline overlay) and outside beings (shadow, sprite), see below |
+| L6 | **y-sorted entities**: sites, finished buildings (exterior or interior with open roof, door leaves, offline overlay) and outside beings (shadow, sprite), see below |
 | L7 | dust and frost particles |
 | L8 | tint (screen space, multiply): day, dusk, night |
 | L9 | additive lights: accents, windows, strips, door glow, lamps, corridor lamps, beacon, offline flicker, sparks, arc flashes |
@@ -408,7 +408,7 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 | pipeline.placeholder.interior.floor_color / tile_px / tile_alpha / bar_h_px / label_font_px | hex / px / alpha / px / px | #2a272c / 48 / 0.03 / 10 / 28 |
 | pipeline.placeholder.min_unique_colors | count | 8 |
 | fit.box_pad_px / clamp_inside / epsilon_px | px / bool / px | 0 / true / 0.001 |
-| fit.pad_color / pad_alpha / pad_corner_px | hex / alpha / px | #6f6157 / 0.6 / 2 |
+| fit.pad_color / pad_alpha / pad_corner_px (legacy, unused) | hex / alpha / px | #6f6157 / 0.6 / 2 |
 | colonist.height_px / mars_born_scale / interior_scale | world px / x / x | 7.6 / 1.1 / 1.9 |
 | colonist.shadow.rx_px / ry_px / dy_px / alpha / color | px / alpha / hex | 1.8 / 0.55 / 0.15 / 0.33 / #1e0a04 |
 | colonist.sleeper_rotation_deg / sleeper_offset_px | deg / px | -90 / [-3.2,-0.6] |
@@ -503,7 +503,7 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 - Colonist carrying regolith shows the ice block frame (Q4).
 - Interiors for kinds with no art yet: placeholder (3.8); roof-open still works and shows the slots of `default` (or the `art.interiors.<kind>` override).
 - An optional raw (decals, sleeping poses) that appears later: the pipeline is rerun, the manifest flips to real, the view uses it with no code change.
-- A 10x10 footprint leaves a tall pad above the sprite and the drawn door sits about 8 px above the sim door line (4.1 side effects); judged on s02, s07, s08.
+- A 10x10 footprint leaves visible terrain above the sprite and the drawn door sits about 8 px above the sim door line (4.1 side effects); judged on s02, s07, s08.
 
 ## 15. Open questions, all decided (owner and coordinator)
 - **Q1** Keying: HANDOFF threshold for border-connected regions, plus near-pure magenta removed everywhere (3.4 rules 1 and 1b; P-3).
@@ -526,7 +526,7 @@ Kind table `art.kinds.<kind>`: `accent` (class for real art: reactor amber, habi
 - Tolerances: float32 Rect2/Vector2, so 1e-5 on scale, `fit.epsilon_px` on positions, 1e-4 on leaf offsets, 1e-3 on interior walk speed.
 
 ## Level of detail (step 17)
-Below `lod.detail_min_zoom` (1.0) the view draws each building as its base plus one grouped light pass (accent and window masks by kind), and skips door leaves, halo copies, ground strips, door glow and foundation pads. Beings keep their sprite and skip the shadow and lamp glow. Offline dimming and construction phases stay visible at any zoom. Above the threshold nothing changes.
+Below `lod.detail_min_zoom` (1.0) the view draws each building as its base plus one grouped light pass (accent and window masks by kind), and skips door leaves, halo copies, ground strips and door glow. Beings keep their sprite and skip the shadow and lamp glow. Offline dimming and construction phases stay visible at any zoom. Finished buildings have no foundation rectangles at any zoom.
 
 ## Changelog
 - 2026-10-03 draft by game-designer. Pending: code-reviewer sign-off against HANDOFF sections 2 and 6 and the cited prototype lines.

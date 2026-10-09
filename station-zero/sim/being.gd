@@ -245,7 +245,16 @@ func decide(w: SimWorld) -> void:
 	if not go and is_night(w) and energy < float(e.night_sleep_below):
 		go = w.rng.chance(float(e.night_sleep_chance))
 	if go:
-		go_sleep(w)
+		if w.lifecycle.stage(self, w.t) == "baby":
+			_enter_sleep(w)
+		else:
+			go_sleep(w)
+		return
+	# Young colonists rest and move indoors; they cannot build, mine, or leave on EVA jobs.
+	if not w.lifecycle.is_adult(self, w.t):
+		if w.lifecycle.stage(self, w.t) != "baby" and _restless_travel(w):
+			return
+		wait_h = idle_wait(w.rng)
 		return
 	if _try_join_construction(w):
 		return

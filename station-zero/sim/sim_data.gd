@@ -42,6 +42,10 @@ static func colony() -> Dictionary:
 	return load_json("colony.json")
 
 
+static func lifecycle() -> Dictionary:
+	return load_json("lifecycle.json")
+
+
 static func buildings() -> Dictionary:
 	return load_json("buildings.json")
 

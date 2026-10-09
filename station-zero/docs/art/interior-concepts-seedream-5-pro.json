@@ -1,0 +1,169 @@
+{
+  "expected_model": "Seedream 5.0 Pro",
+  "expected_provider": "Higgsfield",
+  "render_status": "not_submitted",
+  "images_per_prompt": 1,
+  "total_images": 12,
+  "concept_directory": "station-zero/docs/art/concepts/seedream-5-pro/",
+  "concepts": [
+    {
+      "id": "reactor_a",
+      "building_kind": "reactor",
+      "variant": "A",
+      "title": "Central core with service loop",
+      "target_filename": "reactor_interior_concept_a.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a reinforced rectangular Reactor interior around one compact, prominent amber-glowing cylindrical generator on a raised sealed base at the center. Define its machinery footprint with a narrow hazard-striped service boundary; nobody walks on the base. A continuous wide circulation loop runs outside that boundary and connects the front entry to both side walls. Place a two-position monitoring console against the left wall, two separated inspection panels on the right wall, and neatly routed cooling pipes and cable trunks along the back wall. Leave clear standing space directly in front of each console and panel. Low bolted equipment housings and gray metal floor panels convey reliability rather than a dangerous exposed furnace. Keep the glow restrained so console surfaces and floor boundaries are readable. All wiring belongs to equipment or wall edges, never draped across the walking route. Amber is the functional accent.",
+      "notes": [
+        "Reachable uses: check left console, inspect right service panel, pause outside the central hazard boundary.",
+        "Power production is automatic; no operator staffing requirement is proposed.",
+        "Variant A compares a central machine and a continuous service loop."
+      ]
+    },
+    {
+      "id": "reactor_b",
+      "building_kind": "reactor",
+      "variant": "B",
+      "title": "Rear generator with inspection gallery",
+      "target_filename": "reactor_interior_concept_b.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a reinforced rectangular Reactor interior with the single generator organized as a low, long sealed horizontal assembly along the back wall, its amber inspection window visible from above. The rear machine bank includes cooling manifolds, access hatches, and wall-edge power trunks. Separate it from usable floor with a low service rail that has clearly open approach bays to two safe inspection panels. Keep the main front two-thirds of the room as a broad inspection gallery: a compact freestanding monitoring desk at the left and a secondary wall console at the right, with independent clear approach space and no cables crossing the gallery. The centered front doorway leads into an unobstructed central aisle; that aisle branches to the left desk, right console, and rear inspection bays. This is a different functional layout from a central-core room, not a recolored copy. Use amber accents, reinforced ivory shell panels, and a charcoal service floor. No extra generators, fuel refinery, beds, lounge, or decorative clutter.",
+      "notes": [
+        "Reachable uses: read the left desk, check the right console, inspect the rear machine from its safe bay.",
+        "The rear generator remains automatic; this is a cosmetic service layout.",
+        "Variant B compares a rear machine bank with an open front gallery."
+      ]
+    },
+    {
+      "id": "habitat_a",
+      "building_kind": "habitat",
+      "variant": "A",
+      "title": "Five-bed shared living module",
+      "target_filename": "habitat_interior_concept_a.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a warm rounded-rectangular Habitat interior with exactly FIVE usable individual adult beds, each containing one clearly visible full-length mattress and pillow. Put three separate single beds side by side along the back wall and two single beds along the left wall, with room to approach every mattress from an unobstructed side. All five mattresses must be visible and countable; no stacked bunks, double beds, sofa beds, hidden beds, or shared mattresses. Separate the sleeping zone from active living floor with low lockers or half-height partitions that never block mattress visibility. Place a compact kitchenette on the right back wall, a shared dining table with four distinct chairs in the right-middle zone, and two lounge chairs in the front-right zone. Keep the centered front doorway and the continuous central aisle clear. The lounge and kitchen approaches must not require walking over bedding or through chairs. Use restrained cyan service accents, soft ivory surfaces, warm task lighting, personal lockers, and a cozy but orderly pressure-module atmosphere. Do not add an unrequested infirmary or nursery.",
+      "notes": [
+        "Five usable beds are a provisional concept baseline, not an implemented sleeping-capacity rule or final approved count.",
+        "Reachable uses: sleep on an individual mattress, sit at table or lounge, approach the kitchenette.",
+        "Meal preparation and seated activities are proposed visual ambience; current food use is colony-wide.",
+        "Variant A separates a shared sleeping zone from a right-side living zone."
+      ]
+    },
+    {
+      "id": "habitat_b",
+      "building_kind": "habitat",
+      "variant": "B",
+      "title": "Five private sleep alcoves and central commons",
+      "target_filename": "habitat_interior_concept_b.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a circular or softly polygonal Habitat interior under a fully removed dome roof, using exactly FIVE separate shallow sleeping alcoves distributed around the rear and side perimeter. Each alcove holds exactly one full-length adult single bed with one clearly visible mattress and pillow; all five beds must be visible and easy to count. Alcove partitions are low and opaque, creating privacy without hiding beds or doors. Each alcove opens to a continuous clear curved circulation aisle; no shared beds, extra mattresses, stacked bunks, or floor-sleeping spots. Keep the centered front entrance aligned with an open central commons. Put a small kitchenette on the front-left wall, a four-chair dining table in the right-center, and a compact two-seat lounge toward the front-right, arranged so a direct entry-to-aisle route remains open. Place narrow personal lockers beside alcoves rather than in walking space. The sleeping alcoves form a distinct quiet perimeter; dining, lounge, and kitchen remain on separate active floor. Use the same cyan accents, ivory pressure shell, adult furniture scale, upper-left lighting, and fixed oblique camera as the other rooms.",
+      "notes": [
+        "Five usable beds remain provisional; sleeping capacity still requires a separate simulation change.",
+        "Reachable uses: approach each sleep alcove from the curved aisle, sit in the commons, use the kitchenette.",
+        "Variant B compares private perimeter alcoves and a central commons against the shared dormitory of A.",
+        "The dome shell is a concept candidate; an exterior pair and door alignment would be resolved after selection."
+      ]
+    },
+    {
+      "id": "workshop_a",
+      "building_kind": "workshop",
+      "variant": "A",
+      "title": "Central staging bay and perimeter benches",
+      "target_filename": "workshop_interior_concept_a.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a practical rectangular Workshop interior with a large clear central component-staging bay outlined by restrained yellow hazard markings. The bay is usable floor, not a solid machine. Suspend a compact overhead hoist on a rear-supported gantry, keeping its supports against walls and outside every walking aisle. Put sturdy tool-preparation benches along the back wall and left wall, with visible drawers, clamps, and organized hand tools. Store boxed components, spare equipment, and closed material bins on the right wall; leave their access faces unobstructed. The centered front doorway is a broad pressure-access opening leading directly to the empty staging bay. Maintain a continuous route around the bay to all bench approaches and the exit; no crane hook at head height across the aisle. Include one small component on a rear bench, not an active automated production line. Use restrained muted cyan service accents as a provisional Workshop direction, charcoal rubberized floor panels, ivory shell walls, and tidy industrial wear.",
+      "notes": [
+        "Reachable uses: prepare tools at a rear bench, inspect a component, access right storage, leave for outdoor construction.",
+        "An adult builder in an online Workshop enables construction readiness; no automatic material manufacture is implied.",
+        "Variant A compares perimeter work surfaces and a central floor-staging bay.",
+        "Workshop accent color remains a design choice; muted cyan is consistent across these two concepts only."
+      ]
+    },
+    {
+      "id": "workshop_b",
+      "building_kind": "workshop",
+      "variant": "B",
+      "title": "Twin work islands with a dispatch aisle",
+      "target_filename": "workshop_interior_concept_b.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a rectangular Workshop interior organized around two low work islands, one to the left and one to the right of a broad straight central dispatch aisle from the centered front doorway to rear storage. Each island has a clear working edge facing its own outer aisle, with adult standing space and bench-height tools; keep island ends open so the walking routes connect. The left island is for tool preparation with a vise and parts tray; the right island holds one inspectable construction component and folded equipment. Place pegboard and closed tool cabinets along the left back wall and spare-component shelving along the right back wall. A compact wall-mounted swing hoist serves a small rear-right staging recess; its parked arm and supports stay outside the dispatch aisle. Distinguish that empty staging recess from the two solid bench footprints. Use the same muted cyan accents, ivory shell, charcoal working surfaces, adult scale, and upper-left lighting as Workshop A. No automated factory line, mineral processing, ore pit, robots, or busy scene.",
+      "notes": [
+        "Reachable uses: prepare tools at the left island, inspect the right component, collect stored equipment, depart along the dispatch aisle.",
+        "Construction occurs outdoors; work islands illustrate preparation rather than a new fabrication job.",
+        "Variant B compares independent work islands and a direct dispatch aisle against perimeter benches and central staging."
+      ]
+    },
+    {
+      "id": "green_room_a",
+      "building_kind": "green_room",
+      "variant": "A",
+      "title": "Parallel hydroponic growing lanes",
+      "target_filename": "greenroom_interior_concept_a.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a sealed rectangular Green room for Mars, with three low parallel hydroponic growing-bed rows oriented front to back. Clearly separate their planted troughs from the two generous internal aisles and accessible outer aisles; people can reach bed edges while remaining on floor. Leave an open cross-aisle between the centered front entrance and the planting rows, and another clear cross-aisle at the rear. Put a sealed nutrient tank and protected plumbing in the back-left corner, reachable from the left aisle, and an environmental-control console on the right wall with standing clearance. A potting and packing bench sits against the front-left wall outside the doorway's approach. Grow-light bars are overhead and thin enough not to hide plants or routes. Use leafy crops at moderate height, green accents, pale shell panels, clean dark floor channels, and neatly routed pipes along wall edges. The enclosure is fully pressurized; no open-air crops, exposed Mars soil, jungle density, overgrown aisles, or blue sky.",
+      "notes": [
+        "Reachable uses: inspect planted bed edges, check the tank or control console, work at the packing bench.",
+        "Powered food and oxygen production remains automatic; gardening is proposed ambience.",
+        "Variant A compares parallel growing lanes with two cross-aisles."
+      ]
+    },
+    {
+      "id": "green_room_b",
+      "building_kind": "green_room",
+      "variant": "B",
+      "title": "Four growing islands around a service spine",
+      "target_filename": "greenroom_interior_concept_b.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a sealed rounded-rectangular Green room with four separate low hydroponic growing islands, arranged as two on the left and two on the right of a broad central service spine. The centered front doorway opens directly onto this spine, continuing to a rear environmental-control console. Leave clear transverse walking gaps between each front and rear pair of islands, plus an outer perimeter aisle so every intended tending edge can be reached from floor. Place a compact sealed nutrient tank with protected plumbing on the left rear wall, and a potting/packing counter on the right front wall, both outside the aisle. Keep all planters and machine bases distinctly separate from floor; plants must not spill over their footprint. Suspend thin grow-light bars above the islands without concealing the room layout. Use the same green accents, ivory pressure shell, healthy compact leafy crops, adult working heights, upper-left light, and dark clean service floor as Green room A. No extra levels, decorative trees, exterior greenhouse reflections, open-air agriculture, or staff.",
+      "notes": [
+        "Reachable uses: approach islands from spine or perimeter aisle, check rear controls, tend reachable bed edges, use the right bench.",
+        "No worker is required for existing production; this concept does not add a water-processing mechanic.",
+        "Variant B compares four islands around a direct service spine against parallel rows."
+      ]
+    },
+    {
+      "id": "archive_a",
+      "building_kind": "archive",
+      "variant": "A",
+      "title": "Physical records and reading library",
+      "target_filename": "archive_interior_concept_a.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a quiet rounded-rectangular Archive interior whose proposed identity is a physical record library. Low sealed record cabinets and modest book shelves line the back and left walls, with access faces clear and upper shelves below the shell rim. Leave a continuous browsing aisle along those cabinets. Put a shared reading table with four separate chairs in the right-center, each chair having leg space and a reachable approach; a compact document-viewing terminal sits on the front-left wall. The centered front doorway leads through a clear central route connecting the terminal, cabinet browsing aisle, and table without crossing chair footprints. Add a few closed storage binders, one open unlettered book, and subtle recessed task lights. Use warm ivory, charcoal records furniture, restrained muted violet archive accents, and an orderly lived-in tone consistent with the same Mars-colony interiors. No readable book titles, lore paragraphs, classroom podium, school branding, research laboratory, or computer reward icons.",
+      "notes": [
+        "Proposed visual identity: browse records, read at the table, view a document terminal.",
+        "Archive currently supports curiosity-influenced visits; no research or education system is implemented.",
+        "Variant A emphasizes physical archives and communal reading; muted violet is an exploratory accent."
+      ]
+    },
+    {
+      "id": "archive_b",
+      "building_kind": "archive",
+      "variant": "B",
+      "title": "Digital memory gallery and study stations",
+      "target_filename": "archive_interior_concept_b.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a rectangular Archive interior whose proposed identity is a digital memory gallery. A protected low server-storage bank occupies the rear wall; no walkable space lies inside its machinery footprint. Install three separate seated document terminals along the left wall, with one distinct chair and clear approach per workstation. Place a low central display island holding abstract colony-memory artifacts under simple clear protective cases; leave a generous continuous browsing loop around the island. Two quiet reading chairs with a small side table sit on the right front wall, away from the entry. The centered front doorway opens onto the loop, which branches naturally to terminals, the gallery island, and reading seats. Keep every display and terminal below eye-level walls and visible from the common fixed oblique camera. Use the same restrained violet accents, ivory shell, charcoal equipment, warm task lights, and adult scale as Archive A. Screens show abstract marks, not words. No holographic floating text, research machinery, schoolroom, heroic centerpiece, or new gameplay symbols.",
+      "notes": [
+        "Proposed visual identity: browse memory displays, sit at a document terminal, read quietly.",
+        "Terminals and gallery activities are cosmetic candidates; no knowledge-production mechanic is proposed.",
+        "Variant B emphasizes digital records and individual study rather than physical stacks and shared reading."
+      ]
+    },
+    {
+      "id": "comms_a",
+      "building_kind": "comms",
+      "variant": "A",
+      "title": "Perimeter radio consoles and listening desks",
+      "target_filename": "comms_interior_concept_a.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a rectangular Comms interior as a compact pressurized communications room. Put a curved or segmented low console bank against the rear wall, with two distinct seated stations and visible desk surfaces. A third small listening/radio desk sits on the left wall, with a clear chair approach. Enclosed electronics racks line a portion of the right wall; their service fronts are reachable from a clear aisle. Keep the middle of the room open and connect the centered front doorway to all three workstations and the right service aisle. Use recognizable but restrained radio knobs, compact desk microphones, headset cradles, abstract waveforms, and status lights; no readable messages. Cables stay along walls or under equipment, never over walking paths. Use muted cool-blue accent lights against ivory panels and charcoal consoles, with the same warm upper-left lighting and scale as the other rooms. Do not place an exterior antenna, landing-pad view, holographic map, cockpit windows, or mandatory operator in the room.",
+      "notes": [
+        "Proposed visual identity: check a display, sit at a radio desk, inspect an electronics rack.",
+        "Comms currently supports curiosity-influenced visits; there is no operator-dependent message system.",
+        "Variant A compares perimeter consoles and an open central circulation space."
+      ]
+    },
+    {
+      "id": "comms_b",
+      "building_kind": "comms",
+      "variant": "B",
+      "title": "Central coordination table and rear signal bay",
+      "target_filename": "comms_interior_concept_b.png",
+      "prompt": "Create one empty roofless interior concept for Station Zero, a strictly 2D illustrated Mars-colony game. Painted 2D art, crisp dark contours, restrained texture, warm ivory pressure panels, charcoal equipment, ochre highlights and orange reflected light. Use the same fixed oblique orthographic camera for every room: approximately 35-degree elevation, floor axes approximately 30 degrees to horizontal, no perspective convergence. Keep back walls and low front cutaway walls; reveal the whole usable floor. Center one complete enclosed module on flat pale warm-gray with clear margins. Doorway centered on the nearest front edge. Upper-left light, soft local shadows, no long exterior shadow. Consistent adult-scale beds, counters, chairs and doors; main aisles fit two adults. Clearly separate equipment footprints from floor and leave reachable approaches. No people, Sims, robots, captions, labels, watermarks, terrain, sky, translucent footprint rectangle or ghost exterior. Screens use abstract indicators. No 3D-rendered look or photorealism. Single concept, not a sheet of views. Design a rounded-rectangular Comms interior organized around one low central coordination table with an inset abstract status display and four distinct chairs, one per usable side. Keep ample chair approach space and a continuous walking loop around the table; chair backs must not block the route from the centered front doorway. The rear wall houses an enclosed signal-equipment bay with two protected electronics racks and one standing diagnostic console, all with a clear service aisle. A small secondary two-position radio desk occupies the left front wall, reached from the loop; the right front wall has a shallow equipment cabinet and tidy headset storage. Keep all screens readable as visual surfaces without text, maps with named locations, or floating holograms. Use the same muted cool-blue accents, ivory pressure shell, charcoal electronics, warm upper-left light, adult furniture scale, and fixed oblique camera as Comms A. No command-throne, exterior satellite dish, cockpit, weapons, people, or implied transmission-based game economy.",
+      "notes": [
+        "Proposed visual identity: sit at the coordination table, approach the radio desk, inspect the rear diagnostic console.",
+        "These activities remain cosmetic proposals; Comms has no implemented communications task system.",
+        "Variant B compares a central collaborative table with a separate rear service bay against perimeter operator desks."
+      ]
+    }
+  ]
+}

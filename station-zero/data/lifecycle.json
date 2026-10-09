@@ -1,0 +1,8 @@
+{
+  "calendar_epoch": "2000-01-01T00:00:00",
+  "pregnancy_months": 9,
+  "toddler_age_years": 1,
+  "child_age_years": 3,
+  "teen_age_years": 13,
+  "adult_age_years": 18
+}

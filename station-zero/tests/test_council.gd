@@ -386,18 +386,23 @@ func test_t01a_earth_born_is_a_voice_at_once(t) -> void:
 	_end(t)
 
 
-func test_t01b_mars_born_is_a_voice_from_forty_sols(t) -> void:
+func test_t01b_mars_born_is_a_voice_from_eighteen_years(t) -> void:
 	if not _api(t):
 		return
 	var w = _world()
 	var n := 100
-	var young = _voice(w, {}, 0, float(n) - 39.9)
-	var edge = _voice(w, {}, 0, float(n) - 40.0)
-	var old = _voice(w, {}, 0, float(n) - 41.0)
+	var young = _voice(w, {}, 0, 0.0)
+	var edge = _voice(w, {}, 0, 0.0)
+	var old = _voice(w, {}, 0, 0.0)
+	var boundary: float = w.clock.start_hour + float(n) * w.clock.sol_h
+	var born: float = w.lifecycle.add_months(boundary, -18 * Lifecycle.MONTHS_PER_YEAR)
+	young.born_t = born + w.fixed_step
+	edge.born_t = born
+	old.born_t = born - w.fixed_step
 	_bnd(w, n)
-	t.check(not w.council.is_voice(w, young.id), "a Mars-born being of 39.9 sols is not a voice")
-	t.check(w.council.is_voice(w, edge.id), "one of exactly 40 sols is (the slack of SimWorld.STEP_EPS covers float noise)")
-	t.check(w.council.is_voice(w, old.id), "and one of 41 sols")
+	t.check(not w.council.is_voice(w, young.id), "not a voice before the eighteenth birthday")
+	t.check(w.council.is_voice(w, edge.id), "a voice exactly on the eighteenth birthday")
+	t.check(w.council.is_voice(w, old.id), "older adults are voices")
 	t.eq(int(_cs(w).voices), 2, "voices reading 2")
 	_end(t)
 
@@ -407,12 +412,15 @@ func test_t01c_min_age_is_read_from_the_world_cfg(t) -> void:
 		return
 	var w = _world()
 	var n := 100
-	var b = _voice(w, {}, 0, float(n) - 30.0)
+	var b = _voice(w, {}, 0, 0.0)
+	var boundary: float = w.clock.start_hour + float(n) * w.clock.sol_h
+	b.born_t = w.lifecycle.add_months(boundary, -19 * Lifecycle.MONTHS_PER_YEAR)
+	w.lifecycle.cfg.adult_age_years = 20
 	_bnd(w, n)
-	t.check(not w.council.is_voice(w, b.id), "30 sols old is no voice at the shipped 40")
-	_ccfg(w).voice.min_age_sols = 25
+	t.check(not w.council.is_voice(w, b.id), "nineteen is below a staged twenty-year threshold")
+	w.lifecycle.cfg.adult_age_years = 18
 	_bnd(w, n)
-	t.check(w.council.is_voice(w, b.id), "voice.min_age_sols 25 in the world's cfg makes it one")
+	t.check(w.council.is_voice(w, b.id), "the common eighteen-year threshold makes it a voice")
 	_end(t)
 
 
@@ -549,6 +557,10 @@ func _tree() -> Dictionary:
 	var f2 = _voice(w)
 	var u1 = _voice(w, {}, f1.id, -100.0)
 	var u2 = _voice(w, {}, f2.id, -100.0)
+	# These lineage fixtures are grown voices; preserve the generation ordering in calendar years.
+	for b in w.beings:
+		if not b.earth_born:
+			b.born_t = w.lifecycle.add_months(b.born_t, -18 * 12)
 	_calm(w)
 	return {"w": w, "gg": gg.id, "g": g.id, "p1": p1.id, "p2": p2.id, "c1": c1.id, "c2": c2.id, "f1": f1.id, "f2": f2.id,
 			"u1": u1.id, "u2": u2.id}
@@ -2944,9 +2956,14 @@ func _run_sols(w, n: int) -> void:
 
 
 func _override_entry(w) -> void:
+	# Exercise Council independently of waiting nine months for a first generation of births.
+	_edit(SimData.ages().entry, "mars_born_min", 0)
+	_edit(SimData.ages().entry, "mars_born_homes_min", 0)
 	_ccfg(w).entry.trust_share_min = 0.0
 	_ccfg(w).entry.chosen_share_min = 0.0
 	_ccfg(w).entry.voices_min = 1
+	# A seven-founder household has smaller gatherings than the former instant-birth colony.
+	_ccfg(w).session.min_voices = 2
 
 
 ## Three 160-sol seed-42 worlds shared by tests 16 and 22: [module on, module on (a twin), module off from creation]. The

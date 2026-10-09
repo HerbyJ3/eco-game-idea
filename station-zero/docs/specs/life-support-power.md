@@ -1,5 +1,7 @@
 # Spec: life support, power, beings, construction, suits (Task 1)
 
+Lifecycle update: [lifecycle.md](lifecycle.md) supersedes immediate births with nine calendar months of pregnancy and restricts conception and outside work to adults. The original birth-gate and cooldown rules remain inputs to conception. Historical balance results below predate this change.
+
 Source of truth: HANDOFF.md sections 2, 5, 8. Tiebreaker: `station-zero-handoff/prototype/station-zero-wip.html` ("proto L<n>"). Plan: `docs/tasks/task-1-plan.md` (A1..A13 and the owner decisions are resolved here).
 Locked decisions respected: influence-only god (no power in this slice except the `power_multiplier_until` test hook), ages not meters (no population bar anywhere), per-being energy, power as a budget (a short is never a death).
 Every number below lives in `data/colony.json`, `data/buildings.json`, `data/beings.json`, `data/suits.json`, `data/resources.json` (key paths in section 12). Existing `data/sim.json` supplies the 0.05 h step and seed 42; `data/calendar.json` supplies the sol length (24.6597 h) and the Mars clock.

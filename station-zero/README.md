@@ -2,6 +2,14 @@
 
 Design source: `../station-zero-handoff/HANDOFF.md`. Task plans: `docs/tasks/`. Specs: `docs/specs/`.
 
+All six building types and a format for interior descriptions: [building catalog](docs/art/building-catalog.md). Starting-building purposes and art requirements: [building design brief](docs/art/starting-buildings.md). Indoor behavior, animation gaps, and the animator/graphic-designer handoff: [indoor animation handoff](docs/art/interior-animation.md).
+
+New owner inputs for player influence, organic pacing, bed capacity, and city art direction: [design notes](docs/design/owner-direction-notes.md).
+
+Calendar pregnancy and human life stages: [lifecycle rules](docs/specs/lifecycle.md). Strictly 2D graphics direction based on the owner's concept: [art-director review](docs/art/mars-colony-redesign.md).
+
+Two interior concepts per building, prepared for manual rendering in Higgsfield Seedream 5.0 Pro: [12 concept prompts](docs/art/interior-concepts-seedream-5-pro.md). Current decisions, completed work, reference locations, and remaining tasks: [continuation handoff](docs/design/continuation-handoff.md).
+
 - `sim/`: headless simulation (RefCounted classes, no drawing). Tunables are in `data/*.json`.
 - `view/`: scenes that only read sim state. The `Sim` autoload (`view/sim_host.gd`) owns the `SimWorld` and steps it.
 - `tests/`: headless tests.

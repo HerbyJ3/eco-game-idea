@@ -766,6 +766,8 @@ func test_seeded_determinism(t) -> void:
 ## Habitats with two beings each and every birth gate open (ice 60, food 110, oxygen 140, nets positive).
 func _birth_world(seed_in: int, habitat_online: bool) -> SimWorld:
 	var w := _mk(seed_in, ["workshop", "green_room", "comms"])  # draw 11
+	# Isolate the power gate; the default nine-month scheduler has its own integration tests.
+	w.lifecycle.cfg.pregnancy_months = 0
 	var hab: int = w.add_building("habitat", 500, 0)            # 11 + 3 = 14: online fits, offline cannot return (14 > 13.3)
 	if not habitat_online:
 		w.set_offline(hab, true)

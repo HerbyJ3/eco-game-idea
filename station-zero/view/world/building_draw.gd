@@ -1,5 +1,5 @@
 extends RefCounted
-## Buildings: shadows (L5), the y-sorted entity layer (L6: pad, exterior, door leaves, offline dim, construction) and the
+## Buildings: shadows (L5), the y-sorted entity layer (L6: exterior, door leaves, offline dim, construction) and the
 ## additive lights (L9: accents, windows, door strip and glow, offline flicker). Everything is read from the view model:
 ## the fit rect, door openness, light alphas, the construction draw list. Nothing is animated here.
 
@@ -9,10 +9,6 @@ const BeingDraw = preload("res://view/world/being_draw.gd")
 const Construction = preload("res://view/model/construction.gd")
 const Doors = preload("res://view/model/doors.gd")
 const ZSort = preload("res://view/model/zsort.gd")
-
-var _pad_style: StyleBoxFlat
-var _pad_key := ""
-
 
 # ------------------------------------------------------------------ geometry
 
@@ -62,7 +58,8 @@ func draw_shadows(c: Object, x: WorldCtx) -> void:
 	var off := Vector2(x.shadow.x, x.shadow.y * float(sh.building_dy_scale))
 	for b in _by_kind(x, x.detail):
 		var ext: Rect2 = x.vm.sprite_rect(b)
-		x.blit(c, "building.%s.mask.shadow" % b.kind, Rect2(ext.position + off, ext.size), alpha)
+		# Opening the roof must also remove its silhouette from the ground around the interior.
+		x.blit(c, "building.%s.mask.shadow" % b.kind, Rect2(ext.position + off, ext.size), alpha * (1.0 - roof_cut(x, b)))
 
 
 ## The finished, visible buildings. Far zoom (sorted true) groups them by kind so same-texture draws are consecutive and
@@ -97,8 +94,6 @@ func _draw_building(c: Object, x: WorldCtx, b: Buildings.Building, beings: Being
 	var ext: Rect2 = x.vm.sprite_rect(b)
 	var foot: Rect2 = x.vm.footprint_rect(b)
 	if b.finished():
-		if x.detail:
-			_draw_pad(c, x, foot)
 		var cut := roof_cut(x, b)
 		x.blit(c, "building.%s.base" % b.kind, ext, 1.0 - cut)
 		if cut > 0.0:
@@ -112,17 +107,6 @@ func _draw_building(c: Object, x: WorldCtx, b: Buildings.Building, beings: Being
 			x.blit(c, "building.%s.mask.shadow" % b.kind, ext, lights.dim)
 	else:
 		_draw_site(c, x, b, ext, foot)
-
-
-func _draw_pad(c: Object, x: WorldCtx, foot: Rect2) -> void:
-	var fit: Dictionary = x.art.fit
-	var key := "%s|%s|%s" % [fit.pad_color, str(fit.pad_alpha), str(fit.pad_corner_px)]
-	if _pad_key != key:
-		_pad_key = key
-		_pad_style = StyleBoxFlat.new()
-		_pad_style.bg_color = x.col(fit.pad_color, float(fit.pad_alpha))
-		_pad_style.set_corner_radius_all(int(fit.pad_corner_px))
-	c.draw_style_box(_pad_style, foot)
 
 
 func _draw_door(c: Object, x: WorldCtx, b: Buildings.Building, ext: Rect2, alpha: float) -> void:

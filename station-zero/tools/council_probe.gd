@@ -186,15 +186,14 @@ static func _meet(a: Array, b: Array) -> bool:
 
 ## council.md 5.1 and 5.2 from relationships.pairs: voices, trust, and the chosen share at every (friends_min f, lineage
 ## generations g). Also the chosen-pair leak counts at g = chosen.kin_generations (2). Read only.
-func _readings(w: SimWorld, parent_of: Dictionary, vmin_sols: float) -> Dictionary:
+func _readings(w: SimWorld, parent_of: Dictionary) -> Dictionary:
 	var rel: Relationships = w.relationships
-	var sol_h: float = w.clock.sol_h
 	for b in w.beings:
 		if not parent_of.has(b.id):
 			parent_of[b.id] = int(b.parent_id)
 	var voice := {}
 	for b in w.beings:
-		if b.earth_born or w.t - b.born_t >= vmin_sols * sol_h - SimWorld.STEP_EPS:
+		if w.lifecycle.is_adult(b, w.t):
 			var lins: Array = []
 			for g in GENS:
 				lins.append(_lin(parent_of, b.id, g))
@@ -331,7 +330,6 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 	var rel: Relationships = w.relationships
 	var cst: Dictionary = w.stats.council
 	var sol_h: float = w.clock.sol_h
-	var vmin := float(cfg.voice.min_age_sols)
 	var interval := int(cfg.session.interval_sols)
 	var yes_above := float(cfg.support.yes_above)
 	var no_below := float(cfg.support.no_below)
@@ -388,7 +386,7 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 			last_ticks = rel.ticks
 			var vs := {}
 			for b in w.beings:
-				if b.earth_born or w.t - b.born_t >= vmin * sol_h - SimWorld.STEP_EPS:
+				if w.lifecycle.is_adult(b, w.t):
 					vs[b.id] = true
 			for bid in rel.present:
 				var c := 0
@@ -411,7 +409,7 @@ func _seed_run(seed_in: int, sols: int, tag: String, out_dir: String, params: Di
 				if str(he.how) != "council_split":
 					sns = int(he.sol)
 			hist_seen += 1
-		var rd := _readings(w, parent_of, vmin)
+		var rd := _readings(w, parent_of)
 		var age := str(w.ages.age)
 		var parts: Dictionary = tc._decide_entry_parts(w, n)
 		var notland := age != Ages.LANDING
