@@ -33,7 +33,6 @@ const READ_SOLS: Array[int] = [30, 60, 100, 150, 200, 300]
 const CAPPED: Array[String] = ["friends", "found_friend", "close", "close_crew", "drifted"]
 ## Council gate numbers of docs/specs/council.md 5.1 to 5.3 (estimates E; data/council.json does not exist yet). Read-only use:
 ## the probe recomputes the voice readings and the gate clauses, it does not need the Council module.
-const VOICE_MIN_AGE_SOLS := 40.0
 const KIN_GENERATIONS := 2
 const WIN_SOLS := 20
 const TRUST_SHARE_MIN := 0.5
@@ -650,13 +649,12 @@ static func _window_ok(win: Array, share: float, ok_min: int) -> bool:
 ## The voice readings of council.md 5.1 and 5.2, from the live web (read only). parent_of is the probe's own lineage record
 ## (never pruned). Returns {voices, trust, chosen, family_turned}.
 func _voice_reading(w: SimWorld, rel: Relationships, parent_of: Dictionary) -> Dictionary:
-	var sol_h: float = w.clock.sol_h
 	var voice := {}
 	for b in w.beings:
 		if not parent_of.has(b.id):
 			parent_of[b.id] = int(b.parent_id)
 	for b in w.beings:
-		if b.earth_born or w.t - b.born_t >= VOICE_MIN_AGE_SOLS * sol_h - SimWorld.STEP_EPS:
+		if w.lifecycle.is_adult(b, w.t):
 			var lin := {b.id: true}
 			var cur: int = b.id
 			for g in KIN_GENERATIONS:

@@ -1,6 +1,6 @@
 # Twelve 2D interior concepts for Seedream 5.0 Pro
 
-**Render status: not submitted.** These are complete prompts for the owner’s requested **Higgsfield / Seedream 5.0 Pro** batch. No images have been rendered. The Higgsfield plugin is not exposed to this conversation, so these prompts cannot yet be submitted through it. No substitute model or service is used.
+**Render status: rendered, unreviewed.** All 12 concepts were rendered on 2026-10-09 using **Higgsfield / Seedream 5.0 Pro** and committed in merge `801bec5`. See the [render record, job IDs, and reference details](concepts/seedream-5-pro/README.md) and [contact sheet](concepts/seedream-5-pro/contact_sheet.jpg). The prompts below remain available for manual refinements; no concept has replaced active game artwork.
 
 Generate one image per prompt: two layout alternatives for each of the six implemented building types. Save concept images under `station-zero/docs/art/concepts/seedream-5-pro/` using the filenames below. Keep these exploratory variants outside active game-asset replacement paths. The companion [JSON batch](interior-concepts-seedream-5-pro.json) records each copy-ready prompt and designer note; it is a local manifest, not an invented provider API payload.
 
