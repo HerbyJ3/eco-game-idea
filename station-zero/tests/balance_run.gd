@@ -10,6 +10,8 @@ func _init() -> void:
 	var sols := 300
 	var every := 30
 	var params := {}
+	var tier := ""
+	var out_dir := ""
 	var i := 0
 	while i < args.size():
 		match args[i]:
@@ -22,6 +24,12 @@ func _init() -> void:
 			"--every":
 				i += 1
 				every = int(args[i])
+			"--tier":
+				i += 1
+				tier = args[i]
+			"--out":
+				i += 1
+				out_dir = args[i]
 			"--param":
 				i += 1
 				var kv: PackedStringArray = args[i].split("=", true, 1)
@@ -30,10 +38,23 @@ func _init() -> void:
 				else:
 					print("PARAM ERROR: expected path=value, got %s" % args[i])
 		i += 1
-	var res: Dictionary = lib.run(seed_in, sols, params, every)
+	var res: Dictionary = lib.run(seed_in, sols, params, every, tier)
 	var all_pass := true
 	for line in res.lines:
 		print(line)
+	if tier == "std":
+		# Spec section 8: exit 1 on any L1 or L4 failure; every other verdict is read from the output.
+		for v: Dictionary in res.std.verdicts:
+			if v.id in ["L1", "L4"] and v.verdict == "FAIL":
+				all_pass = false
+		if out_dir != "":
+			DirAccess.make_dir_recursive_absolute(out_dir)
+			var f := FileAccess.open("%s/std_seed_%d.json" % [out_dir, seed_in], FileAccess.WRITE)
+			if f != null:
+				f.store_string(JSON.stringify(res.std.data))
+				f.close()
+		quit(0 if all_pass else 1)
+		return
 	for v: Dictionary in res.verdicts:
 		if v.verdict == "FAIL":
 			all_pass = false

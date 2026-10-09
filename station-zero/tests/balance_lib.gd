@@ -89,7 +89,7 @@ static func _fmt_min(v: Variant) -> String:
 	return "-" if v == null else "%.1f" % float(v)
 
 
-static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int = 30) -> Dictionary:
+static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int = 30, tier: String = "") -> Dictionary:
 	var saved: Array = []
 	var lines: Array[String] = []
 	for k in params:
@@ -114,9 +114,16 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 	var notok := {"sols": 0}
 	for g in Ages.GROUPS:
 		notok[g] = 0
+	# Standard tier (spec lifecycle-calibration.md): a read-only observer; null at Smoke so that path is unchanged.
+	var obs: RefCounted = null
+	if tier == "std":
+		obs = load("res://tests/lifecycle_lib.gd").new()
+		obs.begin(w, row_every)
 	while w.sol() < sols:
 		w.step()
 		total_steps += 1
+		if obs != null:
+			obs.after_step(w)
 		if w._sol_started and w.ages_enabled and w.sol() >= int(SimData.ages().sample.from_sol) \
 				and w.colony.pop() > 0 and not w.ages.window.is_empty():
 			var last: Dictionary = w.ages.window.back()
@@ -163,9 +170,16 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 		if v.verdict == "FAIL":
 			all_pass = false
 	lines.append("RESULT %s (target 9 determinism: table sha256 %s)" % ["PASS" if all_pass else "FAIL", thash.substr(0, 16)])
+	var std := {}
+	if obs != null:
+		std = obs.finish(w, sols, verdicts)
+		lines.append_array(std.lines)
+		var std_text := "\n".join(PackedStringArray(std.lines))
+		lines.append("STD-RESULT (restated targets; exit code follows L1 and L4 only, spec section 8) std_text sha256 %s" % std_text.sha256_text().substr(0, 16))
+		lines.append_array(std.wall_lines)
 	for e in saved:
 		e[0][e[1]] = e[2]
-	return {"lines": lines, "table_hash": thash, "verdicts": verdicts, "steps": total_steps, "world": w}
+	return {"lines": lines, "table_hash": thash, "verdicts": verdicts, "steps": total_steps, "world": w, "std": std}
 
 
 static func _v(n: int, ok: bool, detail: String) -> Dictionary:
