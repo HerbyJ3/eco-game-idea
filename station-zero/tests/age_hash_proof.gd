@@ -16,12 +16,19 @@ extends SceneTree
 ## and the Task 1 hashes must come out), and again after the column and hook exist: a differing hash means a behaviour
 ## change and the step is rejected.
 
+## pre-lifecycle baseline (Tasks 1-5), Task 1 table hashes (no age/web/cn columns), superseded by the calendar-lifecycle baseline (commit e1f2bdd; owner decision
+## 2026-10-09, docs/balance/lifecycle-rebaseline.md). History only, not compared against:
+##   42: "02032b2388529913",
+##   7: "830c7d0c441823f5",
+##   99: "0e3e83a7108140ef",
+##   1234: "bca6eb2ca93ba0c1",
+##   2026: "2645033a417ec400",
 const EXPECTED := {
-	42: "02032b2388529913",
-	7: "830c7d0c441823f5",
-	99: "0e3e83a7108140ef",
-	1234: "bca6eb2ca93ba0c1",
-	2026: "2645033a417ec400",
+	42: "f8750bee8424a3f1",
+	7: "0491abf46338c256",
+	99: "2463601427badf0b",
+	1234: "86b199e697f98d0a",
+	2026: "12ebeb75ad29220c",
 }
 const SOLS := 300
 const EVERY := 30

@@ -3285,8 +3285,10 @@ func test_t18c_council_hash_proof_hashes_and_references(t) -> void:
 	if not _api(t):
 		return
 	var hp: GDScript = load("res://tests/council_hash_proof.gd")
-	t.eq(hp.EXPECTED_T4, {42: "a96b8a9562fd75d0", 7: "a4968e2fcc48ec36", 99: "2210719cf48d8612", 1234: "19437e397d1dff88",
-			2026: "6e7fe68477161196"}, "the Task 4 hashes (docs/balance/task-4-log.md)")
+	# pre-lifecycle baseline (Tasks 1-5), docs/balance/task-4-log.md: 42 a96b8a9562fd75d0, 7 a4968e2fcc48ec36, 99 2210719cf48d8612,
+	# 1234 19437e397d1dff88, 2026 6e7fe68477161196. Current: the calendar-lifecycle baseline, docs/balance/lifecycle-rebaseline.md.
+	t.eq(hp.EXPECTED_T4, {42: "5cae292b785e5de7", 7: "257dc2bda6b29981", 99: "d31bc86c094bcff4", 1234: "bc78b23075c71ef4",
+			2026: "f404077296a86f66"}, "the Task 4-level hashes (docs/balance/lifecycle-rebaseline.md)")
 	t.eq(hp.expected_t3(), load("res://tests/relationships_hash_proof.gd").EXPECTED_T3, "Task 3 hashes by reference")
 	t.eq(hp.expected_t1(), load("res://tests/age_hash_proof.gd").EXPECTED, "Task 1 hashes by reference")
 	var lines: Array = ["# header one", "# header two", "sol pop age web cn", "30 12 S 0.5 -", "60 14 S 0.6 C", "",

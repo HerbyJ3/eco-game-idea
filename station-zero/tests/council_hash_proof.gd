@@ -22,12 +22,19 @@ extends SceneTree
 ## it removes that column in either form, so the Task 1 hash does not depend on the projection.
 
 ## Task 4 table hashes, docs/balance/task-4-log.md (table sha256, balance run output with the age and web columns).
+## pre-lifecycle baseline (Tasks 1-5), Task 4 table hashes, superseded by the calendar-lifecycle baseline (commit e1f2bdd; owner decision
+## 2026-10-09, docs/balance/lifecycle-rebaseline.md). History only, not compared against:
+##   42: "a96b8a9562fd75d0",
+##   7: "a4968e2fcc48ec36",
+##   99: "2210719cf48d8612",
+##   1234: "19437e397d1dff88",
+##   2026: "6e7fe68477161196",
 const EXPECTED_T4 := {
-	42: "a96b8a9562fd75d0",
-	7: "a4968e2fcc48ec36",
-	99: "2210719cf48d8612",
-	1234: "19437e397d1dff88",
-	2026: "6e7fe68477161196",
+	42: "5cae292b785e5de7",
+	7: "257dc2bda6b29981",
+	99: "d31bc86c094bcff4",
+	1234: "bc78b23075c71ef4",
+	2026: "f404077296a86f66",
 }
 const SOLS := 300
 const EVERY := 30

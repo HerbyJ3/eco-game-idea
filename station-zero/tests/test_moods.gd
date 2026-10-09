@@ -2090,12 +2090,12 @@ func test_t25a_expected_t5_is_the_task_5_log(t) -> void:
 	var p = _proof()
 	var exp: Dictionary = p.EXPECTED_T5
 	t.eq(exp.keys().size(), 5, "five seeds")
-	var log_text := FileAccess.get_file_as_string("res://docs/balance/task-5-log.md")
+	var log_text := FileAccess.get_file_as_string("res://docs/balance/lifecycle-rebaseline.md")
 	for seed_i in [42, 7, 99, 1234, 2026]:
 		t.check(exp.has(seed_i), "seed %d is listed" % seed_i)
 		if exp.has(seed_i):
 			t.eq(str(exp[seed_i]).length(), 16, "seed %d hash has 16 hex digits" % seed_i)
-			t.check(log_text.find(str(exp[seed_i])) >= 0, "seed %d: %s appears in docs/balance/task-5-log.md" % [seed_i, str(exp[seed_i])])
+			t.check(log_text.find(str(exp[seed_i])) >= 0, "seed %d: %s appears in docs/balance/lifecycle-rebaseline.md" % [seed_i, str(exp[seed_i])])
 	var chain = load("res://tests/council_hash_proof.gd")
 	for seed_i in [42, 7, 99, 1234, 2026]:
 		t.check(str(exp.get(seed_i, "")) != str(chain.EXPECTED_T4[seed_i]), "the Task 5 and Task 4 hashes differ (seed %d): the constant is not copied from the older proof" % seed_i)

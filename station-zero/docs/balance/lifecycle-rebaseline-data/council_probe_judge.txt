@@ -1,0 +1,151 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+## Judge: tag base, seeds [42, 7, 99, 1234, 2026]
+
+### Voices over time (pop / voices / trust / chosen share at the sol)
+| seed | sol 30 | sol 60 | sol 100 | sol 150 | sol 200 | sol 250 | sol 300 |
+|---|---|---|---|---|---|---|---|
+| 42 | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 0.86 / 0.00 L | 7 / 7 / 0.86 / 0.29 L | 7 / 7 / 0.86 / 0.29 L | 7 / 7 / 0.57 / 0.00 L | 7 / 7 / 0.29 / 0.00 L | 12 / 7 / 0.29 / 0.00 S |
+| 7 | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 1.00 / 0.29 L | 7 / 7 / 0.86 / 0.29 L | 7 / 7 / 0.71 / 0.29 L | 7 / 7 / 0.57 / 0.00 L | 9 / 6 / 0.50 / 0.00 L |
+| 99 | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 0.71 / 0.00 L | 7 / 7 / 0.71 / 0.29 L | 7 / 7 / 0.57 / 0.29 L | 7 / 7 / 0.71 / 0.71 L | 11 / 7 / 0.71 / 0.57 L |
+| 1234 | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 0.86 / 0.00 L | 7 / 7 / 0.71 / 0.00 L | 7 / 7 / 0.43 / 0.00 L | 7 / 7 / 0.29 / 0.00 L | 7 / 7 / 0.29 / 0.00 L | 10 / 7 / 0.29 / 0.00 L |
+| 2026 | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 0.86 / 0.00 L | 7 / 7 / 1.00 / 0.00 L | 7 / 7 / 0.86 / 0.43 L | 7 / 7 / 0.71 / 0.29 L | 12 / 7 / 0.71 / 0.43 L |
+(age letter: L landing, S settlement, C council)
+
+### Crossings
+| seed | projected sequence (sols) | Task 3 settle / changes | age_history (sol how) | Council entries (sol, how, last clause passed, onsets settled/web/chosen/voices) | splits | fall-backs from Council | changes |
+|---|---|---|---|---|---|---|---|
+| 42 | L@0 S@290 | 67 / 2 (DIFFERS) | 0 landing/landing; 290 settlement/settled | none | [] | [] | 0 |
+| 7 | L@0 | 58 / 1 (DIFFERS) | 0 landing/landing | none | [] | [] | 0 |
+| 99 | L@0 | 54 / 2 (DIFFERS) | 0 landing/landing | none | [] | [] | 0 |
+| 1234 | L@0 | 65 / 1 (DIFFERS) | 0 landing/landing | none | [] | [] | 0 |
+| 2026 | L@0 | 53 / 1 (DIFFERS) | 0 landing/landing | none | [] | [] | 0 |
+
+### Trust discrimination (from sol 60) and flags FLOOR / CEILING
+| seed | trust min / max | chosen min / max | FLOOR window (gate-live sols: S+30 to first entry): sols, min web / min chosen | CEILING window (Council terms only): sols, min web, sols < 0.5, sols < 0.3, longest run < 0.3 | chosen pairs Mars-born+unrelated (end) | mean leak share | pairs turned to family (end / max) |
+|---|---|---|---|---|---|---|---|
+| 42 | 0.286 / 0.857 | 0.000 / 0.286 | 0: -1 / -1 | 0: -1, 0, 0, 0 | 0 of 0 (0.00) | 0.00 | 0 / 0 |
+| 7 | 0.500 / 1.000 | 0.000 / 0.429 | 0: -1 / -1 | 0: -1, 0, 0, 0 | 0 of 0 (0.00) | 0.00 | 0 / 0 |
+| 99 | 0.429 / 1.000 | 0.000 / 0.714 | 0: -1 / -1 | 0: -1, 0, 0, 0 | 0 of 3 (0.00) | 0.00 | 0 / 0 |
+| 1234 | 0.286 / 0.857 | 0.000 / 0.286 | 0: -1 / -1 | 0: -1, 0, 0, 0 | 0 of 0 (0.00) | 0.00 | 0 / 0 |
+| 2026 | 0.429 / 1.000 | 0.000 / 0.429 | 0: -1 / -1 | 0: -1, 0, 0, 0 | 0 of 2 (0.00) | 0.00 | 0 / 0 |
+FLOOR web (no seed's web reading ever below 0.50 in its gate-live window): n/a, no live window
+FLOOR chosen (no seed's chosen reading ever below 0.50 in its gate-live window): n/a, no live window
+CEILING (on every seed that enters, web never below 0.5 inside Council terms): n/a, no seed enters
+
+### Proposals
+| seed | # | raised sol | proposer | again | votes | outcome (sol) | reason | hard | vote sols | mean lean at outcome: total = personal + size + means - hard + child |
+|---|---|---|---|---|---|---|---|---|---|---|
+
+### Meetings (sol: present / voices, yes, no; V = vote, R = raise or quiet meeting)
+- 42 (0 meetings): 
+- 7 (0 meetings): 
+- 99 (0 meetings): 
+- 1234 (0 meetings): 
+- 2026 (0 meetings): 
+
+### Votes: lockstep and factions
+| seed | sol | voices | yes | no | one side >= 0.95 | divided (both >= 0.25) | amb yes / no | caution yes / no | trait_ok | stance sign differs from lean | personal sd | mean stance / stance sd | undecided share |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+votes pooled 0, lockstep votes 0 (0%); LOCKSTEP (more than half): clear
+divided votes pooled 0, trait-consistent 0 (0%); first-divided-vote-per-proposal 0, trait-consistent 0
+stance sign differs from lean (share of voices), median over votes -1.000; personal-term sd median over votes -1.000 (spec estimate 0.15)
+pledges 0: 
+SIZE-DOMINANT (corrected: size term >= one sd of the personal term at every pledge): n/a, no pledge; each pledge: []
+SIZE-DOMINANT (old reading, size above half the mean lean at every pledge, printed for the record): n/a, no pledge; each pledge: []
+
+### Gatherings (largest voice gathering at one relationship tick per sol)
+| seed | sols >= 60: count median / p90 / max | share of voices median / p90 / max | Council sols: count median / max | eligible meeting sols | unheld | unheld share | meeting size median / max | first raise after entry (sols) |
+|---|---|---|---|---|---|---|---|---|
+| 42 | 3 / 4 / 6 | 0.429 / 0.571 / 0.857 | - / - | 0 | 0 | - | - / - | no entry |
+| 7 | 3 / 4 / 5 | 0.429 / 0.571 / 0.714 | - / - | 0 | 0 | - | - / - | no entry |
+| 99 | 3 / 4 / 6 | 0.429 / 0.571 / 0.857 | - / - | 0 | 0 | - | - / - | no entry |
+| 1234 | 3 / 4 / 5 | 0.429 / 0.571 / 0.714 | - / - | 0 | 0 | - | - / - | no entry |
+| 2026 | 3 / 4 / 6 | 0.429 / 0.571 / 0.857 | - / - | 0 | 0 | - | - / - | no entry |
+NOROOM (unheld share above 0.50 on any seed): clear
+First-raise delay trigger: first raise under 6 sols after entry on 0 seeds (trigger at 3): not triggered
+
+### Lines
+| seed | Council sols | lines by key | council lines | per 5 Council sols (all / without circles) | dropped by cap | rel + council share of log (flag 0.15) | council share |
+|---|---|---|---|---|---|---|---|
+| 42 | 0 | {  } | 0 | -1 / -1 | 0 | 0.038 | 0.000 |
+| 7 | 0 | {  } | 0 | -1 / -1 | 0 | 0.048 | 0.000 |
+| 99 | 0 | {  } | 0 | -1 / -1 | 0 | 0.027 | 0.000 |
+| 1234 | 0 | {  } | 0 | -1 / -1 | 0 | 0.018 | 0.000 |
+| 2026 | 0 | {  } | 0 | -1 / -1 | 0 | 0.037 | 0.000 |
+
+### Cost (on_sol microseconds; the probe times the real hooks; runs in parallel are noisy, see the cost runs)
+| seed | max pop | on_sol pop 60..80: n median / p95 / max | pop > 120: n median / p95 / max | peak (>= 0.9 max pop): n median / p95 / max | module share of mean step: pop 60..80 / pop > 120 / all |
+|---|---|---|---|---|---|
+| 42 | 12 | 0: - / - / - | 0: - / - / - | 13: 255 / 458 / 458 | - / - / 0.0073 |
+| 7 | 12 | 0: - / - / - | 0: - / - / - | 6: 47 / 51 / 51 | - / - / 0.0077 |
+| 99 | 11 | 0: - / - / - | 0: - / - / - | 4: 55.500 / 68 / 68 | - / - / 0.0065 |
+| 1234 | 10 | 0: - / - / - | 0: - / - / - | 11: 42 / 55 / 55 | - / - / 0.0070 |
+| 2026 | 12 | 0: - / - / - | 0: - / - / - | 12: 48.500 / 74 / 74 | - / - / 0.0076 |
+
+Whole boundary step (world.step() on sol-boundary steps, microseconds): n median / p95 / max; the 16.7 ms trigger of 11.1 is 16700 us
+| seed | all boundary steps | pop > 120 |
+|---|---|---|
+| 42 | 300: 402 / 804 / 6031 | - |
+| 7 | 300: 401 / 673 / 5502 | - |
+| 99 | 300: 402.500 / 730 / 8873 | - |
+| 1234 | 300: 396.500 / 714 / 8720 | - |
+| 2026 | 300: 383.500 / 661 / 957 | - |
+
+### Gate replays (first Council entry sol; '-' = never by sol 300; baseline = shipped values; exact for the first entry)
+| variant | 42 | 7 | 99 | 1234 | 2026 |
+|---|---|---|---|---|---|
+| live first_council_sol | - | - | - | - | - |
+| baseline replay (must equal live) | - | - | - | - | - |
+| trust_share_min 0.4 | - | - | - | - | - |
+| trust_share_min 0.5 | - | - | - | - | - |
+| trust_share_min 0.6 | - | - | - | - | - |
+| settled_sols 20 | - | - | - | - | - |
+| settled_sols 30 | - | - | - | - | - |
+| settled_sols 45 | - | - | - | - | - |
+| trust_ok_min 14 | - | - | - | - | - |
+| trust_ok_min 16 | - | - | - | - | - |
+| trust_ok_min 18 | - | - | - | - | - |
+| web clause off (settled, chosen, voices) | - | - | - | - | - |
+| chosen clause off (settled, web, voices) | - | - | - | - | - |
+| chosen_share_min 0.3, friends_min 1, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.4, friends_min 1, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.5, friends_min 1, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.6, friends_min 1, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.3, friends_min 1, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.4, friends_min 1, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.5, friends_min 1, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.6, friends_min 1, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.3, friends_min 1, kin_generations 2 | - | - | - | - | - |
+| chosen_share_min 0.4, friends_min 1, kin_generations 2 | - | - | - | - | - |
+| chosen_share_min 0.5, friends_min 1, kin_generations 2 | - | - | - | - | - |
+| chosen_share_min 0.6, friends_min 1, kin_generations 2 | - | - | - | - | - |
+| chosen_share_min 0.3, friends_min 2, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.4, friends_min 2, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.5, friends_min 2, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.6, friends_min 2, kin_generations 0 | - | - | - | - | - |
+| chosen_share_min 0.3, friends_min 2, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.4, friends_min 2, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.5, friends_min 2, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.6, friends_min 2, kin_generations 1 | - | - | - | - | - |
+| chosen_share_min 0.3, friends_min 2, kin_generations 2 | - | - | - | - | - |
+| chosen_share_min 0.4, friends_min 2, kin_generations 2 | - | - | - | - | - |
+| chosen_share_min 0.5, friends_min 2, kin_generations 2 | - | - | - | - | - |
+| chosen_share_min 0.6, friends_min 2, kin_generations 2 | - | - | - | - | - |
+
+### Targets
+C1 entered by sol 300 on >= 3 seeds: 0 seeds (["-", "-", "-", "-", "-"]) -> FAIL
+C2 (structural, T12): PASS
+C3 (<= 4 Council changes) -> PASS
+C4 pledge on >= 1 seed(s): seeds [] -> FAIL
+C5 (12.1: divided, set_aside, set_aside_hard or pledge_divided) on >= 2 seeds: seeds [] -> FAIL (set_aside_long, reported not counted, on seeds [])
+C6 trait-consistent at >= 80% of divided votes: 0 of 0 (0%); first-divided only 0 of 0 -> n/a, no divided vote
+C7 Council lines <= 1.0 per 5 Council sols on every seed: all council_* PASS; without circles PASS
+Flags: FLOOR web FLAGGED; FLOOR chosen FLAGGED; CEILING n/a; SIZE-DOMINANT n/a; LOCKSTEP clear; NOROOM clear
+C8 (on_sol median at pop > 120 <= 5.0 ms, max <= 16.7 ms, share <= 0.02; valid only if the run was made alone) -> PASS
+  seed 42: no sol above pop 120
+  seed 7: no sol above pop 120
+  seed 99: no sol above pop 120
+  seed 1234: no sol above pop 120
+  seed 2026: no sol above pop 120
+Boundary-step trigger (11.1): max whole boundary step 0 us against 16700 us -> not triggered

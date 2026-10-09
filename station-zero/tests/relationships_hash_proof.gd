@@ -17,12 +17,19 @@ extends SceneTree
 ## can check them on synthetic tables.
 
 ## Task 3 table hashes (with the age column, balance run output), docs/balance/task-3-log.md line 30.
+## pre-lifecycle baseline (Tasks 1-5), Task 3 table hashes, superseded by the calendar-lifecycle baseline (commit e1f2bdd; owner decision
+## 2026-10-09, docs/balance/lifecycle-rebaseline.md). History only, not compared against:
+##   42: "da166c4f8b202820",
+##   7: "30c53f90949d979b",
+##   99: "54ad1e15b934bf9a",
+##   1234: "7052c92936a75157",
+##   2026: "67e3dcf057200eb9",
 const EXPECTED_T3 := {
-	42: "da166c4f8b202820",
-	7: "30c53f90949d979b",
-	99: "54ad1e15b934bf9a",
-	1234: "7052c92936a75157",
-	2026: "67e3dcf057200eb9",
+	42: "5c590177e627b03c",
+	7: "d9aead4bf953ad7e",
+	99: "6c0df749c1c1e7ec",
+	1234: "9ea6315f71b0c371",
+	2026: "798b786bae4905c1",
 }
 const SOLS := 300
 const EVERY := 30

@@ -1,0 +1,1081 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+PASS test_ages::test_t01_oxygen_and_food_thresholds (3 ms)
+PASS test_ages::test_t02_o2_net_knife_edge_and_food_net (5 ms)
+PASS test_ages::test_t03_power_budget_offline_and_short (3 ms)
+PASS test_ages::test_t04_shortage_death_causes (4 ms)
+PASS test_ages::test_t05_ice_two_sols_of_use (8 ms)
+PASS test_ages::test_t06_calm_share_and_boundaries (12 ms)
+PASS test_ages::test_t06_rested_share_and_boundaries (11 ms)
+PASS test_ages::test_t07_pop_zero (6 ms)
+PASS test_ages::test_t08_samples_start_at_sol_five (5 ms)
+PASS test_ages::test_t09_full_ok_history_enters_at_44 (4 ms)
+PASS test_ages::test_t10_tolerance_edge (9 ms)
+PASS test_ages::test_t11_last_three_block_entry (9 ms)
+PASS test_ages::test_t12_family_mars_born (27 ms)
+PASS test_ages::test_t13_dead_band_pure (2 ms)
+PASS test_ages::test_t13_dead_band_through_on_sol (7 ms)
+PASS test_ages::test_t14_dwell_on_exit_and_entry (14 ms)
+PASS test_ages::test_t14_square_waves_and_flapping (258 ms)
+PASS test_ages::test_t15_dominant_cause_pure (4 ms)
+PASS test_ages::test_t15_clause_to_group_mapping (13 ms)
+PASS test_ages::test_t16_landing_line_founder_and_blank (5 ms)
+PASS test_ages::test_t16_staged_settle_fall_back_settle_again (7 ms)
+PASS test_ages::test_t16_all_cause_and_season_lines (163 ms)
+PASS test_ages::test_t17_ages_off_and_on_are_the_same_world (2096 ms)
+PASS test_ages::test_t17_on_sol_changes_nothing_but_ages (5 ms)
+PASS test_ages::test_t17_newborn_records_parent_and_habitat (20 ms)
+PASS test_ages::test_t17_empty_here_guard_makes_no_extra_draw (1 ms)
+PASS test_ages::test_t18_key_path_parity (36 ms)
+PASS test_ages::test_proof_helper_strips_the_age_column_and_hashes_the_body (4 ms)
+PASS test_ages::test_t20_budget_zero_takes_one_step (1 ms)
+PASS test_ages::test_t20_fake_clock_stops_after_three_steps (3 ms)
+PASS test_ages::test_t20_cap_and_unbudgeted_equivalence (30 ms)
+PASS test_art_library::test_every_entry_with_a_file_loads_at_manifest_size (1615 ms)
+PASS test_art_library::test_mipmaps_on_buildings_interiors_atlases (16 ms)
+PASS test_art_library::test_placeholders_resolve (2 ms)
+PASS test_art_library::test_placeholder_entries_resolve_in_a_synthetic_manifest (8 ms)
+PASS test_art_library::test_missing_id_fails_clearly (2 ms)
+PASS test_art_library::test_door_pivot_and_frame_tables (3 ms)
+PASS test_beings::test_drain_rate_per_state (0 ms)
+PASS test_beings::test_drain_one_hour_idle_to_door_and_transit (5 ms)
+PASS test_beings::test_sleep_does_not_drain_and_gains_11_fed_4_starving (4 ms)
+    fed sleep 20 -> 97: 141 steps (7.05 h); wait_h on waking 6.54
+PASS test_beings::test_fed_sleep_from_20_to_97_takes_7_hours (8 ms)
+    starving sleep 70 -> 97: 135 steps (6.75 h)
+PASS test_beings::test_starving_sleep_gains_4_per_hour_to_97 (9 ms)
+PASS test_beings::test_sleep_below_28_energy_after_drain (2 ms)
+PASS test_beings::test_sleep_intent_forces_sleep_and_is_cleared_on_entering_sleep (0 ms)
+    hour 23.0 energy 64.0: asleep fraction 0.601
+    hour 2.0 energy 64.0: asleep fraction 0.601
+    hour 21.6 energy 64.0: asleep fraction 0.601
+    hour 5.4 energy 64.0: asleep fraction 0.601
+PASS test_beings::test_night_sleep_chance_is_0_6_below_65 (1956 ms)
+PASS test_beings::test_conditional_chance_draws (4 ms)
+    day wake, 1000 sleepers at 80, one step: 17 woke (expect 15)
+    day wake from 76: 452 of 1000 woke below 96 (expect about 440)
+PASS test_beings::test_wake_chance_by_day_is_0_015_per_step (14485 ms)
+PASS test_beings::test_no_day_wake_at_or_below_75_and_none_at_night_before_97 (271 ms)
+PASS test_beings::test_wake_chance_draws_only_when_day_and_energy_between_75_and_97 (2 ms)
+PASS test_beings::test_nearest_online_habitat_is_measured_from_the_current_building (25 ms)
+PASS test_beings::test_offline_habitat_is_skipped_and_the_next_online_one_is_chosen (28 ms)
+PASS test_beings::test_equidistant_habitats_tie_goes_to_the_lowest_id (1 ms)
+PASS test_beings::test_sleeping_on_the_floor_when_there_is_no_online_habitat_or_no_path (2 ms)
+    journey W -> A: 144 steps, states ["to_door", "transit", "idle", "to_door", "transit", "idle", "sleep"]
+PASS test_beings::test_sleep_journey_states_intent_and_arrival_wait (18 ms)
+    to_door mean: drive 0 2.765 h, drive 1 1.659 h, ratio 0.600 (expect 2.75, 1.65, 0.6)
+PASS test_beings::test_to_door_time_scales_with_drive (330 ms)
+    idle_wait drive 0.5 steady 0.5: min 2.16 max 9.90 mean 5.980 (expect 2.10..10.00, mean 6.050)
+    idle_wait drive 1.0 steady 0.0: min 1.34 max 6.40 mean 3.838 (expect 1.30..6.48, mean 3.890)
+    idle_wait drive 0.0 steady 1.0: min 3.13 max 14.13 mean 8.554 (expect 3.03..14.27, mean 8.650)
+PASS test_beings::test_idle_wait_ranges_and_means (567 ms)
+PASS test_beings::test_wait_h_counts_down_in_idle_and_decides_at_zero (1 ms)
+    restless 0.0: 0.081 travel (expect 0.08)
+    restless 0.5: 0.239 travel (expect 0.24)
+    restless 1.0: 0.395 travel (expect 0.40)
+PASS test_beings::test_restless_travel_chance (9651 ms)
+    room pull (got/expected): workshop 0.587/0.605 archive 0.082/0.079 comms 0.089/0.079 habitat 0.074/0.079 green_room 0.085/0.079 reactor 0.084/0.079
+    room pull (got/expected): workshop 0.054/0.059 archive 0.441/0.453 comms 0.318/0.311 habitat 0.062/0.059 green_room 0.065/0.059 reactor 0.061/0.059
+    room pull (got/expected): workshop 0.055/0.061 archive 0.065/0.061 comms 0.068/0.061 habitat 0.160/0.163 green_room 0.385/0.392 reactor 0.267/0.261
+    room pull (got/expected): workshop 0.348/0.348 archive 0.120/0.130 comms 0.124/0.130 habitat 0.140/0.130 green_room 0.131/0.130 reactor 0.136/0.130
+PASS test_beings::test_room_pull_follows_the_traits (4298 ms)
+    transit steps: 48 px 44 (expect 44), 56 px 51 (expect 51)
+PASS test_beings::test_tunnel_transit_timing (6 ms)
+PASS test_beings::test_a_being_in_transit_is_not_interrupted_by_tiredness (3 ms)
+PASS test_beings::test_stats_start_at_zero (0 ms)
+PASS test_beings::test_asleep_share_and_energy_average_stats (1 ms)
+PASS test_beings::test_max_sleep_h_is_the_longest_current_or_completed_sleep (15 ms)
+PASS test_beings::test_founders_are_seven_beings_in_the_layout_homes (4 ms)
+PASS test_beings::test_founder_role_retry_over_200_seeds (573 ms)
+PASS test_beings::test_founder_zero_is_the_first_matching_draw_of_the_seed (23 ms)
+PASS test_beings::test_founders_equal_for_equal_seeds (11 ms)
+    seed 42, 5 sols (2466 steps): asleep share 0.105, average energy 59.6, max_sleep_h 8.15
+    seed 7, 5 sols (2466 steps): asleep share 0.092, average energy 59.8, max_sleep_h 8.40
+    seed 99, 5 sols (2466 steps): asleep share 0.091, average energy 64.9, max_sleep_h 7.75
+PASS test_beings::test_five_sol_run_without_eva_keeps_everyone_alive_and_asleep_about_a_tenth (824 ms)
+PASS test_beings::test_seeded_determinism_of_beings (764 ms)
+PASS test_births::test_birth_data_matches_spec (0 ms)
+    first check births: 18 of 100 seeds at step 80, 0 at another step
+PASS test_births::test_timer_fires_on_the_80th_step (561 ms)
+    after a blocked check at step 80: 12 births at step 160, 0 at another step (60 seeds)
+PASS test_births::test_timer_runs_through_a_failed_check (672 ms)
+PASS test_births::test_gate_matrix_blocks_every_broken_gate (777 ms)
+    gate ice 5.0: births in 500 checks: 0 just below, 98 just above
+    gate food 15.0: births in 500 checks: 0 just below, 98 just above
+    gate oxygen 20.0: births in 500 checks: 0 just below, 98 just above
+    net gate o2_per_green_room 0.10: 0 just below, 94 just above
+    net gate food_per_green_room 0.05: 0 just below, 94 just above
+PASS test_births::test_gate_boundaries_at_default_values (555 ms)
+PASS test_births::test_gate_strictness_exact (392 ms)
+PASS test_births::test_need_depends_on_population (382 ms)
+    warmth 0.9: 424 births in 2000 seeds, rate 0.2120 (expected 0.206)
+PASS test_births::test_birth_rate_headline_over_seeds (1110 ms)
+    warmth 0 (cold pair): rate 0.0683 (expected 0.0800)
+    warmth 0.9: rate 0.1867 (expected 0.2060)
+    warmth 1.0 (mean of 2 and 0, not the sum): rate 0.2008 (expected 0.2200)
+    warmth 2.0 (hot pair): rate 0.3475 (expected 0.3600)
+    a hot being in the workshop is not counted: rate 0.0792 (expected 0.0800)
+    sleepers in H count: rate 0.3458 (expected 0.3600)
+PASS test_births::test_birth_rate_by_warmth (925 ms)
+    draw order replayed on 25 births and 55 chance misses
+PASS test_births::test_birth_draw_order (62 ms)
+    1 habitat, pop 6 (cap 7): 113 births in 500 checks
+    1 habitat, pop 7 (cap 7): 0 births in 500 checks
+    1 habitat, pop 8 (cap 7): 0 births in 500 checks
+    2 habitats, pop 11 (cap 12): 189 births in 500 checks
+    2 habitats, pop 12 (cap 12): 0 births in 500 checks
+    2 habitats, one offline, pop 6 (cap 7): 105 births in 500 checks
+    2 habitats, one offline, pop 7 (cap 7): 0 births in 500 checks
+PASS test_births::test_capacity (673 ms)
+    2 habitats, pop 10: 355 checks with a birth, 38 with two, max pop 12
+PASS test_births::test_capacity_uses_live_population (503 ms)
+    elapsed absent (never had a birth): 111 births in 500 checks
+    elapsed 1 step: 0 births in 500 checks
+    elapsed 6 h: 0 births in 500 checks
+    elapsed 24 h (checks +4 to +24 are blocked): 0 births in 500 checks
+    elapsed 493 steps = 24.65 h: 0 births in 500 checks
+    elapsed 24.6597 - 1e-6: 0 births in 500 checks
+    elapsed 24.6597 + 1e-6: 102 births in 500 checks
+    elapsed 494 steps = 24.70 h: 105 births in 500 checks
+    elapsed 28 h (+28 is allowed): 99 births in 500 checks
+    elapsed 100 h: 93 births in 500 checks
+PASS test_births::test_cooldown_boundaries (601 ms)
+    16 seeds x 2400 steps: 44 births, 28 gaps, gap steps:count 560:10 640:1 720:3 800:3 880:3 1040:1 1120:2 1200:1 1280:1 1360:1 1520:1 1760:1
+PASS test_births::test_cooldown_natural_steps (2740 ms)
+    habitat 4 in cooldown: 0 births there, 123 in the other
+    habitat 5 in cooldown: 0 births there, 105 in the other
+PASS test_births::test_cooldown_is_per_habitat (166 ms)
+    209 newborns: energy 70.0..99.9 mean 84.66, wait_h 0.02..1.99 mean 0.944, per habitat { 4: 106, 5: 103 }
+PASS test_births::test_newborn_fields (135 ms)
+    1221 newborn charts compared; roles { "builder": 383, "social": 319, "curious": 274, "tender": 245 }; habitat longitudes [56.125, 79.125, 153.875, 16.75]
+PASS test_births::test_newborn_persona_from_mars_chart (931 ms)
+PASS test_births::test_births_stats_and_log (3 ms)
+PASS test_births::test_extinct_colony_has_no_births (18 ms)
+PASS test_births::test_births_are_deterministic_per_seed (1184 ms)
+PASS test_clock::test_constants (0 ms)
+PASS test_clock::test_mod360_and_sign (0 ms)
+PASS test_clock::test_ls_at_founding (0 ms)
+PASS test_clock::test_ls_reference_points (0 ms)
+PASS test_clock::test_ls_periodic_and_monotonic (0 ms)
+PASS test_clock::test_sign_lengths (14 ms)
+PASS test_clock::test_mars_hour (0 ms)
+PASS test_clock::test_seasons (0 ms)
+PASS test_clock::test_counting (0 ms)
+PASS test_clock::test_lon_of_tile (0 ms)
+PASS test_colony::test_net_rates_one_green_room_seven_beings (42 ms)
+PASS test_colony::test_net_rates_without_online_green_room (1 ms)
+PASS test_colony::test_caps (1 ms)
+PASS test_colony::test_stock_clamps_to_cap_and_drops_when_green_room_goes_offline (1 ms)
+PASS test_colony::test_stocks_clamp_at_zero (2 ms)
+PASS test_colony::test_ice_drain (48 ms)
+PASS test_colony::test_ice_and_regolith_targets (3 ms)
+PASS test_colony::test_air_warning_once_per_sol (68 ms)
+PASS test_colony::test_food_warning_once_per_sol (41 ms)
+PASS test_colony::test_thirst_warning_once_per_two_sols (66 ms)
+PASS test_colony::test_no_warning_when_stocks_are_positive (55 ms)
+PASS test_colony::test_death_timer_fires_on_step_40_air (4 ms)
+PASS test_colony::test_death_timer_fires_on_step_100_thirst (10 ms)
+PASS test_colony::test_death_timer_fires_on_step_120_hunger (10 ms)
+PASS test_colony::test_air_interval_wins_when_food_also_zero (4 ms)
+PASS test_colony::test_timer_resets_when_shortage_ends (10 ms)
+PASS test_colony::test_deaths_only_on_check_steps (3745 ms)
+PASS test_colony::test_death_chance_is_point_four_per_check (12119 ms)
+PASS test_colony::test_death_cause_air (174 ms)
+PASS test_colony::test_cause_priority_air_over_thirst (160 ms)
+PASS test_colony::test_cause_priority_thirst_over_hunger (444 ms)
+PASS test_colony::test_cause_priority_all_three_is_air (29 ms)
+PASS test_colony::test_death_is_logged_with_cause (28 ms)
+PASS test_colony::test_victims_are_inside_beings (0 ms)
+PASS test_colony::test_seeded_determinism (1019 ms)
+PASS test_colony::test_extinction (190 ms)
+PASS test_construction::test_cost_is_18_or_28_plus_4_per_building (1 ms)
+PASS test_construction::test_start_site_spends_the_cost_and_creates_an_unfinished_building (1 ms)
+PASS test_construction::test_regolith_is_the_gate_at_exactly_the_cost (0 ms)
+PASS test_construction::test_one_site_at_a_time (0 ms)
+PASS test_construction::test_start_site_without_a_spot_uses_find_spot (0 ms)
+PASS test_construction::test_choose_kind_reactor_first (3 ms)
+PASS test_construction::test_choose_kind_o2_net_floor_is_0_4 (6 ms)
+PASS test_construction::test_choose_kind_food_net_floor_is_0_25 (1 ms)
+PASS test_construction::test_choose_kind_stock_floor_is_three_sols_of_use (1 ms)
+PASS test_construction::test_choose_kind_crowd_rule_counts_finished_habitats_offline_included (26 ms)
+PASS test_construction::test_choose_kind_pool_weights_and_workshop_cap (231 ms)
+PASS test_construction::test_build_check_fires_on_step_100_and_is_a_single_site (20 ms)
+PASS test_construction::test_who_is_ready_and_who_is_not (42 ms)
+PASS test_construction::test_the_check_runs_on_its_own_clock_not_when_a_builder_becomes_ready (9 ms)
+PASS test_construction::test_failed_find_spot_charges_nothing_and_the_check_repeats (9 ms)
+PASS test_construction::test_need_regolith_is_logged_every_two_sols_and_waited_every_check (54 ms)
+PASS test_construction::test_first_build_at_seed_42_is_a_reactor_for_34 (15 ms)
+PASS test_construction::test_no_crew_means_zero_progress (68 ms)
+PASS test_construction::test_progress_per_step_follows_the_formula_after_the_drain (1 ms)
+PASS test_construction::test_progress_adds_up_over_the_crew (1 ms)
+PASS test_construction::test_only_beings_in_state_work_with_this_job_are_crew (1 ms)
+PASS test_construction::test_work_drains_three_per_hour_stepped (3 ms)
+PASS test_construction::test_work_left_counts_down_and_arrival_draws_8_to_16 (92 ms)
+PASS test_construction::test_work_wander_is_6_px_per_hour_with_pauses_inside_the_inset_site (384 ms)
+PASS test_construction::test_finishing_turns_the_site_into_a_building_and_the_crew_walks_in (3 ms)
+PASS test_construction::test_finishing_a_reactor_adds_supply_and_sets_first_new_reactor_sol (1 ms)
+PASS test_construction::test_waiting_for_builders_on_step_494_and_again_494_steps_later (48 ms)
+PASS test_construction::test_a_crewed_site_never_warns (76 ms)
+PASS test_construction::test_hours_stats_start_at_zero_and_track_site_and_crew (12 ms)
+PASS test_construction::test_builders_join_in_the_parent_with_chance_0_55 (88 ms)
+PASS test_construction::test_builderish_rules (957 ms)
+PASS test_construction::test_sleep_comes_before_joining (18 ms)
+PASS test_construction::test_builders_elsewhere_walk_to_the_parent_without_a_suit (78 ms)
+PASS test_construction::test_builders_with_no_path_to_the_parent_fall_through (14 ms)
+PASS test_construction::test_suit_up_happens_at_the_corridor_end_p1 (5 ms)
+PASS test_construction::test_suit_up_with_the_site_gone_cancels_after_paying (1 ms)
+PASS test_construction::test_the_walk_out_takes_corridor_plus_site_distance_at_16_px_per_hour (4 ms)
+PASS test_construction::test_suit_kind_flag (1 ms)
+PASS test_construction::test_shift_end_walks_home_p2_then_p1_and_enters_the_parent (8 ms)
+PASS test_construction::test_the_construction_suit_is_kept_on_the_walk_home_until_entering (15 ms)
+PASS test_construction::test_eva_arrival_work_with_a_live_site_starts_work (1 ms)
+PASS test_construction::test_eva_arrival_work_with_the_site_cleared_enters_at_once (1 ms)
+PASS test_construction::test_eva_arrival_enter_and_null_reset_everything (0 ms)
+PASS test_construction::test_site_gone_while_working_enters_at_once (1 ms)
+PASS test_construction::test_a_stale_job_is_not_the_new_sites_crew (1 ms)
+PASS test_construction::test_offline_workshop_makes_builders_not_ready_even_when_they_are_inside (14 ms)
+PASS test_construction::test_whole_cycle_join_suit_up_walk_work_finish_enter (70 ms)
+PASS test_council::test_t01a_earth_born_is_a_voice_at_once (2 ms)
+PASS test_council::test_t01b_mars_born_is_a_voice_from_eighteen_years (1 ms)
+PASS test_council::test_t01c_min_age_is_read_from_the_world_cfg (1 ms)
+PASS test_council::test_t01d_the_dead_are_not_voices (1 ms)
+PASS test_council::test_t02a_one_part_of_six_of_ten_reads_0_6 (1 ms)
+PASS test_council::test_t02b_two_islands_read_the_larger (1 ms)
+PASS test_council::test_t02c_a_non_voice_bridge_does_not_join_voice_parts (0 ms)
+PASS test_council::test_t02d_kin_and_crew_pairs_count_for_the_web (1 ms)
+PASS test_council::test_t02e_non_friend_pairs_do_not_join (1 ms)
+PASS test_council::test_t02f_chosen_share_ignores_kin_and_crew_friends (1 ms)
+PASS test_council::test_t02g_one_chosen_friend_counts_at_one_not_at_two (1 ms)
+PASS test_council::test_t02h_family_pairs_are_not_chosen_at_two_generations (7 ms)
+PASS test_council::test_t02i_distant_and_unrelated_pairs_are_chosen (4 ms)
+PASS test_council::test_t02j_siblings_stay_family_after_the_parent_dies (2 ms)
+PASS test_council::test_t02k_kin_generations_zero_counts_only_the_flags (4 ms)
+PASS test_council::test_t02l_lineage_is_recorded_for_every_living_being (1 ms)
+PASS test_council::test_t02p_landing_skips_the_readings_and_carries_the_series_forward (7 ms)
+PASS test_council::test_t02q_first_settlement_stance_after_landing_is_built_from_lean (2 ms)
+PASS test_council::test_t02r_landing_settlement_landing_settlement_matches_a_world_that_read_throughout (9 ms)
+PASS test_council::test_t02s_with_ages_disabled_no_reading_is_taken (228 ms)
+PASS test_council::test_t02m_no_voices_read_zero_and_one_entry_per_boundary (1 ms)
+PASS test_council::test_t02n_windows_keep_the_last_twenty_readings (3 ms)
+PASS test_council::test_t02o_lengths_match_pop_by_sol_on_a_founder_world (188 ms)
+PASS test_council::test_t02p_lengths_match_pop_by_sol_on_a_blank_world (103 ms)
+PASS test_council::test_t03a_settlement_must_be_held_thirty_sols (7 ms)
+PASS test_council::test_t03b_web_sixteen_of_twenty_including_the_last_three (13 ms)
+PASS test_council::test_t03c_chosen_sixteen_of_twenty_including_the_last_three (7 ms)
+PASS test_council::test_t03d_the_web_passing_alone_is_not_enough_and_nor_chosen_alone (8 ms)
+PASS test_council::test_t03e_twelve_voices_are_needed (5 ms)
+PASS test_council::test_t03f_landing_never_enters (2 ms)
+PASS test_council::test_t03g_entry_appends_one_history_entry_and_touches_no_ages_state (1 ms)
+PASS test_council::test_t03h_the_second_entry_is_again_and_waits_thirty_sols_after_a_split (4 ms)
+PASS test_council::test_t03i_no_entry_on_the_boundary_where_ages_enters_settlement (4 ms)
+PASS test_council::test_t03j_no_entry_on_the_boundary_where_ages_falls_back (2 ms)
+PASS test_council::test_t04a_no_split_before_the_twenty_sol_dwell (4 ms)
+PASS test_council::test_t04b_sixteen_of_twenty_below_a_third_with_the_last_three (7 ms)
+PASS test_council::test_t04c_the_split_entry_and_its_text (3 ms)
+PASS test_council::test_t04d_a_low_chosen_share_alone_never_splits (2 ms)
+PASS test_council::test_t05a_a_council_falls_back_at_the_same_sol_as_a_settlement (4 ms)
+PASS test_council::test_t05b_time_in_council_is_credited (3 ms)
+PASS test_council::test_t05c_ages_decide_is_unchanged_for_landing_and_settlement (1 ms)
+PASS test_council::test_t06a_the_personal_term_alone (2 ms)
+PASS test_council::test_t06b_the_size_term_alone_and_its_clamp (13 ms)
+PASS test_council::test_t06c_the_means_term_alone_and_its_clamp (2 ms)
+PASS test_council::test_t06d_the_hard_term_alone_over_the_last_ten_sols (2 ms)
+PASS test_council::test_t06e_the_hard_read_follows_the_ages_clauses_exactly (2 ms)
+PASS test_council::test_t06f_child_stake_counts_a_living_child_under_twenty_sols (3 ms)
+PASS test_council::test_t06g_the_clamp_at_plus_and_minus_one (10 ms)
+PASS test_council::test_t06h_conditions_weigh_by_temperament (8 ms)
+PASS test_council::test_t06i_trait_centre_is_read_from_the_cfg (5 ms)
+PASS test_council::test_t06j_base_is_added_to_every_lean (2 ms)
+PASS test_council::test_t07a_an_isolated_voice_has_stance_equal_to_lean (0 ms)
+PASS test_council::test_t07b_two_friends_move_toward_each_other_by_the_formula (1 ms)
+PASS test_council::test_t07c_a_close_friend_weighs_close_weight (1 ms)
+PASS test_council::test_t07d_a_non_voice_friend_is_ignored (1 ms)
+PASS test_council::test_t07e_dead_and_former_voices_are_dropped_from_stance (1 ms)
+PASS test_council::test_t07f_reversing_the_order_of_beings_changes_nothing (4 ms)
+PASS test_council::test_t07g_pair_insertion_order_changes_nothing (5 ms)
+PASS test_council::test_t08a_no_meeting_before_the_interval (1 ms)
+PASS test_council::test_t08b_the_room_must_be_big_enough_scaled_by_voices (7 ms)
+PASS test_council::test_t08c_gathering_read_ties_and_counting (2 ms)
+PASS test_council::test_t08d_only_the_council_reads_gatherings (2 ms)
+PASS test_council::test_t08e_the_place_and_the_cleared_best (1 ms)
+PASS test_council::test_t08f_a_stale_best_gathering_is_cleared (2 ms)
+PASS test_council::test_t09a_the_highest_stance_of_the_room_raises_it (1 ms)
+PASS test_council::test_t09b_a_dead_voice_in_the_room_is_skipped (2 ms)
+PASS test_council::test_t09c_nobody_wants_it_the_quiet_line_once_per_term (4 ms)
+PASS test_council::test_t09d_never_two_open_proposals (2 ms)
+PASS test_council::test_t09e_the_again_text_and_the_reraise_clock (5 ms)
+PASS test_council::test_t10a_counts_are_exact_at_the_carry_and_reject_lines (3 ms)
+PASS test_council::test_t10a2_carry_counts_those_with_a_view_and_needs_a_quorum (39 ms)
+PASS test_council::test_t10a3_an_undecided_heavy_colony_pledges_at_the_second_vote (7 ms)
+PASS test_council::test_t10a4_the_reject_step_ignores_the_quorum (7 ms)
+PASS test_council::test_t10b_a_carrying_vote_then_a_failing_one_resets_the_run (2 ms)
+PASS test_council::test_t10c_two_rejecting_votes_set_the_dome_aside (2 ms)
+PASS test_council::test_t10d_the_hard_set_aside_names_the_clause (9 ms)
+PASS test_council::test_t10e_twelve_open_votes_let_the_dome_rest (4 ms)
+PASS test_council::test_t10f_divided_names_both_speakers_with_their_reasons (2 ms)
+PASS test_council::test_t10g_speaker_ties (4 ms)
+PASS test_council::test_t10h_the_no_reason_is_the_hard_clause_when_hardship_dominates (2 ms)
+PASS test_council::test_t10i_the_yes_reason_is_size_when_size_is_the_largest_term (9 ms)
+PASS test_council::test_t10j_friends_is_the_reason_inside_the_band_and_across_zero (3 ms)
+PASS test_council::test_t10k_the_personal_fallback_when_no_term_is_positive (2 ms)
+PASS test_council::test_t11a_the_pledge_sets_its_record_and_blocks_a_further_raise (2 ms)
+PASS test_council::test_t11b_the_pledge_line_names_proposer_place_and_reason (2 ms)
+PASS test_council::test_t11c_the_divided_pledge_text (2 ms)
+PASS test_council::test_t11d_a_dropped_divided_line_still_marks_the_pledge (2 ms)
+PASS test_council::test_t11e_the_pledge_survives_a_fall_back_and_a_reentry (2 ms)
+PASS test_council::test_t11f_aftermath_after_four_sols_still_or_come_round (9 ms)
+PASS test_council::test_t11g_no_aftermath_when_the_doubter_is_gone_or_the_age_changed (7 ms)
+PASS test_council::test_t11h_the_doubter_fallback (10 ms)
+PASS test_council::test_t11i_the_after_pledge_line_comes_once (5 ms)
+PASS test_council::test_t12a_a_split_with_a_proposal_open_lapses_it (2 ms)
+PASS test_council::test_t12b_a_fall_back_with_a_proposal_open_lapses_it (2 ms)
+PASS test_council::test_t13a_the_first_line_comes_fifty_sols_into_settlement (3 ms)
+PASS test_council::test_t13b_the_second_line_comes_a_hundred_sols_later_and_no_third (4 ms)
+PASS test_council::test_t13c_both_come_again_in_a_later_settlement_term (4 ms)
+PASS test_council::test_t14a_the_higher_line_wins_and_the_lower_is_counted (4 ms)
+PASS test_council::test_t14a2_the_full_priority_order_of_spec_7_4 (44 ms)
+PASS test_council::test_t14b_no_boundary_logs_two_council_lines (5 ms)
+PASS test_council::test_t15_texts_have_no_numbers_and_no_banned_words (11 ms)
+PASS test_council::test_t15b_a_council_log_line_is_the_data_text_exactly (3 ms)
+PASS test_council::test_t16a_the_guard_the_council_actually_ran (38477 ms)
+PASS test_council::test_t16b_the_module_changes_nothing_beings_do (2 ms)
+PASS test_council::test_t16c_same_seed_same_override_same_council (1 ms)
+PASS test_council::test_t17a_key_path_parity_both_ways (3 ms)
+PASS test_council::test_t17b_balance_data_hash_covers_council (3 ms)
+PASS test_council::test_t17c_data_sanity_rules_hold_and_each_can_fail (7 ms)
+PASS test_council::test_t17d_no_council_key_in_ages_json (0 ms)
+PASS test_council::test_t18a_council_hash_proof_strips_cn_web_age_in_turn (8 ms)
+PASS test_council::test_t18b_council_hash_proof_refuses_wrong_columns (2 ms)
+PASS test_council::test_t18c_council_hash_proof_hashes_and_references (9 ms)
+PASS test_council::test_t18d_relationships_hash_proof_strips_cn_first (0 ms)
+PASS test_council::test_t18e_balance_lib_projections (3 ms)
+PASS test_council::test_t20a_relationships_disabled_reads_zero_and_does_nothing (101 ms)
+PASS test_council::test_t20b_a_null_relationships_module_does_the_same (90 ms)
+PASS test_council::test_t22_council_off_from_creation (1 ms)
+PASS test_council_balance::test_printed_table_ends_with_age_web_cn (4535 ms)
+PASS test_council_balance::test_cn_column_values_on_staged_worlds (7 ms)
+PASS test_council_balance::test_hash_proof_strips_work_on_the_printed_table (0 ms)
+PASS test_council_balance::test_t10_projected_history_helper (0 ms)
+PASS test_council_balance::test_t10_verdict_uses_the_projected_history_and_names_council (0 ms)
+PASS test_council_balance::test_projected_helper_is_the_one_age_probe_uses (1 ms)
+PASS test_council_balance::test_t12_reports_the_cross_seed_counts (0 ms)
+PASS test_determinism::test_same_seed_same_hash (1965 ms)
+PASS test_determinism::test_param_override_applies_and_restores (177 ms)
+PASS test_determinism::test_stats_window_reset (16 ms)
+PASS test_eva::test_miner_suit_up_costs_one_oxygen_sets_36_h_and_starts_the_walk (1 ms)
+PASS test_eva::test_suit_up_at_oxygen_below_one_clamps_to_zero_and_the_tank_is_still_full (1 ms)
+PASS test_eva::test_arrival_point_is_inside_the_field_over_100_seeds (36 ms)
+PASS test_eva::test_air_falls_one_hour_per_hour_outside_and_never_inside (2 ms)
+PASS test_eva::test_builder_air_also_falls_while_working (3 ms)
+PASS test_eva::test_a_being_at_zero_air_outside_dies_suffocated (0 ms)
+PASS test_eva::test_zero_air_exactly_and_the_step_before (1 ms)
+PASS test_eva::test_turn_back_when_air_is_below_distance_over_16_plus_2_5 (1 ms)
+PASS test_eva::test_turn_back_while_walking_out_sets_no_load_and_the_walk_home_keeps_2_5_hours (12 ms)
+PASS test_eva::test_no_second_turn_back_while_returning (7 ms)
+PASS test_eva::test_eva_with_after_haul_or_enter_never_turns_back (1 ms)
+PASS test_eva::test_a_walking_out_miner_turns_back_before_it_reaches_the_field (0 ms)
+PASS test_eva::test_builder_turn_back_walks_straight_to_p1_not_via_p2 (8 ms)
+PASS test_eva::test_a_builder_walking_out_to_the_site_turns_back_too (1 ms)
+PASS test_eva::test_exhausted_builder_at_12_1_reads_11_95_and_turns_back_keeping_the_air_ticking (0 ms)
+PASS test_eva::test_exhausted_threshold_is_a_strict_12_after_the_drain (1 ms)
+PASS test_eva::test_a_turn_back_while_mining_carries_a_partial_load_home (30 ms)
+PASS test_eva::test_choose_site_ignores_sites_beyond_the_trip_filter (2 ms)
+PASS test_eva::test_decide_never_launches_a_trip_to_a_field_beyond_the_filter (9 ms)
+PASS test_eva::test_choose_site_wants_ice_below_30_without_drawing_the_chance (5 ms)
+PASS test_eva::test_choose_site_ice_probability_follows_the_need_formula (132 ms)
+PASS test_eva::test_choose_site_draw_order_is_chance_then_pick (2 ms)
+PASS test_eva::test_choose_site_pool_fallbacks_and_empty (2 ms)
+PASS test_eva::test_choose_site_stops_above_1_3_times_the_target (47 ms)
+PASS test_eva::test_choose_site_with_no_online_building_is_none (1 ms)
+PASS test_eva::test_mining_attempt_chance_is_0_4_times_will_times_the_need_term (1325 ms)
+PASS test_eva::test_mining_attempt_needs_oxygen_above_10 (158 ms)
+PASS test_eva::test_mining_attempt_chance_matches_the_formula_trial_by_trial (763 ms)
+PASS test_eva::test_mining_attempt_draws_nothing_unless_every_gate_passes (1 ms)
+PASS test_eva::test_intent_in_the_launch_building_starts_mining_at_once (1 ms)
+PASS test_eva::test_intent_elsewhere_hops_by_tunnel_to_the_nearest_online_door_then_suits_up_there (16 ms)
+PASS test_eva::test_nearest_online_door_changes_when_a_building_goes_offline (14 ms)
+PASS test_eva::test_intent_with_no_online_building_or_a_dry_field_is_cancelled_without_oxygen (1 ms)
+PASS test_eva::test_a_new_attempt_in_another_building_sets_an_intent_and_hops (0 ms)
+PASS test_eva::test_eva_arrival_mine_starts_mining_with_a_5_to_9_hour_shift (29 ms)
+PASS test_eva::test_eva_arrival_haul_deposits_ice_or_regolith_and_goes_home (1 ms)
+PASS test_eva::test_haul_walk_goes_to_the_door_and_a_load_from_a_dried_field_still_goes_into_ice (2 ms)
+PASS test_eva::test_ice_and_regolith_yield_bands_at_drive_half_energy_80 (218 ms)
+PASS test_eva::test_yield_scales_with_energy_read_after_the_drain_and_with_drive (19 ms)
+PASS test_eva::test_digging_takes_the_yield_from_the_field_at_once_and_ice_arrives_only_with_the_haul (0 ms)
+PASS test_eva::test_a_dry_field_is_clamped_removed_logged_once_and_replaced (1 ms)
+PASS test_eva::test_wander_draws_wait_then_angle_then_radius_inside_the_field (19 ms)
+PASS test_eva::test_wander_moves_4_px_per_hour_only_after_the_wait (3 ms)
+PASS test_eva::test_wander_reach_is_0_6_px_not_the_0_8_of_a_waypoint (1 ms)
+PASS test_eva::test_eva_waypoint_is_reached_inside_0_8_px (1 ms)
+PASS test_eva::test_eva_footprints_every_third_step_with_the_reset_rule (3 ms)
+PASS test_eva::test_footprint_sides_are_perpendicular_to_a_slanted_heading (1 ms)
+PASS test_eva::test_work_footprints_every_eighth_step (3 ms)
+PASS test_eva::test_mining_footprints_every_eleventh_step_which_needs_the_eps (3 ms)
+PASS test_eva::test_no_prints_while_standing_in_a_tunnel_or_inside (7 ms)
+PASS test_eva::test_heavy_prints_for_builders_and_haulers_light_for_miners (3 ms)
+PASS test_eva::test_footprints_cap_at_2200_and_the_oldest_go_first (128 ms)
+PASS test_eva::test_footprints_expire_after_2_5_sols (63 ms)
+PASS test_eva::test_suit_kind_of_a_miner_is_eva_in_every_outside_state_and_none_inside (1 ms)
+PASS test_eva::test_lamp_is_on_only_outside_and_at_night (1 ms)
+PASS test_eva::test_eva_and_mining_drain_stepped_for_one_hour_from_80 (2 ms)
+PASS test_eva::test_valid_trips_never_turn_back_for_air_over_30_seeds (1044 ms)
+PASS test_eva::test_the_longest_shift_at_the_far_edge_keeps_about_a_third_of_an_hour_of_air (36 ms)
+PASS test_eva::test_builder_walking_home_after_the_shift_leaves_heavy_prints (2 ms)
+PASS test_eva::test_an_exhausted_miners_partial_load_reduces_the_field_by_exactly_the_load (8 ms)
+PASS test_eva::test_each_turn_back_kind_logs_its_own_line_once (18 ms)
+PASS test_eva::test_founder_colony_runs_without_air_turn_backs_or_suffocation (1708 ms)
+PASS test_eva::test_resumed_intent_cancels_when_the_launch_door_moved_beyond_the_trip_limit (1 ms)
+PASS test_eva::test_site_dug_accumulates_what_is_dug (273 ms)
+PASS test_eva::test_log_carries_the_clock_sol (4 ms)
+PASS test_footprint_expiry::test_expiry_matches_full_pass_in_order (100 ms)
+PASS test_footprint_expiry::test_expiry_matches_full_pass_out_of_order (5 ms)
+PASS test_footprint_expiry::test_expiry_after_clear_and_equal_age_boundary (0 ms)
+PASS test_layout::test_founder_layout_rects_and_doors (9 ms)
+PASS test_layout::test_founder_corridors_exact (4 ms)
+PASS test_layout::test_founder_tunnel_hops (4 ms)
+PASS test_layout::test_founder_sites_pit_and_two_ice_fields (4 ms)
+PASS test_layout::test_founder_sites_200_seeds_obey_every_rule (553 ms)
+PASS test_layout::test_door_is_bottom_centre_for_100_random_rects (2 ms)
+PASS test_layout::test_add_attached_geometry_all_directions (0 ms)
+PASS test_layout::test_site_has_its_corridor_but_it_is_not_traversable_until_finished (0 ms)
+PASS test_layout::test_bfs_five_node_graph (1 ms)
+PASS test_layout::test_bfs_disconnected_returns_none (0 ms)
+PASS test_layout::test_bfs_unfinished_corridor_cuts_the_path (0 ms)
+PASS test_layout::test_bfs_shortest_over_random_trees (21 ms)
+PASS test_layout::test_find_spot_never_overlaps_500_seeds_20_sites (1043 ms)
+PASS test_layout::test_find_spot_result_matches_add_attached (0 ms)
+PASS test_layout::test_find_spot_draw_order_first_try (1 ms)
+PASS test_layout::test_find_spot_parents_are_finished_buildings_only (3 ms)
+PASS test_layout::test_find_spot_corridor_margin_crossing_and_touching (6 ms)
+PASS test_layout::test_find_spot_gives_up_after_80_tries (1 ms)
+PASS test_layout::test_layout_determinism (17 ms)
+PASS test_layout::test_trip_time_numbers_from_the_spec (0 ms)
+PASS test_layout::test_dry_field_is_not_reachable_even_if_listed (0 ms)
+PASS test_layout::test_launch_is_the_nearest_online_door_and_trip_uses_it (1 ms)
+PASS test_layout::test_launch_tie_goes_to_the_lowest_id_and_none_online_gives_none (0 ms)
+PASS test_layout::test_spawn_invariant_500_seeds_trip_check_at_spawn (3441 ms)
+PASS test_layout::test_spawn_is_rejected_not_clamped (200 ms)
+PASS test_layout::test_spawn_needs_an_online_building (1 ms)
+PASS test_layout::test_spawn_properties_ice_and_pit (0 ms)
+PASS test_layout::test_spawn_clearances_in_the_founder_colony (189 ms)
+PASS test_layout::test_take_ice_clamps_and_dry_field_is_removed (0 ms)
+PASS test_layout::test_dry_up_with_two_others_live_spawns_nothing (0 ms)
+PASS test_layout::test_dry_up_below_two_reachable_spawns_at_once (9 ms)
+PASS test_layout::test_unreachable_fields_do_not_count_for_the_floor (1 ms)
+PASS test_layout::test_repeated_dry_ups_keep_two_reachable_over_20_seeds (12 ms)
+PASS test_layout::test_scouting_rate_one_reachable_field_500_seeds (881 ms)
+PASS test_layout::test_scouting_per_step_chance (311 ms)
+PASS test_layout::test_scouting_stops_at_two_reachable_and_ignores_unreachable_fields (330 ms)
+PASS test_layout::test_scouting_continues_with_a_pit_present_and_spawns_a_valid_field (15 ms)
+PASS test_layout::test_world_step_scouts_and_logs (93 ms)
+PASS test_layout::test_reachable_sample_stat_at_each_sol_boundary (1122 ms)
+PASS test_layout::test_spawn_determinism_and_seed_sensitivity (86 ms)
+PASS test_lifecycle::test_default_schedule (1 ms)
+PASS test_lifecycle::test_pregnancy_uses_nine_calendar_months (0 ms)
+PASS test_lifecycle::test_calendar_preserves_subsecond_simulation_time (0 ms)
+PASS test_lifecycle::test_life_stages_change_on_birthdays (1 ms)
+PASS test_lifecycle::test_leap_day_birthday_uses_february_end (1 ms)
+PASS test_lifecycle::test_birth_record_change_invalidates_age_cache (0 ms)
+PASS test_lifecycle::test_founders_are_adults_and_mars_newborns_are_babies (7 ms)
+PASS test_lifecycle::test_no_birth_before_due_and_one_birth_at_due (1 ms)
+PASS test_lifecycle::test_normal_birth_check_schedules_pregnancy_not_instant_baby (0 ms)
+PASS test_lifecycle::test_pregnancies_reserve_population_capacity (1 ms)
+PASS test_lifecycle::test_only_adults_can_conceive_and_not_twice (0 ms)
+PASS test_lifecycle::test_dead_parent_releases_pregnancy_reservation (0 ms)
+PASS test_lifecycle::test_pause_does_not_advance_gestation (0 ms)
+PASS test_lifecycle::test_children_do_not_enable_construction_or_take_outside_jobs (0 ms)
+PASS test_lifecycle::test_council_uses_the_same_adult_boundary (1 ms)
+PASS test_lifecycle::test_counts_are_read_only (0 ms)
+FAIL test_moods::test_t01a_temperament_table_for_twelve_signs_and_two_worlds (1 ms)
+FAIL test_moods::test_t01b_a_neutral_chartless_being_and_the_test_seam (1 ms)
+FAIL test_moods::test_t01c_earth_born_founders_use_the_moon_and_newborns_the_deimos (0 ms)
+FAIL test_moods::test_t02a_mood_k_is_the_closed_form_and_n_ticks_follow_it (1 ms)
+FAIL test_moods::test_t02b_half_life_to_the_discretisation_tolerance (1 ms)
+FAIL test_moods::test_t03a_decay_is_monotonic_and_snaps_to_the_baseline (0 ms)
+FAIL test_moods::test_t03b_a_being_at_its_baseline_stays_exactly_there (0 ms)
+FAIL test_moods::test_t04a_headroom_scales_a_push_by_the_distance_to_the_limit (1 ms)
+FAIL test_moods::test_t04b_no_run_of_pushes_passes_the_limits_and_saturation_is_counted (0 ms)
+FAIL test_moods::test_t05a_a_grown_friendship_pushes_both (1 ms)
+FAIL test_moods::test_t05b_a_close_crossing_pushes_both (0 ms)
+FAIL test_moods::test_t05c_kin_seeding_pushes_nothing_and_a_crew_lapse_pushes_nothing (1 ms)
+FAIL test_moods::test_t05d_lapses_push_both_and_a_was_close_lapse_pushes_more (0 ms)
+FAIL test_moods::test_t06a_grief_by_the_linear_rule_for_every_mourner (1 ms)
+FAIL test_moods::test_t06b_a_mourner_that_died_in_the_same_tick_is_skipped (0 ms)
+FAIL test_moods::test_t07a_the_parent_of_a_newborn_is_pushed_and_the_why_is_the_birth (1 ms)
+FAIL test_moods::test_t07b_no_push_for_a_dead_parent_or_no_parent_and_all_newborns_in_a_tick (0 ms)
+FAIL test_moods::test_t07c_births_land_after_decay_and_before_relationship_events (1 ms)
+FAIL test_moods::test_t08a_a_hard_sol_is_recorded_at_the_boundary_and_pushed_at_the_next_tick (0 ms)
+FAIL test_moods::test_t08b_the_clause_is_the_first_short_of_ice_air_food (1 ms)
+FAIL test_moods::test_t08c_the_sol_hook_loops_over_no_beings (0 ms)
+FAIL test_moods::test_t09a_the_pledge_pushes_everyone_once (0 ms)
+FAIL test_moods::test_t09b_an_age_change_pushes_nothing (1 ms)
+FAIL test_moods::test_t10a_two_friends_awake_together_get_the_company_push (0 ms)
+FAIL test_moods::test_t10b_no_company_asleep_in_transit_or_between_non_friends (0 ms)
+FAIL test_moods::test_t10c_friends_on_the_same_ice_field_count (1 ms)
+FAIL test_moods::test_t10d_the_company_ceiling (0 ms)
+FAIL test_moods::test_t11a_decay_events_colony_company_in_that_order (1 ms)
+FAIL test_moods::test_t11b_two_same_seed_staged_worlds_give_identical_moods (0 ms)
+FAIL test_moods::test_t12a_each_line_changes_the_band_only_when_0_03_past_it (0 ms)
+FAIL test_moods::test_t12b_a_push_that_crosses_two_lines_moves_two_bands_in_one_tick (1 ms)
+FAIL test_moods::test_t12c_a_mood_hovering_on_a_line_does_not_flip_the_text (0 ms)
+FAIL test_moods::test_t13a_a_grief_why_is_sticky_against_every_other_push (1 ms)
+FAIL test_moods::test_t13a2_stickiness_holds_against_a_lapse_big_enough_to_qualify (0 ms)
+FAIL test_moods::test_t13b_a_second_grief_replaces_only_when_at_least_half_the_deviation (1 ms)
+FAIL test_moods::test_t13c_a_non_sticky_why_is_replaced_by_a_major_push_of_at_least_half (0 ms)
+FAIL test_moods::test_t13d_a_push_of_the_wrong_sign_never_sets_or_replaces_a_why (1 ms)
+FAIL test_moods::test_t13e_the_size_test_uses_the_nominal_push (0 ms)
+FAIL test_moods::test_t13f_hard_and_pledge_set_a_why_only_when_none_and_far_enough (1 ms)
+FAIL test_moods::test_t13g_company_never_sets_replaces_or_clears_a_why (0 ms)
+FAIL test_moods::test_t13h_a_why_is_cleared_when_the_deviation_falls_below_show_dev (1 ms)
+FAIL test_moods::test_t13i_the_clause_and_sign_fields_have_the_documented_shape (0 ms)
+FAIL test_moods::test_t13j_pair_bound_whys_are_cleared_when_the_pair_no_longer_holds (1 ms)
+FAIL test_moods::test_t14a_gain_zero_leaves_the_chance_exactly_task_5s (0 ms)
+FAIL test_moods::test_t14b_gain_on_shifts_the_argument_inside_the_clamps (1 ms)
+FAIL test_moods::test_t14c_the_chance_never_falls_below_the_floor (0 ms)
+FAIL test_moods::test_t15a_idle_drain_gain_zero_is_task_5s (0 ms)
+FAIL test_moods::test_t15b_idle_drain_gain_on_is_bounded_between_0_90_and_1_15 (0 ms)
+FAIL test_moods::test_t15c_sleep_eva_work_and_mining_drains_ignore_mood (0 ms)
+FAIL test_moods::test_t16_no_sim_file_other_than_the_allowed_reads_mood (1 ms)
+FAIL test_moods::test_t17_dormant_purity_gains_zero_changes_nothing_old (0 ms)
+FAIL test_moods::test_t18_determinism_two_same_seed_worlds_agree_for_60_sols (1 ms)
+FAIL test_moods::test_t19a_the_quiet_line_text_follows_the_why_with_two_wordings (0 ms)
+FAIL test_moods::test_t19b_once_cooldown_and_the_relief_arc (1 ms)
+FAIL test_moods::test_t19c_the_cap_drops_the_rest_changes_no_state_and_orders_deepest_first (0 ms)
+FAIL test_moods::test_t19d_ties_go_to_the_highest_bond_to_the_why_then_the_lowest_id (0 ms)
+FAIL test_moods::test_t19e_relief_rules (1 ms)
+FAIL test_moods::test_t19f_the_60_sol_run_keeps_the_line_invariants (0 ms)
+FAIL test_moods::test_t20a_the_texts_are_the_spec_texts (0 ms)
+FAIL test_moods::test_t20b_no_digit_percent_sign_trait_word_or_chart_word_in_any_text (1 ms)
+FAIL test_moods::test_t21a_series_have_the_length_of_pop_by_sol_on_a_founder_world (0 ms)
+FAIL test_moods::test_t21b_series_on_a_blank_world_and_at_pop_zero (1 ms)
+FAIL test_moods::test_t25a_expected_t5_is_the_task_5_log (0 ms)
+FAIL test_moods::test_t25b_strip_md_removes_only_a_final_md_column (1 ms)
+FAIL test_moods::test_t26a_key_path_parity_both_ways (0 ms)
+FAIL test_moods::test_t26b_the_balance_data_hash_covers_mood (1 ms)
+FAIL test_moods::test_t26c_the_sanity_rules_hold_on_the_shipped_data (0 ms)
+FAIL test_moods::test_t26d_each_sanity_rule_fails_on_one_broken_copy (0 ms)
+FAIL test_moods::test_t27a_friend_pairs_returns_flags_and_copies (1 ms)
+FAIL test_moods::test_t27b_the_arrays_are_copies_and_the_call_is_read_only (1 ms)
+FAIL test_moods::test_t27c_the_council_reads_the_same_world_through_the_accessor (0 ms)
+FAIL test_moods::test_t28_friends_of_is_ascending_with_flags_and_a_dictionary_fallback (1 ms)
+FAIL test_moods::test_t29a_events_are_cleared_each_tick_and_list_every_kind (0 ms)
+FAIL test_moods::test_t29b_a_death_lists_one_grief_entry_per_mourner (0 ms)
+FAIL test_moods::test_t29c_with_friend_marks_both_ends_of_grown_friend_pairs_only (1 ms)
+FAIL test_moods::test_t31a_a_colony_in_permanent_hardship_stays_inside_the_limits (0 ms)
+FAIL test_moods::test_t31b_stepped_hardship_loses_no_being_to_an_unstaged_cause (0 ms)
+FAIL test_moods::test_t34a_control_gain_takes_the_mood_branch_with_a_tiny_shift (1 ms)
+FAIL test_moods::test_t34b_two_control_runs_of_60_sols_are_identical (0 ms)
+FAIL test_moods::test_t35_twenty_friends_together_for_100_sols_never_pass_the_company_ceiling (0 ms)
+FAIL test_moods::test_t36_a_birth_push_reaches_light_and_falls_back_within_a_half_life (0 ms)
+PASS test_persona::test_sign_table (0 ms)
+PASS test_persona::test_hand_calc_all_spark (0 ms)
+PASS test_persona::test_reference_personas (0 ms)
+PASS test_persona::test_boost_routing (1 ms)
+PASS test_persona::test_trait_ranges_over_all_charts (17495 ms)
+PASS test_persona::test_role_weights (0 ms)
+PASS test_persona::test_describe (1 ms)
+PASS test_persona::test_persona_from_is_deterministic (0 ms)
+    unique charts: 15481 / 20000
+    builder: 0.315
+    curious: 0.200
+    social: 0.281
+    tender: 0.204
+PASS test_population::test_mars_births (1571 ms)
+    colony lon (tiles 0..100): unique 13273
+    builder: 0.314
+    curious: 0.198
+    social: 0.280
+    tender: 0.207
+PASS test_population::test_mars_births_colony_lon (1626 ms)
+PASS test_power::test_supply_per_reactor (2 ms)
+PASS test_power::test_draw_per_kind (1 ms)
+PASS test_power::test_construction_site_draws_two_whatever_the_kind (3 ms)
+PASS test_power::test_hand_check_founding_numbers (1 ms)
+PASS test_power::test_offline_building_draws_zero_and_demand_ignores_offline (0 ms)
+PASS test_power::test_no_short_at_or_below_supply (9 ms)
+PASS test_power::test_over_limit_shorts_exactly_one_per_step_until_it_fits (98 ms)
+PASS test_power::test_one_short_per_step_when_far_over (1 ms)
+PASS test_power::test_short_records_time_log_and_hold (1 ms)
+PASS test_power::test_short_never_picks_reactor_site_or_offline_building (235 ms)
+PASS test_power::test_over_limit_with_no_candidates_does_nothing (2 ms)
+PASS test_power::test_short_draw_order_chance_then_pick_on_failure (32 ms)
+PASS test_power::test_short_rng_consumption (11 ms)
+PASS test_power::test_newest_building_probability_n10 (474 ms)
+PASS test_power::test_newest_building_probability_n4 (303 ms)
+PASS test_power::test_reonline_load_rule (68 ms)
+PASS test_power::test_reonline_is_immediate_with_no_recent_short (1 ms)
+PASS test_power::test_reonline_hold_60_steps_blocked_61_online (3 ms)
+PASS test_power::test_reonline_hold_after_a_real_short (18 ms)
+PASS test_power::test_reonline_ascending_id_one_per_step (0 ms)
+PASS test_power::test_reonline_takes_first_that_fits_not_first_in_line (4 ms)
+PASS test_power::test_reonline_never_while_over_supply (0 ms)
+PASS test_power::test_offline_since_set_on_short_and_cleared_on_return (3 ms)
+PASS test_power::test_set_offline_sets_offline_since (1 ms)
+PASS test_power::test_max_offline_h (10 ms)
+PASS test_power::test_max_offline_h_is_the_maximum_over_buildings (2 ms)
+PASS test_power::test_offline_green_room_stops_producing (6 ms)
+PASS test_power::test_nearest_online_habitat_skips_offline (1 ms)
+PASS test_power::test_sleepers_in_a_habitat_that_shorts_keep_sleeping (11 ms)
+PASS test_power::test_tired_being_with_no_online_habitat_sleeps_on_the_floor (1 ms)
+PASS test_power::test_fortune_defaults (0 ms)
+PASS test_power::test_fortune_multiplier_raises_supply_for_one_sol_then_expires (19 ms)
+PASS test_power::test_fortune_one_reactor_gives_21 (0 ms)
+PASS test_power::test_fortune_brings_a_dark_building_back_on_the_next_step_and_it_may_short_again (29 ms)
+PASS test_power::test_fortune_load_rule_uses_the_boosted_supply (1 ms)
+PASS test_power::test_demand_stat_counts_steps_over_supply (7 ms)
+PASS test_power::test_demand_includes_the_site (2 ms)
+PASS test_power::test_shorts_per_sol_stat (28 ms)
+PASS test_power::test_seeded_determinism (728 ms)
+PASS test_power::test_offline_habitat_gives_no_births (4455 ms)
+PASS test_relationships::test_t01_room_growth_recurrence (1 ms)
+PASS test_relationships::test_t02a_warm_pair_outgrows_cold_pair (2 ms)
+PASS test_relationships::test_t02b_equal_tempo_outgrows_clashing (2 ms)
+PASS test_relationships::test_t02c_curiosity_softens_the_clash_exactly (1 ms)
+PASS test_relationships::test_t02d_full_clash_is_held_at_the_floor (0 ms)
+PASS test_relationships::test_t03_not_together_means_no_growth_and_decay (3 ms)
+PASS test_relationships::test_t04a_work_grows_at_work_rate_without_warmth (1 ms)
+PASS test_relationships::test_t04b_miners_grow_on_the_same_field_only (0 ms)
+PASS test_relationships::test_t04c_a_pair_never_grows_twice_in_a_tick (2 ms)
+PASS test_relationships::test_t05a_restless_decays_faster_than_steady (1 ms)
+PASS test_relationships::test_t05b_close_pair_loses_close_hold_of_the_open_rate (2 ms)
+PASS test_relationships::test_t05c_unflagged_pair_under_forget_below_is_removed (1 ms)
+PASS test_relationships::test_t06_hysteresis (1 ms)
+PASS test_relationships::test_t07a_founder_world_seeds_21_crew_pairs_and_blank_none (5 ms)
+PASS test_relationships::test_t07b_crew_close_logs_close_crew_once_per_founder (4 ms)
+PASS test_relationships::test_t07c_crew_drift_logs_once_per_founder_and_counts_all (5 ms)
+PASS test_relationships::test_t08a_kin_pair_at_the_seed_value_with_no_line (1 ms)
+PASS test_relationships::test_t08b_dead_parent_or_no_parent_gives_no_pair (1 ms)
+PASS test_relationships::test_t09a_grief_lines_name_the_two_strongest_mourners (2 ms)
+PASS test_relationships::test_t09b_no_grief_when_every_bond_is_under_the_friend_line (1 ms)
+PASS test_relationships::test_t09c_grief_is_never_capped_or_queued (1 ms)
+PASS test_relationships::test_t09d_pending_event_naming_the_dead_is_dropped (1 ms)
+PASS test_relationships::test_t10a_friends_form_and_place_sentence_per_room_kind (3 ms)
+PASS test_relationships::test_t10b_site_ice_and_pit_places (2 ms)
+PASS test_relationships::test_t10c_other_place_fallback (1 ms)
+PASS test_relationships::test_t10d_found_friend_form_names_the_new_being_first (1 ms)
+PASS test_relationships::test_t10e_close_only_for_the_first_close_of_both (0 ms)
+PASS test_relationships::test_t10f_drifted_only_for_was_close_or_the_crew_rule (0 ms)
+PASS test_relationships::test_t10g_cap_queue_and_second_sol (1 ms)
+PASS test_relationships::test_t10h_stale_queued_event_and_full_queue_drop (3 ms)
+PASS test_relationships::test_t10i_a_dropped_first_friendship_keeps_its_first (1 ms)
+PASS test_relationships::test_t10j_cap_scales_with_population (16 ms)
+PASS test_relationships::test_t10k_texts_have_no_digit_and_no_percent (0 ms)
+PASS test_relationships::test_t10l_log_eviction_is_kind_blind (3 ms)
+PASS test_relationships::test_t11a_chain_and_lonely_shares (0 ms)
+PASS test_relationships::test_t11b_two_islands (1 ms)
+PASS test_relationships::test_t11c_pop_zero_and_one (1 ms)
+PASS test_relationships::test_t11d_lists_have_the_length_of_pop_by_sol_when_stepped (179 ms)
+PASS test_relationships::test_t12a_pull_off_equals_module_disabled (7 ms)
+PASS test_relationships::test_t12b_friend_pull_adds_per_friend_up_to_the_cap (6 ms)
+PASS test_relationships::test_t12c_lonely_pull_per_person_for_beings_without_friends (9 ms)
+PASS test_relationships::test_t13_purity_and_determinism (1888 ms)
+PASS test_relationships::test_t14_one_tick_every_20_steps (80 ms)
+PASS test_relationships::test_t15a_key_path_parity (4 ms)
+PASS test_relationships::test_t15c_balance_data_hash_covers_relationships (3 ms)
+PASS test_relationships::test_t15b_data_sanity_rules_hold_and_each_can_fail (2 ms)
+PASS test_relationships::test_t17_hash_proof_helpers_on_synthetic_tables (0 ms)
+PASS test_relationships::test_t18a_queued_events_recompute_the_form (2 ms)
+PASS test_relationships::test_t18b_a_queued_event_with_nobody_new_is_dropped (1 ms)
+PASS test_relationships::test_t18c_same_tick_events_second_one_sees_the_first (1 ms)
+PASS test_relationships::test_t18d_no_found_friend_line_names_a_known_being_first (2075 ms)
+PASS test_relationships::test_t19_crew_drift_revalidation (6 ms)
+PASS test_relationships::test_t20_grief_before_queued_events_and_not_counted (1 ms)
+PASS test_relationships::test_t21_cap_resets_at_the_first_tick_of_the_next_sol (2 ms)
+PASS test_relationships::test_t22a_no_module_or_disabled_gives_task_3_weights (5 ms)
+PASS test_relationships::test_t22b_missing_present_entry_and_zero_cap_add_nothing (11 ms)
+PASS test_relationships::test_t23a_pair_key_arithmetic (2 ms)
+PASS test_relationships::test_t23b_events_are_offered_in_ascending_key_order (5 ms)
+PASS test_relationships::test_t24_kin_newborn_gets_the_found_friend_line (2 ms)
+PASS test_relationships::test_t25_renewals_are_not_formations (11 ms)
+PASS test_relationships::test_t26_close_hold_closed_form (84 ms)
+PASS test_relationships_balance::test_web_column_is_last_after_age_with_two_decimals (4484 ms)
+PASS test_relationships_balance::test_t11_is_judged_from_stats_relationships (4370 ms)
+PASS test_sky::test_mars_chart_reference_points (0 ms)
+PASS test_sky::test_earth_direction_reference_points (0 ms)
+PASS test_sky::test_rise_at_dawn (0 ms)
+PASS test_sky::test_rise_half_sol (0 ms)
+PASS test_sky::test_moon_speeds (17 ms)
+PASS test_sky::test_earth_direction_range_and_synodic (1 ms)
+PASS test_sky::test_earth_chart (0 ms)
+PASS test_sky::test_founder_birth (0 ms)
+PASS test_smoke::test_data_loads (0 ms)
+PASS test_smoke::test_rng_is_seeded (0 ms)
+PASS test_smoke::test_world_fixed_step (12 ms)
+PASS test_smoke::test_founders_live_in_sim (9 ms)
+PASS test_smoke::test_advance_is_capped (270 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 7   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     140.0 / 550   +1.05 /h   running low
+Food       110.0 / 420   +0.76 /h   running low
+Ice         60.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 11  demand 11
+Buildings: Reactor 1, Habitat 1, Workshop 1, Green room 1
+Construction: none
+Beings: idle 7  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 7  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+  sol 1  7 founders landed.
+  sol 1  The founders have landed at Jezero. For now, air and water and warmth are all there is to think about.
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view::test_hud_sections (290 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_ages::test_t19_clock_line_ends_with_the_age_name (13 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_ages::test_t19_chapters_strip (18 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_ages::test_t19_resource_words_at_the_sample_thresholds (16 ms)
+PASS test_view_ages::test_t19_hud_source_reads_no_hidden_ages_state (5 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_ages::test_t20_speed_readout_and_throttle_line (27 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_ages::test_t20_readout_refreshes_at_most_every_half_second (21 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_council::test_t19a_the_age_word_is_council_from_council_data (14 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_council::test_t19b_the_strip_shows_three_merged_chapters_in_time_order (13 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_council::test_t19c_the_pledge_stays_pinned (12 ms)
+PASS test_view_council::test_t19d_the_hud_source_reads_no_hidden_council_state (12 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_council::test_t19e_no_number_or_bar_appears_in_a_council_hud (13 ms)
+Jezero Crater  |  Year 1, Sol 1  |  06:00  |  northern spring  |  Landing
+Population 12   births 0   deaths 0
+  deaths by cause: air 0, thirst 0, hunger 0, suffocated outside 0, other 0
+Oxygen     550.0 / 550   +0.80 /h
+Food       420.0 / 420   +0.58 /h
+Ice       1000.0 (target 120)   +0.00 /h
+Regolith    80.0 (target 208)   +0.00 /h
+Power: supply 14  draw 10  demand 10
+Buildings: Reactor 1, Habitat 2, Green room 1
+Construction: none
+Beings: idle 12  sleep 0  work 0  mining 0  eva 0  transit 0
+Babies 0  toddlers 0  children 0  teens 0  adults 12  pregnancies 0
+sol 1  The founders have landed at Jezero.
+Log
+Speed: 1x max   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x
+PASS test_view_council::test_t22a_with_the_module_off_the_hud_shows_no_council_word (12 ms)
+PASS test_view_model::test_fit_f1_inside_footprint_bottom_anchored (7 ms)
+PASS test_view_model::test_fit_f2_no_stretch (2 ms)
+PASS test_view_model::test_facing_fa (1 ms)
+PASS test_view_model::test_walk_phase_w1 (1 ms)
+PASS test_view_model::test_walk_interpolation_w2 (0 ms)
+PASS test_view_model::test_pose_table_p1 (9 ms)
+PASS test_view_model::test_scale_p2 (2 ms)
+PASS test_view_model::test_lamp_levels (0 ms)
+PASS test_view_model::test_light_curve_l1 (1 ms)
+PASS test_view_model::test_doors_d1 (6 ms)
+PASS test_view_model::test_door_geometry_d2 (0 ms)
+PASS test_view_model::test_accent_pulse_a1 (2 ms)
+PASS test_view_model::test_offline_o1 (100 ms)
+PASS test_view_model::test_construction_table_c1 (3 ms)
+PASS test_view_model::test_sparks_c2 (387 ms)
+PASS test_view_model::test_sparks_through_the_model (139 ms)
+PASS test_view_model::test_footprints_fp (2 ms)
+PASS test_view_model::test_zsort (0 ms)
+PASS test_view_model::test_interior_slots_i (711 ms)
+PASS test_view_model::test_interior_via_model_leaves_sim_alone (3381 ms)
+PASS test_view_model::test_selection_s (3 ms)
+PASS test_view_model::test_camera_cam (3 ms)
+PASS test_view_model::test_transit_position_through_the_model (2 ms)
+PASS test_view_model::test_walk_through_the_model (5 ms)
+PASS test_view_model::test_lamp_through_the_model (29 ms)
+PASS test_view_model::test_interior_beings_through_the_model (5 ms)
+PASS test_view_model::test_debug_toggle_dbg (31 ms)
+balance row (seed 7, 10,000 frames x 2 steps): sol 40 pop 7 oxygen 549.053 food 420.000 ice 44.224 regolith 75.631 supply 28.0 deaths {"air":0,"hunger":0,"other":0,"suffocated_outside":0,"thirst":0} births 0
+PASS test_view_model::test_model_leaves_the_sim_alone_rng (9942 ms)
+PASS test_view_model::test_model_view_state_is_reproducible (2300 ms)
+PASS test_view_model::test_no_global_random_in_view_rng (7 ms)
+PASS test_view_model::test_data_every_art_leaf_is_named_in_the_spec (33 ms)
+PASS test_view_model::test_data_no_tunable_literals_in_view_model (4 ms)
+texture memory: 44.9 MB real entries, 44.9 MB with placeholder files (limit 48.0)
+view model update, 160 beings, 200 refreshes: median 2.010 ms, max 6.282 ms (limit 2.0 ms; headless)
+FAIL test_view_model::test_perf_perf (522 ms)
+FAIL test_view_moods::test_t22a_the_canonical_panels_are_exact (1 ms)
+FAIL test_view_moods::test_t22b_the_four_spirit_sentences_with_and_without_a_why (1 ms)
+FAIL test_view_moods::test_t22c_an_even_being_with_no_why_has_no_spirits_line (0 ms)
+FAIL test_view_moods::test_t22d_the_company_sentence_k1_close_and_friend (0 ms)
+FAIL test_view_moods::test_t22e_a_newborn_with_a_held_kin_bond_is_not_lonely_and_a_lapsed_pair_is (0 ms)
+FAIL test_view_moods::test_t22f_sign_agreement_and_the_texts_of_every_why (1 ms)
+FAIL test_view_moods::test_t22g_a_company_why_adds_no_sentence (0 ms)
+FAIL test_view_moods::test_t22h_the_panel_is_never_more_than_four_sentences_and_has_no_digit (0 ms)
+FAIL test_view_moods::test_t22i_nature_reachability_for_twelve_signs_and_both_worlds (1 ms)
+FAIL test_view_moods::test_t13h_tenses_fresh_and_old (0 ms)
+FAIL test_view_moods::test_t36_the_birth_why_shows_while_light (1 ms)
+FAIL test_view_moods::test_t23_calling_the_panel_changes_nothing_and_draws_nothing (0 ms)
+FAIL test_view_moods::test_t24_the_view_source_reads_no_mood_number (1 ms)
+PASS test_view_relationships::test_t16a_friend_pair_talks_through_the_whole_cycle_and_both_agree (4 ms)
+PASS test_view_relationships::test_t16b_stranger_pair_talks_in_the_share_and_follows_the_phase (4 ms)
+PASS test_view_relationships::test_t16c_two_stranger_pairs_with_different_lo_are_not_in_phase (4 ms)
+PASS test_view_relationships::test_t16d_share_one_restores_task_3 (5 ms)
+PASS test_view_relationships::test_t16e_no_bond_value_reaches_the_view (4 ms)
+PASS test_world_beings::test_beings_drawn_only_outside_or_in_an_open_roof (63 ms)
+PASS test_world_beings::test_frame_rects_come_from_the_right_atlas_per_suit_and_role (106 ms)
+PASS test_world_beings::test_mars_born_scale_and_feet_on_the_position (52 ms)
+PASS test_world_beings::test_walking_being_mirrors_and_faces (55 ms)
+PASS test_world_beings::test_helmet_lamp_follows_the_schedule_and_sits_on_the_anchor (61 ms)
+PASS test_world_beings::test_lamp_is_off_inside_and_for_jumpsuits (36 ms)
+PASS test_world_beings::test_footprint_batch_count_equals_the_model (180 ms)
+PASS test_world_beings::test_baked_footprint_has_ellipse_and_heel (0 ms)
+PASS test_world_beings::test_terrain_decals_when_present_else_procedural_without_rocks (13 ms)
+PASS test_world_beings::test_selection_outline_only_when_selected_and_never_a_rect (57 ms)
+PASS test_world_beings::test_outline_ring_hugs_the_silhouette (2 ms)
+PASS test_world_beings::test_outline_of_a_real_building_has_clear_corners (222 ms)
+PASS test_world_beings::test_outline_follows_the_roof_open_interior (162 ms)
+PASS test_world_beings::test_roof_returns_at_lower_zoom_and_peek_fades (55 ms)
+PASS test_world_beings::test_interior_beings_scale_count_and_poses (73 ms)
+PASS test_world_beings::test_interior_real_sleeping_poses (55 ms)
+PASS test_world_beings::test_outside_beings_sorted_with_buildings_by_y (39 ms)
+PASS test_world_beings::test_full_view_leaves_the_seed_7_sim_hash_unchanged (536 ms)
+view model: 160 beings, one building open, update median 2.008 ms (budget 2.0 ms)
+view draw: 84 commands with 160 beings, 1 building open
+FAIL test_world_beings::test_model_update_stays_under_budget_with_160_beings (732 ms)
+PASS test_world_view::test_layers_in_spec_order_and_node_budget (8 ms)
+PASS test_world_view::test_every_layer_draws_something_or_is_reserved (45 ms)
+PASS test_world_view::test_building_sprites_are_fitted_never_stretched (61 ms)
+PASS test_world_view::test_mipmapped_textures_for_sprites (11 ms)
+PASS test_world_view::test_door_leaves_follow_the_model (55 ms)
+PASS test_world_view::test_rollup_door_slides_up_clipped (54 ms)
+PASS test_world_view::test_lights_follow_day_and_night (115 ms)
+PASS test_world_view::test_offline_building_is_dark (91 ms)
+PASS test_world_view::test_site_draws_by_phase (64 ms)
+PASS test_world_view::test_welding_sparks_are_drawn_from_the_snapshot (26 ms)
+PASS test_world_view::test_terrain_and_tunnels_from_sim_data (42 ms)
+PASS test_world_view::test_unbuilt_tunnel_is_dashed_and_partial (50 ms)
+PASS test_world_view::test_camera_transform_and_set_camera (6 ms)
+PASS test_world_view::test_wheel_zoom_keeps_point_under_cursor_and_keys (6 ms)
+PASS test_world_view::test_drag_pans_and_a_tap_selects (4 ms)
+PASS test_world_view::test_view_never_writes_the_sim (270 ms)
+world view sim hash (seed 7, 10 sols): a5c89e00631ecffc
+PASS test_world_view::test_sim_hash_unchanged_with_the_view_attached (1812 ms)
+world view: 6 buildings, 537 draw commands per frame, update + record median 8.364 ms (model budget 2.0 ms)
+PASS test_world_view::test_view_cost_and_draw_counts_are_printed (1135 ms)
+PASS test_world_view::test_far_zoom_lod_draws_base_only (70 ms)
+PASS test_world_view::test_open_interior_removes_exterior_shadow (15 ms)
+
+734 tests, 42775 checks, 96 failures
+  test_moods::test_t01a_temperament_table_for_twelve_signs_and_two_worlds: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t01b_a_neutral_chartless_being_and_the_test_seam: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t01c_earth_born_founders_use_the_moon_and_newborns_the_deimos: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t02a_mood_k_is_the_closed_form_and_n_ticks_follow_it: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t02b_half_life_to_the_discretisation_tolerance: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t03a_decay_is_monotonic_and_snaps_to_the_baseline: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t03b_a_being_at_its_baseline_stays_exactly_there: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t04a_headroom_scales_a_push_by_the_distance_to_the_limit: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t04b_no_run_of_pushes_passes_the_limits_and_saturation_is_counted: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t05a_a_grown_friendship_pushes_both: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t05b_a_close_crossing_pushes_both: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t05c_kin_seeding_pushes_nothing_and_a_crew_lapse_pushes_nothing: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t05d_lapses_push_both_and_a_was_close_lapse_pushes_more: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t06a_grief_by_the_linear_rule_for_every_mourner: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t06b_a_mourner_that_died_in_the_same_tick_is_skipped: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t07a_the_parent_of_a_newborn_is_pushed_and_the_why_is_the_birth: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t07b_no_push_for_a_dead_parent_or_no_parent_and_all_newborns_in_a_tick: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t07c_births_land_after_decay_and_before_relationship_events: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t08a_a_hard_sol_is_recorded_at_the_boundary_and_pushed_at_the_next_tick: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t08b_the_clause_is_the_first_short_of_ice_air_food: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t08c_the_sol_hook_loops_over_no_beings: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t09a_the_pledge_pushes_everyone_once: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t09b_an_age_change_pushes_nothing: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t10a_two_friends_awake_together_get_the_company_push: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t10b_no_company_asleep_in_transit_or_between_non_friends: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t10c_friends_on_the_same_ice_field_count: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t10d_the_company_ceiling: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t11a_decay_events_colony_company_in_that_order: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t11b_two_same_seed_staged_worlds_give_identical_moods: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t12a_each_line_changes_the_band_only_when_0_03_past_it: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t12b_a_push_that_crosses_two_lines_moves_two_bands_in_one_tick: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t12c_a_mood_hovering_on_a_line_does_not_flip_the_text: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13a_a_grief_why_is_sticky_against_every_other_push: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13a2_stickiness_holds_against_a_lapse_big_enough_to_qualify: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13b_a_second_grief_replaces_only_when_at_least_half_the_deviation: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13c_a_non_sticky_why_is_replaced_by_a_major_push_of_at_least_half: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13d_a_push_of_the_wrong_sign_never_sets_or_replaces_a_why: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13e_the_size_test_uses_the_nominal_push: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13f_hard_and_pledge_set_a_why_only_when_none_and_far_enough: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13g_company_never_sets_replaces_or_clears_a_why: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13h_a_why_is_cleared_when_the_deviation_falls_below_show_dev: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13i_the_clause_and_sign_fields_have_the_documented_shape: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t13j_pair_bound_whys_are_cleared_when_the_pair_no_longer_holds: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t14a_gain_zero_leaves_the_chance_exactly_task_5s: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t14b_gain_on_shifts_the_argument_inside_the_clamps: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t14c_the_chance_never_falls_below_the_floor: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t15a_idle_drain_gain_zero_is_task_5s: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t15b_idle_drain_gain_on_is_bounded_between_0_90_and_1_15: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t15c_sleep_eva_work_and_mining_drains_ignore_mood: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t16_no_sim_file_other_than_the_allowed_reads_mood: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t17_dormant_purity_gains_zero_changes_nothing_old: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t18_determinism_two_same_seed_worlds_agree_for_60_sols: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t19a_the_quiet_line_text_follows_the_why_with_two_wordings: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t19b_once_cooldown_and_the_relief_arc: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t19c_the_cap_drops_the_rest_changes_no_state_and_orders_deepest_first: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t19d_ties_go_to_the_highest_bond_to_the_why_then_the_lowest_id: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t19e_relief_rules: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t19f_the_60_sol_run_keeps_the_line_invariants: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t20a_the_texts_are_the_spec_texts: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t20b_no_digit_percent_sign_trait_word_or_chart_word_in_any_text: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t21a_series_have_the_length_of_pop_by_sol_on_a_founder_world: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t21b_series_on_a_blank_world_and_at_pop_zero: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t25a_expected_t5_is_the_task_5_log: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t25b_strip_md_removes_only_a_final_md_column: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t26a_key_path_parity_both_ways: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t26b_the_balance_data_hash_covers_mood: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t26c_the_sanity_rules_hold_on_the_shipped_data: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t26d_each_sanity_rule_fails_on_one_broken_copy: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t27a_friend_pairs_returns_flags_and_copies: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t27b_the_arrays_are_copies_and_the_call_is_read_only: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t27c_the_council_reads_the_same_world_through_the_accessor: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t28_friends_of_is_ascending_with_flags_and_a_dictionary_fallback: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t29a_events_are_cleared_each_tick_and_list_every_kind: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t29b_a_death_lists_one_grief_entry_per_mourner: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t29c_with_friend_marks_both_ends_of_grown_friend_pairs_only: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t31a_a_colony_in_permanent_hardship_stays_inside_the_limits: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t31b_stepped_hardship_loses_no_being_to_an_unstaged_cause: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t34a_control_gain_takes_the_mood_branch_with_a_tiny_shift: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t34b_two_control_runs_of_60_sols_are_identical: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t35_twenty_friends_together_for_100_sols_never_pass_the_company_ceiling: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_moods::test_t36_a_birth_push_reaches_light_and_falls_back_within_a_half_life: missing API: data/mood.json, sim/moods.gd, SimData.moods(), SimWorld.moods, SimWorld.moods_enabled, SimWorld.mood_travel_gain, SimWorld.mood_energy_gain, world.relationships.events, world.relationships.with_friend, world.relationships.friend_pairs(), world.relationships.friends_of(), Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_k, Being.mood_band, Being.mood_why, Being.mood_quiet_t, Being.mood_down_t, stats.moods
+  test_view_model::test_perf_perf: median update 2.010 ms <= 2.0 ms
+  test_view_moods::test_t22a_the_canonical_panels_are_exact: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22b_the_four_spirit_sentences_with_and_without_a_why: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22c_an_even_being_with_no_why_has_no_spirits_line: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22d_the_company_sentence_k1_close_and_friend: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22e_a_newborn_with_a_held_kin_bond_is_not_lonely_and_a_lapsed_pair_is: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22f_sign_agreement_and_the_texts_of_every_why: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22g_a_company_why_adds_no_sentence: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22h_the_panel_is_never_more_than_four_sentences_and_has_no_digit: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t22i_nature_reachability_for_twelve_signs_and_both_worlds: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t13h_tenses_fresh_and_old: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t36_the_birth_why_shows_while_light: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t23_calling_the_panel_changes_nothing_and_draws_nothing: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_view_moods::test_t24_the_view_source_reads_no_mood_number: missing API: data/mood.json, view/model/being_panel.gd, sim/moods.gd, Being.mood, Being.mood_base, Being.mood_halflife, Being.mood_band, Being.mood_why, world.relationships.friends_of()
+  test_world_beings::test_model_update_stays_under_budget_with_160_beings: model update median 2.008 ms within 2.0 ms
+exit 1
