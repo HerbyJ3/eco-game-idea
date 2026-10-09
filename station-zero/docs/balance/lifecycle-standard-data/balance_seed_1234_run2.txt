@@ -1,0 +1,128 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# station zero balance run: seed=1234 sols=1500 overrides=[] fixed_step=0.05 data_hash=c370381b5ad96932
+# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window
+ sol  pop  min birth dead a/t/h/o/x           oxygen    food     ice   regol   dmnd   supp short bldg R/H/W/G/A/C  reach trips  avgE asleep%  waitH minIce  minO2 age web cn
+  30    7    7     0 0/0/0/0/0                 700.0   540.0    58.0    48.1   18.0   28.0     0 2/2/1/2/0/0           2    25  54.1   10.8  521.1   50.4  262.5 L 1.00 -
+  60    7    7     0 0/0/0/0/0                 700.0   540.0    58.5    68.3   23.0   28.0     0 2/2/1/2/0/1           2    29  54.7   11.1  482.7   50.6  698.1 L 0.86 -
+  90    7    7     0 0/0/0/0/0                 700.0   540.0    49.3    47.9   25.0   28.0     0 2/2/1/2/1/1           2    16  55.7   10.6  636.5   35.0  699.0 L 0.71 -
+ 120    7    7     0 0/0/0/0/0                 700.0   540.0    60.7    41.6   26.0   42.0     0 3/3/1/2/1/1           2    22  55.3   11.0  589.2   38.7  699.0 L 0.57 -
+ 150    7    7     0 0/0/0/0/0                 850.0   660.0    79.3    25.4   32.0   42.0     0 3/3/1/3/1/1           2    29  54.7   11.1  534.9   59.8  698.0 L 0.43 -
+ 180    7    7     0 0/0/0/0/0                 850.0   660.0    49.2    47.5   35.0   42.0     0 3/4/1/3/1/1           2    18  55.4   10.8  575.4   48.3  849.0 L 0.29 -
+ 210    7    7     0 0/0/0/0/0                 850.0   660.0    36.1    90.1   35.0   42.0     0 3/4/1/3/1/1           2    15  55.9   10.3  712.0   36.1  849.0 L 0.29 -
+ 240    7    7     0 0/0/0/0/0                1000.0   780.0    37.8    32.4   39.0   42.0     0 3/4/1/4/1/1           2    15  57.4   10.8  718.4   26.5  849.0 L 0.29 -
+ 270    7    7     0 0/0/0/0/0                1000.0   780.0    72.1    63.5   40.0   56.0     0 4/4/1/4/1/2           2    32  55.8   11.6  289.2   37.6  999.0 L 0.43 -
+ 300   10    7     3 0/0/0/0/0                1150.0   900.0    52.2     7.0   46.0   56.0     0 4/4/1/5/1/2           2    24  56.2   10.8  365.8   48.9  999.0 L 0.40 -
+ 330   12   10     5 0/0/0/0/0                1300.0  1020.0    31.1    13.4   50.0   56.0     0 4/4/1/6/1/2           2    29  59.9   10.7  400.5   16.6 1149.0 S 1.00 -
+ 360   12   12     5 0/0/0/0/0                1300.0  1020.0    29.4    60.9   50.0   56.0     0 4/4/1/6/2/2           2    28  58.7   10.8  323.3   10.0 1299.0 S 0.58 -
+ 390   13   12     6 0/0/0/0/0                1450.0  1140.0    16.5    16.8   54.0   56.0     0 4/4/1/7/2/2           2    27  58.6   10.7  190.2   16.5 1299.0 S 0.77 -
+ 420   13   13     6 0/0/0/0/0                1450.0  1140.0    31.6    23.2   54.0   56.0     0 4/4/1/7/2/2           2    29  58.8   10.4   80.0   12.6 1449.0 S 0.62 -
+ 450   13   13     6 0/0/0/0/0                1450.0  1140.0    18.0    17.8   54.0   70.0     0 5/4/1/7/2/2           2    31  59.0   10.6  167.7   11.7 1449.0 S 0.62 -
+ 480   13   13     6 0/0/0/0/0                1450.0  1140.0    15.1    49.0   54.0   70.0     0 5/4/1/7/2/2           2    26  58.9   10.7   20.0   10.1 1449.0 S 0.62 -
+ 510   13   13     6 0/0/0/0/0                1450.0  1140.0    16.2     3.1   56.0   70.0     0 5/4/1/7/2/2           2    28  59.9   10.8  166.4   13.0 1449.0 S 0.77 -
+ 540    6    6     6 0/7/0/0/0                1600.0  1260.0    20.3     3.1   58.0   70.0     0 5/4/1/8/2/2           2    18  59.9   10.3  229.2    0.0 1449.0 S 0.67 -
+ 570    8    6     8 0/7/0/0/0                1600.0  1260.0    35.3    35.6   58.0   70.0     0 5/4/1/8/2/2           2    19  58.0   10.8    0.0   19.5 1599.0 S 0.25 -
+ 600   10    8    10 0/7/0/0/0                1600.0  1260.0     9.0    67.7   58.0   70.0     0 5/4/1/8/2/2           2    16  62.6   10.7    0.0    9.0 1599.0 S 0.60 -
+ 630   10   10    10 0/7/0/0/0                1600.0  1260.0    30.1    67.7   58.0   70.0     0 5/4/1/8/2/2           2    15  61.8   11.0    5.0    5.1 1599.0 S 0.50 -
+ 660   10   10    10 0/7/0/0/0                1600.0  1260.0    36.5    96.3   58.0   70.0     0 5/4/1/8/2/2           2    21  63.3   10.7   25.0   21.7 1599.0 S 0.40 -
+ 690    3    3    10 0/14/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2    10  60.7   10.6  566.5    0.0 1599.0 S 0.33 -
+ 720    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     1  58.8    9.9  739.8    0.0 1599.0 S 0.00 -
+ 750    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+ 780    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+ 810    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+ 840    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.7    0.0 1600.0 S 0.00 -
+ 870    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+ 900    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+ 930    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+ 960    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+ 990    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1020    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.7    0.0 1600.0 S 0.00 -
+1050    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1080    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1110    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1140    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1170    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.7    0.0 1600.0 S 0.00 -
+1200    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1230    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1260    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1290    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1320    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1350    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.7    0.0 1600.0 S 0.00 -
+1380    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1410    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1440    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1470    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+1500    0    0    10 0/17/0/0/0               1600.0  1260.0     0.0     9.1   60.0   70.0     0 5/4/1/8/2/2           2     0   0.0    0.0  739.8    0.0 1600.0 S 0.00 -
+
+targets for seed 1234 (1500 sols):
+  T1 FAIL run min pop 0 (needs >= 5), final pop 0
+  T2 PASS deaths 17 (air 0 thirst 17 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 10, first_birth_sol 288, at_capacity 0, cooldown_violations 0, pop@30=7, pop@100=7, pop@300=10
+  T4 PASS min O2 262.5, food 203.1; ice ran dry (pressure): min ice 0.0, ice>30 0.0, thirst deaths 17; max ice/target 0.75, regolith/target 0.41
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 11 (<=15)
+  T6 PASS limited 27573.4 h = 74.54% (>=2% provisional; 4 of 5 seeds), site busy 73.7%; waiting_regolith 1010.0 h, site_no_crew 26563.4 h
+  T7 PASS turn_backs_air 0, exhausted 206, reachable>=2 at 100.0% of 1500 sol samples (>=95), trips 523
+  T8 FAIL row avg energy 0.0..63.3 (40..90), row asleep 0.0..11.6% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+  T10 FAIL first settlement sol 312 (40..150), age_changes 1 (<=4), min gap between consecutive history entries 312 (>=20), history 2 entries (changes+1 = 2); report: sols_in_age landing 312 settlement 1188 council 0, age at end settlement, changes [sol 312 settled], fall back causes [none], not-ok sols 82 (by group, a sol can fail several: ice 22, food 1, oxygen 1, power 0, death 8, unrest 60)
+  T11 FAIL (1) list lengths 1501/1501/1501/1501 ok; (2) lonely mean of last 50 readings 0.000 (max 0.35) ok; (3) friends_mean 0.00 (1.0..15.0) BAD; (4) first_friendship_sol 250 ok; (5) lines_dropped (total) 0 ok; report: web 0.00 second 0.00 lonely 0.00 friends_mean 0.00 friends share of colony 0.000 (pop 0)
+  T12 PASS (1) list lengths 1501/1501/1501 ok; (2) C2 ok; (3) council changes 0 (<=4) ok; (4) proposals 0 ok; (5) one Council line per boundary ok; report: first Council sol <null>, meetings 0, proposals [], pledge sol <null> reason -, lines {"circles_few":2}, dropped 0; council_min_seeds 3 pledge_min_seeds 1
+RESULT FAIL (target 9 determinism: table sha256 94b5d2657c1103ba)
+
+== STANDARD TIER (docs/specs/lifecycle-calibration.md): restated targets and L1-L5, seed-level; seed counts across seeds are applied in the report ==
+  L1   FAIL   min adults 0 (first at sol 704)  [limit: >= 4 every sol]
+  T1r  FAIL   min adults 0, final pop 0  [limit: min adults >= 4 and final pop >= 7]
+  T2r  FAIL   unexplained 0, founder deaths 7 of 7, total deaths 17  [limit: unexplained 0, founder deaths <= 2]  (by cause {"thirst":17}; by stage/cause {"adult/thirst":7,"baby/thirst":8,"toddler/thirst":2})
+  T3a  PASS   at_capacity 0, cooldown_violations 0  [limit: both 0]
+  T3b  PASS   first birth sol 288  [limit: 265..320]
+  T3c  PASS   pop@300 10  [limit: >= 9]
+  T3d  FAIL   pop@1500 0  [limit: 25..80 at the end]
+  T3e  FAIL   births per complete window: c1[288,558)=6 c2[558,828)=4 c3[828,1098)=0 c4[1098,1368)=0 c5[1368,1638)=0 incomplete  [limit: >= 3 per complete 270-sol window]  (def: windows of 270 sols anchored on the first birth sol, window 1 included; incomplete tail not judged)
+  T3f  REPORT saturated sols (capacity - (pop+pending) <= 0) 83 of 1501 = 5.5%, longest saturated run 63 sols (ending sol 108)  [limit: reported]
+  T4r  PASS   min O2 262.465000000022, min food 203.091499999978; min ice/being 0.00 (sol 521); thirst deaths 17 = 2.646 per 1000 being-sols; ice-dry sols per cohort window c1=4 c2=129 c3=270 c4=270 c5=133  [limit: O2 and food never 0 (ice reported)]
+  T5   PASS   demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 11 (<=15)  [limit: kept as written]
+  T6a  FAIL   longest saturated-housing run 63 sols  [limit: <= 60 sols]  (def: housing 'waits' = consecutive sols with capacity - (pop+pending) <= 0; the spec text does not say whether free adults must exist, so it is the plain saturation run)
+  T6b  FAIL   buildings finished per 270-sol window from sol 0: 12,6,0,0,0  [limit: >= 1 each]
+  T6c  REPORT crew-limited share 74.54%  [limit: reported]
+  T7r  PASS   trips 523 over 4340 adult-sols = 0.1205 per adult-sol; exhausted 206 = 0.0475 per adult-sol; turn_backs_air 0; reachable>=2 100.0%  [limit: 0.05..0.30 trips per adult-sol; turn_backs_air 0; reachable >= 95%]
+  T8r  FAIL   adult row avg energy 0.0..57.9, adult row asleep 0.0..11.6%, max sleep (all beings, run) 8.8 h  [limit: energy 40..90, asleep 5..30%, max sleep <= 18 h]  (def: adults only, sampled once per sim hour (not every step), rows every 30 sols as the table; max sleep is the run-wide all-beings figure (not split by stage))
+  T10r PASS   Settlement sol 312, projected age changes 1, fall-backs []  [limit: Settlement 265..700 (4 of 5 seeds), changes <= 4]
+  T11r PASS   final pop 0; adults with friend_count 0 over last 50 readings: max 0 mean 0.00; module lonely share last 50 mean 0.000; toddler-and-up with 0 friends: mean 0.00, share of those who can bond 0.000  [limit: pop < 20: <= 2 such adults on the last 50 readings; pop >= 20: lonely share <= 0.35]  (def: 'no more than 2 on the last 50 readings' read as the max over those readings; module share is over all beings incl. babies)
+  T11b FAIL   friends_mean 0.00, first_friendship_sol 250, lines_dropped 0  [limit: friends_mean 1.0..15.0, first friendship not null]
+  T12r PASS   council entries []; max adult voices over run 7 (voices_min 12)  [limit: structure ok; no entry with voices < voices_min]
+  Circ PASS   circles lines 2 (circles_few 2), at sols 362,462  [limit: >= 1 circles_few and <= 2 circles per term]  (def: circles_max read from data/council.json (lines.circles_max if present, else 2); 'per term' applied to the whole run (no Council term exists))
+  L2   PASS   max (pop-adults)/adults 2.00 (sol 690); ice/being c3 0.00 -> c4 0.00; food/being c3 1260.00 -> c4 1260.00  [limit: ratio <= 6 every sol; ice and food per being not falling over the last 2 complete cohort windows]  (def: 'not falling' = mean of the later window >= mean of the earlier, no tolerance)
+  L3   FAIL   first-cohort conception span 89 sols (sols 21..110), births c1 6, c2 4  [limit: span <= 60 sols; c2 births >= 40% of c1]
+  L4   PASS   capacity >= pop+pending on 1501 of 1501 sols = 100.0%  [limit: >= 90% of sols]
+  L5   PASS   stage counts summed to pop on 1501 sols, 645 being-age checks (every 10th sol), 0 violations  [limit: 0 violations]
+
+cohort table (270-sol windows anchored on the first birth sol 288):
+  window  from   to  births  complete
+  c1       288   558      6  yes
+  c2       558   828      4  yes
+  c3       828  1098      0  yes
+  c4      1098  1368      0  yes
+  c5      1368  1638      0  no
+population at each 300 sols:
+  sol 300: pop 10 (adults 7, baby 3 toddler 0 child 0 teen 0)
+  sol 600: pop 10 (adults 4, baby 6 toddler 0 child 0 teen 0)
+  sol 900: pop 0 (adults 0, baby 0 toddler 0 child 0 teen 0)
+  sol 1200: pop 0 (adults 0, baby 0 toddler 0 child 0 teen 0)
+  sol 1500: pop 0 (adults 0, baby 0 toddler 0 child 0 teen 0)
+births (sol, conceived sol, home): 288(c21,h2); 289(c23,h6); 294(c27,h6); 304(c37,h6); 311(c45,h2); 378(c110,h2); 563(c297,h2); 565(c300,h2); 579(c313,h2); 582(c316,h6)
+conception sols (15): 21,23,27,37,45,110,296,297,300,313,316,413,586,595,597
+settlement: first_settlement_sol 312; family_mars_born now [0, 0]
+deaths: [{"cause":"thirst","founder":true,"name":"Ixle-23","sol":521,"stage":"adult"},{"cause":"thirst","founder":true,"name":"Ixth-37","sol":521,"stage":"adult"},{"cause":"thirst","founder":true,"name":"Kira-21","sol":522,"stage":"adult"},{"cause":"thirst","founder":false,"name":"Kix-83","sol":525,"stage":"baby"},{"cause":"thirst","founder":false,"name":"Zena-93","sol":526,"stage":"baby"},{"cause":"thirst","founder":false,"name":"Zeth-24","sol":526,"stage":"baby"},{"cause":"thirst","founder":false,"name":"Elra-14","sol":526,"stage":"baby"},{"cause":"thirst","founder":false,"name":"Tane-77","sol":688,"stage":"toddler"},{"cause":"thirst","founder":false,"name":"Kivi-16","sol":688,"stage":"baby"},{"cause":"thirst","founder":false,"name":"Tana-61","sol":688,"stage":"toddler"},{"cause":"thirst","founder":true,"name":"Zena-49","sol":688,"stage":"adult"},{"cause":"thirst","founder":true,"name":"Kine-9","sol":689,"stage":"adult"},{"cause":"thirst","founder":false,"name":"Quoro-59","sol":689,"stage":"baby"},{"cause":"thirst","founder":true,"name":"Elmo-83","sol":689,"stage":"adult"},{"cause":"thirst","founder":false,"name":"Fenka-15","sol":690,"stage":"baby"},{"cause":"thirst","founder":false,"name":"Elka-41","sol":691,"stage":"baby"},{"cause":"thirst","founder":true,"name":"Luka-60","sol":703,"stage":"adult"}]
+birth-check outcomes per habitat check (observed after the step): {"birth_cooldown":1,"capacity":115,"chance_roll_failed":86,"conceived":15,"conception_cooldown":7,"no_eligible_adult_inside":33144,"too_few_beings_inside":1903}
+birth-check outcomes by cohort window (pre = before first birth): {"0":{"chance_roll_failed":26,"conceived":6,"conception_cooldown":1,"no_eligible_adult_inside":5997,"too_few_beings_inside":630},"1":{"birth_cooldown":1,"chance_roll_failed":13,"conceived":3,"conception_cooldown":2,"no_eligible_adult_inside":6251,"too_few_beings_inside":386},"2":{"no_eligible_adult_inside":6660},"3":{"no_eligible_adult_inside":6656},"4":{"no_eligible_adult_inside":3256},"pre":{"capacity":115,"chance_roll_failed":47,"conceived":6,"conception_cooldown":4,"no_eligible_adult_inside":4324,"too_few_beings_inside":887}}
+silence guard (while the colony lives, to sol 704): longest gap 140 sols
+silence guard: longest gap between sols carrying any pregnant/born/died/rel_* line: 797 sols (from sol 703); sols with such lines 48 of 1500
+log lines by kind (scanned every step, not capped): {"age_began":1,"born":10,"building_done":18,"colony_silent":1,"council_circles":2,"died":17,"exhausted":206,"ground_broken":19,"ice_dry":4,"ice_found":4,"need_regolith":69,"pregnant":15,"rel_close":2,"rel_close_crew":1,"rel_drifted":3,"rel_found_friend":8,"rel_friends":4,"rel_grief":15,"waiting_for_builders":1033,"water_dry":405}
+power: shorts 0, reonlines 0, max offline 0.0 h (stats), sampled longest offline 0.0 h
+ice timeline (sol:stock,pop,live fields/total dried so far at the end,reachable,remaining amount): 0:ice 60,pop 7,fields 2/4 reachable 2,amt 598 | 30:ice 58,pop 7,fields 2/4 reachable 2,amt 548 | 60:ice 59,pop 7,fields 2/4 reachable 2,amt 496 | 90:ice 49,pop 7,fields 2/4 reachable 2,amt 453 | 120:ice 61,pop 7,fields 2/4 reachable 2,amt 390 | 150:ice 79,pop 7,fields 2/4 reachable 2,amt 320 | 180:ice 49,pop 7,fields 2/4 reachable 2,amt 298 | 210:ice 36,pop 7,fields 2/4 reachable 2,amt 260 | 240:ice 38,pop 7,fields 2/4 reachable 2,amt 206 | 270:ice 72,pop 7,fields 2/4 reachable 2,amt 120 | 300:ice 52,pop 10,fields 2/4 reachable 2,amt 81 | 330:ice 31,pop 12,fields 2/4 reachable 2,amt 377 | 360:ice 29,pop 12,fields 2/4 reachable 2,amt 606 | 390:ice 16,pop 13,fields 2/4 reachable 2,amt 527 | 420:ice 32,pop 13,fields 2/4 reachable 2,amt 404 | 450:ice 18,pop 13,fields 2/4 reachable 2,amt 324 | 480:ice 15,pop 13,fields 2/4 reachable 2,amt 237 | 510:ice 16,pop 13,fields 2/4 reachable 2,amt 143 | 540:ice 20,pop 6,fields 2/4 reachable 2,amt 425 | 570:ice 35,pop 8,fields 2/4 reachable 2,amt 363 | 600:ice 9,pop 10,fields 2/4 reachable 2,amt 321 | 630:ice 30,pop 10,fields 2/4 reachable 2,amt 628 | 660:ice 37,pop 10,fields 2/4 reachable 2,amt 547 | 690:ice 0,pop 3,fields 2/4 reachable 2,amt 516 | 720:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 750:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 780:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 810:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 840:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 870:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 900:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 930:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 960:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 990:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1020:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1050:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1080:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1110:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1140:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1170:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1200:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1230:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1260:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1290:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1320:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1350:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1380:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1410:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1440:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1470:ice 0,pop 0,fields 2/4 reachable 2,amt 513 | 1500:ice 0,pop 0,fields 2/4 reachable 2,amt 513
+ice fields: dried 4, scouts found 0, ice_dry sols 806 of 1501
+friends by stage at the end (Q8): {}
+STD-RESULT (restated targets; exit code follows L1 and L4 only, spec section 8) std_text sha256 83a5b7db9306eda3
+@wall cost pop 0..9: 1164 sols, 573586 steps, 184.0 us/step (mean over the band, wall clock incl. observer)
+@wall cost pop 10..19: 337 sols, 166206 steps, 315.7 us/step (mean over the band, wall clock incl. observer)
+@wall slowest sol 418: pop 13, 726 us/step

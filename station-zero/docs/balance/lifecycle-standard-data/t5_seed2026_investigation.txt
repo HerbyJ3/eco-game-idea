@@ -1,0 +1,17 @@
+
+sol 270 t=6664.3 supply 42.0 draw 41.0 demand 41.0 margin 1.0 offline [] sites [] reg 50
+sol 278 t=6876.2 supply 42.0 draw 43.0 demand 43.0 margin -1.0 offline [] sites ["reactor#16 built 0.00"] reg 6
+sol 278 t=6876.2 supply 42.0 draw 39.0 demand 43.0 margin 3.0 offline ["green_room#15 since t=6876.2"] sites ["reactor#16 built 0.00"] reg 6
+sol 288 t=7130.5 supply 56.0 draw 37.0 demand 41.0 margin 19.0 offline ["green_room#15 since t=6876.2"] sites [] reg 19
+sol 288 t=7130.6 supply 56.0 draw 41.0 demand 41.0 margin 15.0 offline [] sites [] reg 19
+LOG sol 270 t=6676.2 need_regolith More regolith is needed to build.
+LOG sol 272 t=6731.2 need_regolith More regolith is needed to build.
+LOG sol 275 t=6806.2 need_regolith More regolith is needed to build.
+LOG sol 278 t=6876.2 ground_broken Ground broken for a new reactor.
+LOG sol 278 t=6876.2 short Green room shorted out.
+LOG sol 288 t=7130.5 building_done A new reactor is finished.
+LOG sol 288 t=7130.6 back_online Green room is back online.
+LOG sol 289 t=7136.2 need_regolith More regolith is needed to build.
+LOG sol 291 t=7186.2 need_regolith More regolith is needed to build.
+LOG sol 294 t=7261.2 need_regolith More regolith is needed to build.
+cfg draws {} site_draw 2.0 reactor_supply 14.0 reonline {"hold_h":3.0,"load_fraction":0.95} short {"newest_chance":0.6}

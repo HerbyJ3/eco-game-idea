@@ -1,0 +1,26 @@
+extends SceneTree
+func _init() -> void:
+	var w := SimWorld.new(2026)
+	var last_draw := -1.0
+	var printed := {}
+	while w.sol() < 296:
+		w.step()
+		var s := w.sol()
+		if s >= 270:
+			var key := "%.1f|%.1f|%d" % [w.buildings.supply(), w.buildings.draw(), w.buildings.list.size()]
+			if key != last_draw_key(printed):
+				printed["k"] = key
+				var offl := []
+				var sites := []
+				for b in w.buildings.list:
+					if b.offline: offl.append("%s#%d since t=%.1f" % [b.kind, b.id, float(b.offline_since)])
+					if not b.finished(): sites.append("%s#%d built %.2f" % [b.kind, b.id, b.built])
+				print("sol %d t=%.1f supply %.1f draw %.1f demand %.1f margin %.1f offline %s sites %s reg %.0f" % [s, w.t, w.buildings.supply(), w.buildings.draw(), w.buildings.demand(), w.buildings.margin(), offl, sites, w.colony.regolith])
+	for e in w.log:
+		if int(e.sol) >= 270 and e.kind in ["short","back_online","building_done","ground_broken","need_regolith"]:
+			print("LOG sol %d t=%.1f %s %s" % [e.sol, e.t, e.kind, e.text])
+	var bd := w.buildings
+	print("cfg draws ", JSON.stringify(bd.cfg.get("draw", {})), " site_draw ", bd.cfg.site_draw, " reactor_supply ", bd.cfg.reactor_supply, " reonline ", JSON.stringify(bd.cfg.reonline), " short ", JSON.stringify(bd.cfg.short))
+	quit(0)
+func last_draw_key(p: Dictionary) -> String:
+	return str(p.get("k", ""))
