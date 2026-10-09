@@ -36,7 +36,7 @@ static func parse_value(text: String) -> Variant:
 
 static func data_hash() -> String:
 	var parts: Array[String] = []
-	for f in ["calendar", "signs", "persona", "sim", "colony", "buildings", "beings", "resources", "suits", "ages", "relationships", "council"]:
+	for f in ["calendar", "signs", "persona", "sim", "colony", "buildings", "beings", "resources", "suits", "ages", "relationships", "council", "mood"]:
 		parts.append(JSON.stringify(SimData.load_json(f + ".json"), "", true))
 	return "\n".join(parts).sha256_text()
 
@@ -54,6 +54,11 @@ static func cn_column(w: SimWorld) -> String:
 	if pledged:
 		return "P"
 	return "C" if str(w.ages.age) == "council" else "-"
+
+
+## The trailing `md` column (emotions.md 9): the latest colony mean mood, `%+.2f`. A debug column, never read by the HUD.
+static func md_column(w: SimWorld) -> String:
+	return "%+.2f" % float(w.stats.moods.mean) if w.stats.has("moods") else "+0.00"
 
 
 ## The age_history entries that survive the Landing / not-Landing projection (consecutive equal letters collapse; the
@@ -102,9 +107,9 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 			seed_in, sols, pstr, str(w.fixed_step), data_hash().substr(0, 16)])
 	lines.append("# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window")
 	var body: Array[String] = []
-	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s %s %s" % [
+	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s %s %s %s" % [
 			"sol", "pop", "min", "birth", "dead a/t/h/o/x", "oxygen", "food", "ice", "regol",
-			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2", "age", "web", "cn"]
+			"dmnd", "supp", "short", "bldg R/H/W/G/A/C", "reach", "trips", "avgE", "asleep%", "waitH", "minIce", "minO2", "age", "web", "cn", "md"]
 	body.append(head)
 	var prev := {"shorts": 0, "trips": 0}
 	var rows: Array[Dictionary] = []
@@ -114,9 +119,12 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 	var notok := {"sols": 0}
 	for g in Ages.GROUPS:
 		notok[g] = 0
+	var mood_lines: Array = []
+	var mood_seen_t := -1.0
 	while w.sol() < sols:
 		w.step()
 		total_steps += 1
+		mood_seen_t = collect_mood_lines(w, mood_seen_t, mood_lines)
 		if w._sol_started and w.ages_enabled and w.sol() >= int(SimData.ages().sample.from_sol) \
 				and w.colony.pop() > 0 and not w.ages.window.is_empty():
 			var last: Dictionary = w.ages.window.back()
@@ -138,7 +146,7 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 		var row := {"sol": s, "avg_e": avg_e, "asleep": asleep, "pop": w.colony.pop(),
 				"min_pop": win.min_pop, "min_ice": win.min_ice}
 		rows.append(row)
-		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s %s %.2f %s" % [
+		body.append("%4d %4d %4s %5d %-23s %7.1f %7.1f %7.1f %7.1f %6.1f %6.1f %5d %-17s %5d %5d %5.1f %6.1f %6.1f %6s %6s %s %.2f %s %s" % [
 				s, w.colony.pop(), _fmt_min(win.min_pop).replace(".0", ""), st.births,
 				"%d/%d/%d/%d/%d" % [d.air, d.thirst, d.hunger, d.suffocated_outside, d.other],
 				w.colony.oxygen, w.colony.food, w.colony.ice, w.colony.regolith,
@@ -146,14 +154,14 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 				"/".join(counts), w.resources.reachable_ice_count(), int(st.mining_trips) - int(prev.trips),
 				avg_e, asleep, float(win.hours_waiting_regolith) + float(win.hours_site_no_crew),
 				_fmt_min(win.min_ice), _fmt_min(win.min_oxygen),
-				age_column(w), float(st.relationships.web_share), cn_column(w)])
+				age_column(w), float(st.relationships.web_share), cn_column(w), md_column(w)])
 		prev.shorts = st.shorts
 		prev.trips = st.mining_trips
 		w.reset_window()
 	var table_text := "\n".join(body)
 	var thash := table_text.sha256_text()
 	lines.append_array(body)
-	var verdicts := _targets(w, rows, sols, notok)
+	var verdicts := _targets(w, rows, sols, notok, mood_lines)
 	lines.append("")
 	lines.append("targets for seed %d (%d sols):" % [seed_in, sols])
 	for v in verdicts:
@@ -173,7 +181,7 @@ static func _v(n: int, ok: bool, detail: String) -> Dictionary:
 
 
 ## Per-seed verdicts for the nine targets (spec section 13). Target 9 is checked by repeat runs, not here.
-static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int, notok: Dictionary = {}) -> Array[Dictionary]:
+static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int, notok: Dictionary = {}, mood_lines: Array = []) -> Array[Dictionary]:
 	var st: Dictionary = w.stats
 	var out: Array[Dictionary] = []
 	var sol_h: float = w.clock.sol_h
@@ -250,6 +258,7 @@ static func _targets(w: SimWorld, rows: Array[Dictionary], sols: int, notok: Dic
 	out.append(_t10(w, sols, notok))
 	out.append(_t11(w))
 	out.append(_t12(w))
+	out.append(t13(st, mood_lines, SimData.moods(), sol_h))
 	return out
 
 
@@ -410,3 +419,82 @@ static func _t12(w: SimWorld) -> Dictionary:
 			pledged_reason, JSON.stringify(cs.lines), int(cs.lines_dropped),
 			int(cfg.balance.council_min_seeds), int(cfg.balance.pledge_min_seeds)]
 	return _v(12, ok1 and ok2 and ok3 and ok4 and ok5, detail)
+
+
+## Appends to `out` the `mood_*` log entries written since `seen_t` (the log is a 500-entry FIFO, so invariants (2) and (3) of T13
+## can only be judged on lines collected as the run goes: call this after every step). Returns the new `seen_t`.
+static func collect_mood_lines(w: SimWorld, seen_t: float, out: Array) -> float:
+	var n := w.log.size()
+	if n == 0:
+		return seen_t
+	var k := n - 1
+	while k >= 0 and float(w.log[k].t) > seen_t:
+		k -= 1
+	for j in range(k + 1, n):
+		var e: Dictionary = w.log[j]
+		if str(e.kind).begins_with("mood_"):
+			out.append({"kind": str(e.kind), "t": float(e.t), "sol": int(e.sol), "being_id": int(e.being_id)})
+	return float(w.log[n - 1].t)
+
+
+## Target 13, emotions (spec emotions.md section 12), per seed from `stats` and the `mood_*` lines collected per step. Judged:
+## (1) mean_by_sol, sd_by_sol and heavy_by_sol have the length of pop_by_sol; (2) at most `lines.max_per_sol` mood lines per
+## elapsed sol; (3) every mood_relief has an earlier mood_quiet of the same being at least `lines.relief_min_sols` sols before;
+## (4) heavy_by_sol never exceeds `balance.heavy_share_max` after sol 30; (5) min_dev not below `range.floor_dev` and max_dev not
+## above `range.ceil_dev`; (6) deaths_unexplained is 0. `cfg` is the mood data (SimData.moods()), `sol_h` the sol length in hours. Returns the usual verdict
+## dictionary plus `checks` (six bools), `quiet`, `relief`, `relief_without_quiet`, `worst_per_sol` and `heavy_max`.
+static func t13(stats: Dictionary, mood_lines: Array, cfg: Dictionary, sol_h: float) -> Dictionary:
+	if not stats.has("moods"):
+		var absent := _v(13, false, "stats.moods ABSENT")
+		absent["checks"] = [false, false, false, false, false, false]
+		return absent
+	var m: Dictionary = stats.moods
+	var min_sols := float(cfg.lines.relief_min_sols)
+	var per_sol := {}
+	var quiet_t := {}
+	var n_quiet := 0
+	var n_relief := 0
+	var rel_bad := 0
+	for e in mood_lines:
+		per_sol[int(e.sol)] = int(per_sol.get(int(e.sol), 0)) + 1
+		var id := int(e.being_id)
+		if str(e.kind) == "mood_quiet":
+			n_quiet += 1
+			if not quiet_t.has(id):
+				quiet_t[id] = []
+			quiet_t[id].append(float(e.t))
+		elif str(e.kind) == "mood_relief":
+			n_relief += 1
+			var found := false
+			for qt in quiet_t.get(id, []):
+				if float(e.t) - float(qt) >= min_sols * sol_h - 1e-6:
+					found = true
+			if not found:
+				rel_bad += 1
+	var n: int = stats.pop_by_sol.size()
+	var ok1: bool = m.mean_by_sol.size() == n and m.sd_by_sol.size() == n and m.heavy_by_sol.size() == n
+	var worst := 0
+	for s in per_sol:
+		worst = maxi(worst, int(per_sol[s]))
+	var ok2: bool = worst <= int(cfg.lines.max_per_sol)
+	var ok3: bool = rel_bad == 0
+	var heavy_max := 0.0
+	for i in range(31, m.heavy_by_sol.size()):
+		heavy_max = maxf(heavy_max, float(m.heavy_by_sol[i]))
+	var ok4: bool = heavy_max <= float(cfg.balance.heavy_share_max)
+	var ok5: bool = float(m.min_dev) >= float(cfg.range.floor_dev) - 1e-9 and float(m.max_dev) <= float(cfg.range.ceil_dev) + 1e-9
+	var ok6: bool = int(stats.deaths_unexplained) == 0
+	var ok := ok1 and ok2 and ok3 and ok4 and ok5 and ok6
+	var detail := "(1) series lengths %s; (2) mood lines per sol worst %d (<=%d) %s; (3) quiet %d relief %d relief-without-quiet %d %s; (4) heavy share max after sol 30 %.3f (<=%.2f) %s; (5) dev [%.3f, %.3f] in [%.2f, %.2f] %s; (6) unexplained %d %s" % [
+			"ok" if ok1 else "BAD", worst, int(cfg.lines.max_per_sol), "ok" if ok2 else "BAD", n_quiet, n_relief, rel_bad,
+			"ok" if ok3 else "BAD", heavy_max, float(cfg.balance.heavy_share_max), "ok" if ok4 else "BAD",
+			float(m.min_dev), float(m.max_dev), float(cfg.range.floor_dev), float(cfg.range.ceil_dev), "ok" if ok5 else "BAD",
+			int(stats.deaths_unexplained), "ok" if ok6 else "BAD"]
+	var v := _v(13, ok, detail)
+	v["checks"] = [ok1, ok2, ok3, ok4, ok5, ok6]
+	v["quiet"] = n_quiet
+	v["relief"] = n_relief
+	v["relief_without_quiet"] = rel_bad
+	v["worst_per_sol"] = worst
+	v["heavy_max"] = heavy_max
+	return v

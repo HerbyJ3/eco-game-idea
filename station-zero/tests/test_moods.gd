@@ -32,8 +32,7 @@ extends RefCounted
 ##    `SimWorld.new(seed, {"blank": true, "moods_enabled": false})` is the neutral-founder option.
 ##  - Being fields: mood, mood_base, mood_halflife (sols), mood_k, mood_band (0 heavy .. 4 bright), mood_why (null or
 ##    {key, id, name, t, clause, sign}), mood_quiet_t, mood_down_t (null or sim hour). Why keys: grief, friend, close, lapse,
-##    lapse_close, hard_sol, pledge, and "birth" or "birth_parent" (spec 5.2 and test 7 say birth, 5.4 rule 1 says birth_parent:
-##    both accepted, spec question 4). A hard why has clause "ice"|"air"|"food"; hard and pledge whys carry id/name of any kind.
+##    lapse_close, hard_sol, pledge, and birth_parent (the only accepted birth key, revision 4). A hard why has clause "ice"|"air"|"food"; hard and pledge whys carry id/name of any kind.
 ##  - Relationships additions: `events` Array of {kind: grief|friend|close|lapse|lapse_close, a, b[, bond, name]} (spec 9.1; for
 ##    friend, close, lapse and lapse_close a is the lower id), `with_friend` PackedByteArray by id, `friend_pairs()` ->
 ##    {lo, hi, flags} (flag bits 1 close, 2 kin, 4 crew), `friends_of(id)` -> Array of {id, close, kin, crew, bond}.
@@ -755,7 +754,7 @@ func test_t07a_the_parent_of_a_newborn_is_pushed_and_the_why_is_the_birth(t) -> 
 	var why = parent.mood_why
 	t.check(why != null, "a why is set")
 	if why != null:
-		t.check(str(why.key) in ["birth", "birth_parent"], "its key is the birth (got %s)" % str(why.key))
+		t.eq(str(why.key), "birth_parent", "its key is birth_parent (the only accepted name, revision 4)")
 		t.eq(int(why.id), nb.id, "why.id is the newborn")
 		t.eq(str(why.name), nb.name, "why.name is the newborn's name")
 		t.eq(int(why.sign), 1, "sign +1")
@@ -1282,6 +1281,28 @@ func test_t13f_hard_and_pledge_set_a_why_only_when_none_and_far_enough(t) -> voi
 	_end(t)
 
 
+func test_t13f2_a_lone_friend_push_never_shows_but_one_on_a_lifted_being_does(t) -> void:
+	if not _api(t):
+		return
+	# From rest: +0.10 ends at d +0.10, under show_dev 0.15, so the why is cleared in the same tick and the band is even.
+	var c := _why_world()
+	_inject(c.w, [_ev("friend", c.a.id, c.x.id)])
+	t.near(_d(c.a), _p("friend"), CMP, "the friend push lands from rest")
+	t.check(c.a.mood_why == null, "a lone friend push from rest leaves no surviving why")
+	t.eq(int(c.a.mood_band), 2, "and the band stays even, so nothing is shown")
+	# On a being already at d +0.15 (company's ceiling) with no why: d after = 0.15 + 0.10 x (1 - 0.15 / 0.70), the light band.
+	var c2 := _why_world()
+	c2.a.mood = float(c2.a.mood_base) + 0.15
+	_inject(c2.w, [_ev("friend", c2.a.id, c2.x.id)])
+	var want := 0.15 + _p("friend") * _scale(0.15, 1.0)
+	t.near(_d(c2.a), want, 1e-12, "the friend push is scaled by the headroom")
+	t.check(c2.a.mood_why != null and str(c2.a.mood_why.key) == "friend", "the friend why is set (got %s)" % _why_key(c2.a))
+	if c2.a.mood_why != null:
+		t.eq(int(c2.a.mood_why.sign), 1, "sign +1, equal to the sign of d: it would be displayed")
+	t.eq(int(c2.a.mood_band), 3, "the band is light, so the why displays")
+	_end(t)
+
+
 func test_t13g_company_never_sets_replaces_or_clears_a_why(t) -> void:
 	if not _api(t):
 		return
@@ -1507,29 +1528,93 @@ func test_t15b_idle_drain_gain_on_is_bounded_between_0_90_and_1_15(t) -> void:
 	_end(t)
 
 
-func test_t15c_sleep_eva_work_and_mining_drains_ignore_mood(t) -> void:
+## Energy lost over one Being.update (negative when it gained) in a freshly built world, for a being in `kind` at mood `m` with
+## the energy gain 0.25 (revision 4, test 15: every drain state is measured through Being.update, which is where the factor is
+## applied; drain_per_h() cannot see it). The world is the same seeded blank world each call, so the only difference between two
+## calls of one kind is the mood.
+func _update_loss(kind: String, m: float, gain: float = 0.25) -> float:
+	var w = SimWorld.new(1, {"blank": true})
+	var r = w.buildings.add("reactor", 0, 0, 1.0, 12, 10)
+	w.add_building("reactor", 300, 300)
+	w.buildings.add_attached("workshop", r.id, "d", 12, 9, 6)
+	w.colony.regolith = 500.0
+	var b = w.add_being(r.id, "builder" if kind == "work" else "social")
+	b.name = "N%d" % b.id
+	w.mood_energy_gain = gain
+	b.mood = m
+	b.energy = 70.0
+	b.wait_h = 1000.0
+	b.x = 141.0
+	b.y = 40.0
+	b.heading = 0.0
+	match kind:
+		"idle":
+			b.state = "idle"
+		"asleep":
+			b.state = "sleep"
+			b.sleep_started_t = w.t
+			b.energy = 40.0
+		"eva":
+			b.state = "eva"
+			b.after = "enter"
+			b.returning = true
+			b.air_h = 1000.0
+			b.path = [Vector2(6141.0, 40.0)]
+		"trip":
+			var f = w.resources.add_ice_field(140.0, 150.0, 200.0, 20.0)
+			b.state = "eva"
+			b.after = "mine"
+			b.mine = {"site": f, "door": Vector2(48.0, 80.0), "home_id": r.id}
+			b.air_h = 36.0
+			b.x = 58.0
+			b.y = 80.0
+			b.path = [Vector2(6058.0, 80.0)]
+		"mining":
+			var f2 = w.resources.add_ice_field(140.0, 150.0, 200.0, 20.0)
+			b.state = "mining"
+			b.after = "mine"
+			b.mine = {"site": f2, "door": Vector2(48.0, 80.0), "home_id": r.id}
+			b.air_h = 36.0
+			b.work_left_h = 1000.0
+			b.x = 140.0
+			b.y = 150.0
+			b.wander_target = Vector2(140.0, 150.0)
+		"work":
+			w.start_site("habitat", {"parent_id": r.id, "dir": "r", "tw": 10, "th": 8, "gap": 5})
+			var site = w.buildings.site
+			b.state = "work"
+			b.after = "work"
+			b.job = site
+			b.construction_suit = true
+			b.air_h = 1000.0
+			b.wait_h = 0.0
+			b.work_left_h = 1000.0
+			b.wander_target = Vector2(211.0, 40.0)
+	var e0 := float(b.energy)
+	b.update(w, float(w.fixed_step))
+	return (e0 - float(b.energy)) / float(w.fixed_step)
+
+
+func test_t15c_only_the_idle_drain_carries_the_mood_factor(t) -> void:
 	if not _api(t):
 		return
-	var w = _world()
-	var b = _being(w, HAB1, 0.0, 0.0, 4.0, true, true)
-	w.mood_energy_gain = 0.25
-	var en: Dictionary = SimData.beings().energy
-	for k in [["sleep", 0.0], ["eva", float(en.drain_eva)], ["work", float(en.drain_work)], ["mining", float(en.drain_mining)]]:
-		for m in [-0.6, 0.4]:
-			b.mood = float(m)
-			b.state = str(k[0])
-			t.near(float(b.drain_per_h()), float(k[1]), 1e-12, "%s drain at m %+.1f is the data value" % [k[0], float(m)])
-	var w2 = _world()
-	var s1 = _being(w2, HAB1)
-	var s2 = _being(w2, HAB1)
-	w2.mood_energy_gain = 0.25
-	s1.mood = -0.6
-	s2.mood = 0.4
-	s1.energy = 40.0
-	s2.energy = 40.0
-	s1.update(w2, float(w2.fixed_step))
-	s2.update(w2, float(w2.fixed_step))
-	t.eq(float(s1.energy), float(s2.energy), "a sleeper's energy gain does not depend on mood")
+	var idle := float(SimData.beings().energy.drain_idle)
+	for kind in ["idle", "asleep", "eva", "trip", "mining", "work"]:
+		var base := _update_loss(kind, 0.0)
+		for k in [[-0.6, 1.15], [0.4, 0.90]]:
+			var got := _update_loss(kind, float(k[0]))
+			if kind == "idle":
+				t.near(got, idle * float(k[1]), 1e-9, "idle at m %+.1f is %.2f times the drain" % [float(k[0]), float(k[1])])
+				t.near(got, base * float(k[1]), 1e-9, "idle at m %+.1f is %.2f times the m 0 loss" % [float(k[0]), float(k[1])])
+			else:
+				t.near(got, base, 1e-9, "%s: the energy lost in one update at gain 0.25 and m %+.1f equals the m 0 loss" % [kind, float(k[0])])
+		if kind != "asleep":
+			t.check(base > 0.0, "staging: %s really drains (%.4f per hour)" % [kind, base])
+		else:
+			t.check(base < 0.0, "staging: a sleeper gains energy")
+	# The gain at 0.0 leaves every state exactly as it was.
+	for kind in ["idle", "eva", "mining", "work"]:
+		t.eq(_update_loss(kind, -0.6, 0.0), _update_loss(kind, 0.0, 0.0), "%s: gain 0 ignores mood" % kind)
 	_end(t)
 
 
@@ -2709,7 +2794,7 @@ func test_t36_a_birth_push_reaches_light_and_falls_back_within_a_half_life(t) ->
 	var nb = w.beings.back()
 	_inject(w)
 	t.eq(int(par.mood_band), 3, "+0.24 at the baseline reaches the light band")
-	t.check(par.mood_why != null and str(par.mood_why.key) in ["birth", "birth_parent"] and int(par.mood_why.id) == nb.id, "the why names the newborn while light")
+	t.check(par.mood_why != null and str(par.mood_why.key) == "birth_parent" and int(par.mood_why.id) == nb.id, "the why names the newborn while light")
 	var n := 0
 	while int(par.mood_band) == 3 and n < 400:
 		_inject(w)

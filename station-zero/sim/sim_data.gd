@@ -68,3 +68,7 @@ static func relationships() -> Dictionary:
 
 static func council() -> Dictionary:
 	return load_json("council.json")
+
+
+static func moods() -> Dictionary:
+	return load_json("mood.json")

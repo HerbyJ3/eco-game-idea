@@ -30,6 +30,11 @@ var lines_this_sol := 0
 var present: Dictionary = {}
 ## Wall time of the last tick in ms. Probe only; never in stats, log or any hashed state.
 var last_tick_ms := 0.0
+## Emotions feed (emotions.md 9.1), read by Moods and nothing else in sim/. `events` is this tick's list of mood-relevant
+## changes (grief per mourner, friend, close, lapse, lapse_close); `with_friend` marks, by being id, the beings grown together
+## with a friend this tick. Both are written here and never read here, so no relationships result depends on them.
+var events: Array = []
+var with_friend := PackedByteArray()
 
 ## Tick-local.
 var _cfg: Dictionary = {}
@@ -131,6 +136,7 @@ func on_step(world: SimWorld, dt: float) -> void:
 
 func _tick(world: SimWorld) -> void:
 	ticks += 1
+	events = []
 	var by_id := _prepare(world)
 	_seeded.clear()
 	_deaths(world, by_id)
@@ -146,6 +152,8 @@ func _prepare(world: SimWorld) -> Dictionary:
 	var top := 0
 	for b in world.beings:
 		top = maxi(top, b.id + 1)
+	with_friend.resize(top)
+	with_friend.fill(0)
 	_warm.resize(top)
 	_warm.fill(0.0)
 	_tempo.resize(top)
@@ -180,6 +188,11 @@ func _deaths(world: SimWorld, by_id: Dictionary) -> void:
 	for d in dead:
 		var cands: Array = []
 		var rm: Array = []
+		var dead_name := ""
+		for i in range(world.stats.deaths_list.size() - 1, -1, -1):
+			if int(world.stats.deaths_list[i].being_id) == d:
+				dead_name = str(world.stats.deaths_list[i].name)
+				break
 		for k in pairs:
 			var p: Dictionary = pairs[k]
 			if p.lo != d and p.hi != d:
@@ -190,11 +203,8 @@ func _deaths(world: SimWorld, by_id: Dictionary) -> void:
 				cands.append([float(p.bond), other])
 		cands.sort_custom(func(x: Array, y: Array) -> bool:
 			return x[0] > y[0] or (x[0] == y[0] and x[1] < y[1]))
-		var dead_name := ""
-		for i in range(world.stats.deaths_list.size() - 1, -1, -1):
-			if int(world.stats.deaths_list[i].being_id) == d:
-				dead_name = str(world.stats.deaths_list[i].name)
-				break
+		for c in cands:
+			events.append({"kind": "grief", "a": int(c[1]), "b": d, "bond": float(c[0]), "name": dead_name})
 		if dead_name != "":
 			for i in mini(cands.size(), int(_cfg.log.grief_max)):
 				var m: int = cands[i][1]
@@ -326,6 +336,9 @@ func _grow_group(grown: Dictionary, ids: Array, gi: int, rate: float, warmth_bas
 			_sb[slot] = nb
 			_sp[slot].bond = nb
 			grown[key] = gi
+			if _sf[slot] & 1:
+				with_friend[a] = 1
+				with_friend[c] = 1
 
 
 # ---------------------------------------------------------------- 5.5 decay, forgetting, flags
@@ -416,6 +429,7 @@ func _decay_and_flags(world: SimWorld, by_id: Dictionary, grown: Dictionary) -> 
 			if p.kin or p.crew:
 				rs.friendships_renewed += 1
 			else:
+				events.append({"kind": "friend", "a": p.lo, "b": p.hi})
 				rs.friendships_formed += 1
 				if rs.first_friendship_sol == null:
 					rs.first_friendship_sol = world.sol()
@@ -426,6 +440,7 @@ func _decay_and_flags(world: SimWorld, by_id: Dictionary, grown: Dictionary) -> 
 				if not (found_friend.has(p.lo) and found_friend.has(p.hi)):
 					ev.friend.append({"type": "friend", "lo": p.lo, "hi": p.hi, "place": place, "building_id": bid})
 		if r & 4:
+			events.append({"kind": "close", "a": p.lo, "b": p.hi})
 			rs.close_formed += 1
 			if not p.was_close:
 				p.was_close = true
@@ -433,6 +448,10 @@ func _decay_and_flags(world: SimWorld, by_id: Dictionary, grown: Dictionary) -> 
 					ev.close.append({"type": "close_crew" if p.crew else "close", "lo": p.lo, "hi": p.hi,
 							"place": place, "building_id": bid})
 		if r & 2:
+			if p.was_close:
+				events.append({"kind": "lapse_close", "a": p.lo, "b": p.hi})
+			elif not p.kin and not p.crew:
+				events.append({"kind": "lapse", "a": p.lo, "b": p.hi})
 			if p.was_close:
 				rs.drifted += 1
 				ev.drift.append({"type": "drift_close", "lo": p.lo, "hi": p.hi, "place": "", "building_id": null})
@@ -621,6 +640,44 @@ static func _find_packed(uf: PackedInt32Array, x: int) -> int:
 	while uf[r] != r:
 		r = uf[r]
 	return r
+
+
+## Friend pairs as copies (emotions.md 9.1): {lo, hi, flags} for the pairs holding the `friends` flag; flag bits 1 close,
+## 2 kin, 4 crew. Order unspecified (mirror order, or dictionary order when the mirror is out of step). Read-only.
+func friend_pairs() -> Dictionary:
+	var lo := PackedInt32Array()
+	var hi := PackedInt32Array()
+	var fl := PackedByteArray()
+	if _sk.size() == _sf.size() and _sf.size() == pairs.size():
+		for i in _sf.size():
+			var f := _sf[i]
+			if not (f & 1):
+				continue
+			var p: Dictionary = _sp[i]
+			lo.append(_sl[i])
+			hi.append(_sh[i])
+			fl.append((1 if (f & 2) else 0) | (2 if p.kin else 0) | (4 if p.crew else 0))
+	else:
+		for k in pairs:
+			var p: Dictionary = pairs[k]
+			if not p.friends:
+				continue
+			lo.append(int(p.lo))
+			hi.append(int(p.hi))
+			fl.append((1 if p.close else 0) | (2 if p.kin else 0) | (4 if p.crew else 0))
+	return {"lo": lo, "hi": hi, "flags": fl}
+
+
+## The friends of a being, ascending by other id: [{id, close, kin, crew, bond}]. Read-only; view side, never in a sim step.
+func friends_of(id: int) -> Array:
+	var out: Array = []
+	for k in pairs:
+		var p: Dictionary = pairs[k]
+		if not p.friends or (p.lo != id and p.hi != id):
+			continue
+		out.append({"id": p.hi if p.lo == id else p.lo, "close": p.close, "kin": p.kin, "crew": p.crew, "bond": p.bond})
+	out.sort_custom(func(x: Dictionary, y: Dictionary) -> bool: return x.id < y.id)
+	return out
 
 
 # ---------------------------------------------------------------- 8 the pull (read by Being._restless_travel)
