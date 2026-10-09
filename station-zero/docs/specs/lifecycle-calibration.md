@@ -4,6 +4,9 @@ Status: design, docs only. Nothing in `sim/` or `data/` changes here. Every numb
 
 Design review: the three assistant designers were not run for this document. It is a re-baselining of numbers, not a new mechanic, and the owner questions in section 7 are where their lenses would matter; the main session may run them on those. Lens notes are marked inline (Wright, Barone, Korppoo) as my own application of their published approaches, not their opinions.
 
+
+**Owner decisions (Herby, 2026-10-09):** horizons = Smoke 300 + Standard 1,500 (five seeds) + rare Generational 7,200 (seed 42, background); Council = late, generational (`voices_min` 12 kept; a throwaway lower-voices diagnostic at Standard is allowed, in a separate data directory, nothing shipped); Settlement = measure first, no retune before the Standard baseline (decide only if Settlement misses sol 700 on 2+ seeds).
+
 ## 1. Lifecycle arithmetic that fixes the horizon
 
 Constants: 1 sol = 24.6597 h; a Gregorian year = 8765.8 h (E, 365.2425 d) = about 355.5 sols; 9 months = about 267 sols (measured: births at sol 280 to 292); 18 years = 18 x 355.5 = **about 6,400 sols**; 13 years = 4,620; 3 years = 1,070; 1 year = 355.5. Sim step is 0.05 h (493 steps per sol), so 300 sols = 148k steps and 7,200 sols = 3.5M steps.
