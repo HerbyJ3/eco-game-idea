@@ -1,0 +1,6 @@
+base|
+E1|resources.throughput.urgent_redirect=true
+E2|resources.throughput.launch_energy_min=45
+E3|resources.throughput.commute_pause=false
+E4|colony.consumption.ice_stage_mult={"baby":0.3,"toddler":0.5,"child":0.75,"teen":1.0,"adult":1.0}
+E5|resources.throughput.water_before_construction=true

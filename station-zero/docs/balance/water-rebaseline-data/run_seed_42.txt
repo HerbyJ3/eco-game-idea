@@ -1,0 +1,30 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# station zero balance run: seed=42 sols=300 overrides=[] fixed_step=0.05 data_hash=fcb5ff2f0fbf63a1
+# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window
+ sol  pop  min birth dead a/t/h/o/x           oxygen    food     ice   regol   dmnd   supp short bldg R/H/W/G/A/C  reach trips  avgE asleep%  waitH minIce  minO2 age web cn
+  30    7    7     0 0/0/0/0/0                 700.0   540.0    60.6    52.4   21.0   28.0     0 2/3/1/2/0/0           2    33  54.8   11.3  475.0   56.8  259.7 L 1.00 -
+  60    7    7     0 0/0/0/0/0                 700.0   540.0    83.8    27.9   28.0   42.0     0 3/4/2/2/0/0           2    35  57.9   11.9  391.4   57.6  698.2 L 0.86 -
+  90    7    7     0 0/0/0/0/0                 700.0   540.0    94.6    51.3   35.0   42.0     0 3/5/2/2/1/0           2    42  56.4   11.7  427.5   82.1  699.0 L 0.43 -
+ 120    7    7     0 0/0/0/0/0                 700.0   540.0   120.2    93.7   39.0   56.0     0 4/5/3/2/2/0           2    44  56.8   11.6  378.3   93.2  698.7 L 0.43 -
+ 150    7    7     0 0/0/0/0/0                1000.0   780.0    91.8   107.2   49.0   56.0     0 4/5/3/4/2/0           2    39  55.9   11.5  437.6   91.8  699.0 L 0.43 -
+ 180    7    7     0 0/0/0/0/0                1150.0   900.0    90.4    26.7   53.0   70.0     0 5/5/3/5/3/0           2    27  56.7   11.4  545.4   72.5  999.0 L 0.86 -
+ 210    7    7     0 0/0/0/0/0                1300.0  1020.0    98.0    18.0   59.0   70.0     0 5/5/3/6/3/0           2    37  56.9   11.7  345.7   87.1 1149.0 L 0.71 -
+ 240    7    7     0 0/0/0/0/0                1300.0  1020.0   106.3    99.2   63.0   70.0     0 5/5/3/6/3/2           2    40  56.3   11.2  355.0   82.0 1299.0 L 0.57 -
+ 270    7    7     0 0/0/0/0/0                1300.0  1020.0   108.1    60.3   68.0   70.0     0 5/6/3/6/3/2           2    36  58.6   11.5  296.1   86.9 1298.8 L 0.57 -
+ 300   12    7     5 0/0/0/0/0                1450.0  1140.0    74.9   111.4   70.0   84.0     0 6/6/3/7/3/2           2    32  60.0   11.0  334.6   74.9 1298.8 S 1.00 -
+
+targets for seed 42 (300 sols):
+  T1 PASS run min pop 7 (needs >= 5), final pop 12
+  T2 PASS deaths 0 (air 0 thirst 0 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 5, first_birth_sol 277, at_capacity 0, cooldown_violations 0, pop@30=7, pop@100=7, pop@300=12
+  T4 PASS min O2 259.7, food 203.1; ice never ran dry: min ice 56.8, ice>30 57.6, thirst deaths 0; max ice/target 1.03, regolith/target 0.38
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 4 (<=15)
+  T6 PASS limited 3986.4 h = 53.89% (>=2% provisional; 4 of 5 seeds), site busy 55.8%; waiting_regolith 650.0 h, site_no_crew 3336.4 h
+  T7 PASS turn_backs_air 0, exhausted 72, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 365
+  T8 PASS row avg energy 54.8..60.0 (40..90), row asleep 11.0..11.9% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+  T10 FAIL first settlement sol 291 (40..150), age_changes 1 (<=4), min gap between consecutive history entries 291 (>=20), history 2 entries (changes+1 = 2); report: sols_in_age landing 291 settlement 9 council 0, age at end settlement, changes [sol 291 settled], fall back causes [none], not-ok sols 38 (by group, a sol can fail several: ice 0, food 1, oxygen 1, power 0, death 0, unrest 37)
+  T11 PASS (1) list lengths 301/301/301/301 ok; (2) lonely mean of last 50 readings 0.250 (max 0.35) ok; (3) friends_mean 2.17 (1.0..15.0) ok; (4) first_friendship_sol 116 ok; (5) lines_dropped (total) 0 ok; report: web 1.00 second 0.00 lonely 0.00 friends_mean 2.17 friends share of colony 0.197 (pop 12)
+  T12 PASS (1) list lengths 301/301/301 ok; (2) C2 ok; (3) council changes 0 (<=4) ok; (4) proposals 0 ok; (5) one Council line per boundary ok; report: first Council sol <null>, meetings 0, proposals [], pledge sol <null> reason -, lines {}, dropped 0; council_min_seeds 3 pledge_min_seeds 1
+RESULT FAIL (target 9 determinism: table sha256 6ee99c980e75c9c5)

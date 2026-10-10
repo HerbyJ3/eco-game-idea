@@ -24,12 +24,19 @@ extends SceneTree
 ##   99: "54ad1e15b934bf9a",
 ##   1234: "7052c92936a75157",
 ##   2026: "67e3dcf057200eb9",
+## calendar-lifecycle baseline (commit e1f2bdd), Task 3-level table hashes, superseded by the water-throughput baseline
+## (W3 commute without room pauses; owner decision 2026-10-09, docs/balance/water-rebaseline.md). History only:
+##   42: "5c590177e627b03c",
+##   7: "d9aead4bf953ad7e",
+##   99: "6c0df749c1c1e7ec",
+##   1234: "9ea6315f71b0c371",
+##   2026: "798b786bae4905c1",
 const EXPECTED_T3 := {
-	42: "5c590177e627b03c",
-	7: "d9aead4bf953ad7e",
-	99: "6c0df749c1c1e7ec",
-	1234: "9ea6315f71b0c371",
-	2026: "798b786bae4905c1",
+	42: "3a781ace17210e77",
+	7: "d19831ca3d3a9282",
+	99: "80407b975e346c1e",
+	1234: "0cc6764008aed14f",
+	2026: "11ff36bd5fe69349",
 }
 const SOLS := 300
 const EVERY := 30
