@@ -443,58 +443,65 @@ func _water_world(pop: int = 8) -> SimWorld:
 	return w
 
 
+## Ice that lasts `sols` sols at the world's current drinking.
+func _ice_for(w: SimWorld, sols: float) -> float:
+	w.colony.ice = 1.0
+	return sols * 1.0 / w._water_sols()
+
+
 func test_water_outlook_states(t) -> void:
 	var w := _water_world(8)
-	t.near(w.colony.ice_target(), 120.0, 0.001, "setup: target is the 120 floor")
-	w.colony.ice = 110.0
-	w.ice_at_sol_start = 110.0
-	t.eq(w.water_outlook().state, "steady", "plenty of water, flat")
-	w.colony.ice = 100.0
-	w.ice_at_sol_start = 120.0
-	t.eq(w.water_outlook().state, "steady", "above 0.8 x target: steady even if falling")
-	w.colony.ice = 90.0
-	w.ice_at_sol_start = 90.5
-	t.eq(w.water_outlook().state, "steady", "below 0.8 but not falling by 0.01 x target")
-	w.ice_at_sol_start = 92.0
-	t.eq(w.water_outlook().state, "falling", "below 0.8 and down 2 since sol start (>= 1.2)")
-	w.colony.ice = 61.0
-	w.ice_at_sol_start = 61.0
-	t.eq(w.water_outlook().state, "steady", "just above 0.5 x target and flat")
-	w.colony.ice = 50.0
-	t.eq(w.water_outlook().state, "low", "below 0.5 x target")
+	w.colony.ice = _ice_for(w, 30.0)
+	w.ice_at_sol_start = w.colony.ice + 2.0
+	t.eq(w.water_outlook().state, "steady", "30 sols of water: steady even if falling")
+	w.colony.ice = _ice_for(w, 24.0)
+	w.ice_at_sol_start = w.colony.ice
+	t.eq(w.water_outlook().state, "steady", "under 25 sols but flat: steady")
+	w.ice_at_sol_start = w.colony.ice + 1.0
+	t.eq(w.water_outlook().state, "falling", "under 25 sols and down since sol start")
+	w.colony.ice = _ice_for(w, 16.0)
+	w.ice_at_sol_start = w.colony.ice + 1.0
+	t.eq(w.water_outlook().state, "falling", "16 sols, falling")
+	w.colony.ice = _ice_for(w, 14.0)
+	t.eq(w.water_outlook().state, "low", "under 15 sols: low")
 	w.colony.ice = 0.0
 	t.eq(w.water_outlook().state, "dry", "no ice")
-	w.colony.ice = 50.0
+	w.colony.ice = _ice_for(w, 14.0)
 	var o := w.water_outlook()
-	t.near(float(o.sols), 50.0 / (8.0 * 0.01 * SOL_H), 0.001, "sols = stock / (heads x drink x sol hours)")
+	t.near(float(o.sols), 14.0, 0.001, "sols = stock / (heads x drink x sol hours)")
+	t.near(float(o.sols), o.ice / (8.0 * 0.01 * SOL_H), 0.001, "8 plain heads")
 	t.near(float(o.target), 120.0, 0.001, "outlook carries the target")
-	t.near(float(o.ice), 50.0, 0.001, "and the ice")
+	var empty: SimWorld = _world().w
+	empty.colony.ice = 5.0
+	t.eq(empty.water_outlook().state, "steady", "no one to drink: steady")
+	empty.colony.ice = 0.0
+	t.eq(empty.water_outlook().state, "dry", "no one, no ice: dry")
 
 
 func test_water_outlook_hysteresis_and_log(t) -> void:
 	var w := _water_world(8)
-	w.colony.ice = 61.0
-	w.ice_at_sol_start = 61.0
+	w.colony.ice = _ice_for(w, 16.0)
+	w.ice_at_sol_start = w.colony.ice
 	w._update_water()
 	t.eq(_logs(w, "water_low"), 0, "no line above the threshold")
-	w.colony.ice = 55.0
+	w.colony.ice = _ice_for(w, 14.0)
 	w._update_water()
 	t.eq(_logs(w, "water_low"), 1, "one line on entering low")
-	t.check(_last(w, "water_low").begins_with("The water tanks are below half: about "), "world voice: " + _last(w, "water_low"))
+	t.check(_last(w, "water_low").begins_with("The water tanks are running down: about 14 sols"), "world voice: " + _last(w, "water_low"))
 	t.eq(w.stats.first_low_sol, w.sol(), "first low sol recorded")
-	w.colony.ice = 65.0
+	w.colony.ice = _ice_for(w, 18.0)
 	w._update_water()
-	t.eq(w.water_outlook().state, "low", "still low between 0.5 and 0.6 x target")
+	t.eq(w.water_outlook().state, "low", "still low between 15 and 20 sols")
 	t.eq(_logs(w, "water_low") + _logs(w, "water_ok"), 1, "no new line while in the band")
-	w.colony.ice = 55.0
+	w.colony.ice = _ice_for(w, 14.0)
 	w._update_water()
 	t.eq(_logs(w, "water_low"), 1, "dipping again inside the band is not a new crossing")
-	w.colony.ice = 73.0
-	w.ice_at_sol_start = 73.0
+	w.colony.ice = _ice_for(w, 21.0)
+	w.ice_at_sol_start = w.colony.ice
 	w._update_water()
-	t.eq(w.water_outlook().state, "steady", "leaves low at 0.6 x target")
+	t.eq(w.water_outlook().state, "steady", "leaves low at 20 sols")
 	t.eq(_last(w, "water_ok"), "The water is holding again.", "quiet line when it clears")
-	w.colony.ice = 50.0
+	w.colony.ice = _ice_for(w, 10.0)
 	w._update_water()
 	t.eq(_logs(w, "water_low"), 2, "re-armed: a second crossing logs again")
 	w.colony.ice = 0.0
@@ -503,16 +510,25 @@ func test_water_outlook_hysteresis_and_log(t) -> void:
 	t.eq(_logs(w, "water_low"), 2, "going dry from low is not a new low")
 
 
+func test_founder_colony_is_not_low_at_sol_zero(t) -> void:
+	var w := SimWorld.new(7)
+	var o := w.water_outlook()
+	print("founders=%d ice=%.1f sols_left=%.2f state=%s" % [w.colony.pop(), w.colony.ice, float(o.sols), o.state])
+	t.check(o.state != "low" and o.state != "dry", "fresh founder colony is not low at sol 0 (%s, %.1f sols)" % [o.state, float(o.sols)])
+	t.eq(_logs(w, "water_low"), 0, "no water_low line at sol 0")
+
+
 func test_water_outlook_is_a_pure_read(t) -> void:
 	var w := _water_world(8)
-	w.colony.ice = 50.0
+	w.colony.ice = _ice_for(w, 10.0)
 	var before := _rng_state(w)
 	var logn := w.log.size()
 	for i in 20:
 		w.water_outlook()
 		w.dark_building_count()
 	t.check(_rng_state(w) == before and w.log.size() == logn, "reading the outlook changes nothing")
-	w.colony.ice = 70.0
+	w.colony.ice = _ice_for(w, 18.0)
+	w.ice_at_sol_start = w.colony.ice
 	t.eq(w.water_outlook().state, "steady", "the latch is only set by _update_water, not by reading")
 
 
@@ -540,19 +556,19 @@ func test_hud_texts(t) -> void:
 	var main: GDScript = load("res://view/main.gd")
 	var w := _water_world(8)
 	w.resources.add_ice_field(140.0, 150.0, 300.0, 20.0)
-	w.colony.ice = 110.0
-	w.ice_at_sol_start = 110.0
+	w.colony.ice = _ice_for(w, 30.0)
+	w.ice_at_sol_start = w.colony.ice
 	t.eq(main._water_text(w), "Water    steady", "Water line, steady")
-	w.colony.ice = 90.0
-	w.ice_at_sol_start = 95.0
+	w.colony.ice = _ice_for(w, 22.0)
+	w.ice_at_sol_start = w.colony.ice + 1.0
 	t.check(main._water_text(w).begins_with("Water    falling (about "), "Water line, falling: " + main._water_text(w))
-	w.colony.ice = 50.0
+	w.colony.ice = _ice_for(w, 10.0)
 	t.check(main._water_text(w).begins_with("Water    LOW (about "), "Water line, LOW: " + main._water_text(w))
 	w.colony.ice = 0.0
 	t.eq(main._water_text(w), "Water    DRY", "Water line, DRY")
-	w.colony.ice = 110.0
+	w.colony.ice = _ice_for(w, 30.0)
 	t.eq(main._button_text(w, "guide", 5), "[F5] Guide ready", "plain Guide when water is fine")
-	w.colony.ice = 50.0
+	w.colony.ice = _ice_for(w, 10.0)
 	t.eq(main._button_text(w, "guide", 5), "[F5] Guide - ice low", "Guide marked when ice is low")
 	t.eq(main._button_text(w, "sign", 4), "[F4] Sign ready", "nothing else is marked")
 	t.eq(main._button_text(w, "fortune", 1), "[F1] Fortune ready", "Fortune plain with no dark room")
@@ -607,4 +623,4 @@ func test_attentive_player_cadence_and_report(t) -> void:
 	t.check(player.checks >= 2 and player.checks <= 4, "about one glance per two sols over 6 sols (%d)" % player.checks)
 	var lines: Array = player.report(res.world)
 	t.check(lines.size() >= 4 and str(lines).contains("first_low_sol=") and str(lines).contains("low_share="), "report prints the section 5 metrics")
-	t.eq(res.world.stats.first_low_sol, 0, "the founder colony starts below half its water target")
+	t.check(res.world.stats.first_low_sol != 0, "the founder colony does not start low")

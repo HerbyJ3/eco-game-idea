@@ -4,7 +4,7 @@
   "grace": { "duration_sols": 1.5, "bonus": 0.35 },
   "sign": { "restless": 0.5, "steady": 0.6, "jitter": 0.15, "threshold": 0.35 },
   "guide": { "duration_sols": 1, "chance": 0.7, "need_floor": 0.6 },
-  "water": { "low_frac": 0.5, "low_clear_frac": 0.6, "falling_frac": 0.8, "falling_drop_frac_per_sol": 0.01 },
+  "water": { "low_sols": 15, "low_clear_sols": 20, "falling_sols": 25 },
   "hud": { "soon_below_sols": 0.5, "note_s": 4.0 },
   "names": { "fortune": "Fortune", "inspire": "Inspire", "grace": "Grace", "sign": "Sign", "guide": "Guide" },
   "texts": {
@@ -39,7 +39,7 @@
     "guide_end_one": "Guidance ended: 1 trip, {hauled} hauled.",
     "guide_end_none": "Guidance ended: no one set out.",
     "ready_again": "{power} is ready again.",
-    "water_low": "The water tanks are below half: about {n} sols at today's use.",
+    "water_low": "The water tanks are running down: about {n} sols at today's use.",
     "water_ok": "The water is holding again."
   }
 }

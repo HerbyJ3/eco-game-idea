@@ -768,36 +768,39 @@ func _dark_ids() -> Array:
 	return out
 
 
-## Water outlook (spec 4.1): {state, sols, ice, target}. A pure read of the stock, the latch kept by
-## _update_water and `ice_at_sol_start`. `sols` is how long the stock lasts at today's drinking, ignoring supply.
+## Water outlook (spec 4.1 rev 3): {state, sols, ice, target}. A pure read of the stock, the latch kept by
+## _update_water and `ice_at_sol_start`. `sols` is how long the stock lasts at today's drinking, ignoring
+## supply (INF with no one to drink).
 func water_outlook() -> Dictionary:
-	var wc: Dictionary = SimData.powers().water
 	var ice := colony.ice
-	var target := colony.ice_target()
+	var sols := _water_sols()
+	var state := "steady"
+	if ice <= 0.0:
+		state = "dry"
+	elif _water_is_low(sols):
+		state = "low"
+	elif sols < float(SimData.powers().water.falling_sols) and ice < ice_at_sol_start:
+		state = "falling"
+	return {"state": state, "sols": sols, "ice": ice, "target": colony.ice_target()}
+
+
+## Sols of water left at today's drinking (same stage-weighted heads as the drain); INF with 0 heads.
+func _water_sols() -> float:
 	var heads := _water_heads()
 	if heads < 0.0:
 		heads = float(colony.pop())
 	var per_sol := heads * float(colony.cfg.consumption.ice_per_being) * clock.sol_h
-	var sols := ice / per_sol if per_sol > 0.0 else 0.0
-	var state := "steady"
-	if ice <= 0.0:
-		state = "dry"
-	elif _water_is_low(ice, target):
-		state = "low"
-	elif ice < float(wc.falling_frac) * target \
-			and ice_at_sol_start - ice >= float(wc.falling_drop_frac_per_sol) * target:
-		state = "falling"
-	return {"state": state, "sols": sols, "ice": ice, "target": target}
+	return colony.ice / per_sol if per_sol > 0.0 else INF
 
 
-func _water_is_low(ice: float, target: float) -> bool:
+func _water_is_low(sols: float) -> bool:
 	var wc: Dictionary = SimData.powers().water
-	return ice < float(wc.low_frac) * target or (_water_low and ice < float(wc.low_clear_frac) * target)
+	return sols < float(wc.low_sols) or (_water_low and sols < float(wc.low_clear_sols))
 
 
 ## Phase 3b: keeps the low latch and logs the crossing into and out of `low` (once per crossing). Reads only.
 func _update_water() -> void:
-	var low := _water_is_low(colony.ice, colony.ice_target())
+	var low := colony.ice > 0.0 and _water_is_low(_water_sols())
 	if low == _water_low:
 		return
 	_water_low = low

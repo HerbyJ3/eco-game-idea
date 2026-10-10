@@ -76,21 +76,24 @@ All wording is data (`texts`), with `{name}`, `{label}`, `{n}` placeholders.
 
 ### 4.1 Water outlook (`water_outlook()`)
 
-State from stored ice against the target (`colony.ice_target()`; at 8 ice per being, target = 32.4 sols of use at one being's drink 0.01/h), with hysteresis:
+**Rev 3 (owner-direction fix, found by godot-engineer): the outlook is judged in days of water left, not as a fraction of the target.** Rev 2 compared ice with 0.5 x `ice_target()`, but the founders start with 60 ice against the `ice_min` floor of 120, so `low` was true from step 1 (`water_low` at sol 0, `low_sol` 0 on every seed) and both the lead criterion and the player trigger meant nothing. "Low" must mean "the tanks run out soon at today's drinking", which is what a watching player can act on, and a full-looking start is simply a colony with about a month of water.
+
+`sols` = stored ice / (heads x `ice_per_being` x sol hours): how long the stock lasts at today's drinking, ignoring supply. Heads = living colonists; with 0 heads, `sols` is unbounded (state `steady` unless ice <= 0). The target is no longer used by the outlook, so no special case for the start and no grace period. States, with hysteresis on `low`:
 
 | State | Rule | Data key |
 | --- | --- | --- |
 | `dry` | ice <= 0 | |
-| `low` | ice < 0.5 x target. Leaves `low` only when ice >= 0.6 x target | `water.low_frac` 0.5, `water.low_clear_frac` 0.6 |
-| `falling` | not low, ice < 0.8 x target, and ice fell by at least 0.01 x target since the start of the current sol | `water.falling_frac` 0.8, `water.falling_drop_frac_per_sol` 0.01 |
+| `low` | sols < 15. Leaves `low` only when sols >= 20 | `water.low_sols` 15, `water.low_clear_sols` 20 |
+| `falling` | not low, sols < 25, and ice fell during the current sol (ice < `ice_at_sol_start`) | `water.falling_sols` 25 |
 | `steady` | otherwise | |
 
-`sols` = stored ice / (heads x `ice_per_being` x sol hours) — how long the stock lasts at today's drinking, ignoring supply. At the `low` threshold with unchanged population that is about 16 sols. Shown for `falling`, `low`.
+Reading it: 15 sols is about 6 real minutes at 1x, enough to send Guide several times (recharge 3 sols) before the first thirst death; the 20 clear line stops flicker. `falling` is the early heads-up. Numbers are estimates until a run measures them. Check at the start: founders need more than 25 sols of water to open `steady`: 60 / (heads x 0.01 x sol hours) is about 30 sols at 8 founders and 24 at 10 (opening `falling`, which is honest and not alarming). The engineer reports the founder head count and the opening state; `low` at sol 0 needs 16 or more founders, and if so the owner's `start.ice` is the lever, not this rule.
+Removed keys: `low_frac`, `low_clear_frac`, `falling_frac`, `falling_drop_frac_per_sol`. Dissent: Wright-style "fraction of the target" reads as a progress bar and is the thing the owner ruled out; Korppoo's lens favours a number the player can reason about ("sols left"), which the HUD already shows. A grace period was rejected as a special case that hides a start the player is meant to see.
 
 ### 4.2 What the player sees
 
 - A **Water** line in the colony panel: `Water: steady` / `falling (about 22 sols)` / `LOW (about 14 sols)` / `DRY`. Low and dry in the warning colour.
-- A log line when entering `low`: `The water tanks are below half: about {n} sols at today's use.` (kind `water_low`, once per crossing; re-armed after the state clears). A quiet `The water is holding again.` when it clears (`water_ok`). The existing `water_dry` stays.
+- A log line when entering `low`: `The water tanks are running down: about {n} sols at today's use.` (kind `water_low`, once per crossing; re-armed after the state clears). A quiet `The water is holding again.` when it clears (`water_ok`). The existing `water_dry` stays.
 - **Button marking.** When ready, Guide shows `[F5] Guide - ice low` while the state is `low` or `dry`; Fortune shows `[F1] Fortune - a room is dark` while `dark_building_count() > 0`. Otherwise plain `[F5] Guide`. Nothing else is marked (no nagging for Inspire, Grace, Sign).
 - **Influence line** moves beside the Water line; shorter form: `[F1] Fortune ready  [F5] Guide 2 sols`. Under 0.5 sol: `soon`; otherwise one decimal. Active powers show time left: `Guide on (0.6 sols)`. The controls text lists the keys F1 to F5.
 - A failed use shows the world-voice text from 3.2 for a few seconds.
@@ -111,7 +114,7 @@ All numbers are estimates from arithmetic until the run measures them. Standard 
 ### 5.1 Unattended: gradual and readable (the owner's central test)
 
 U1. **Unchanged:** powers unused, the 300-sol tables reproduce the pinned bed-fix hashes (42 a298dbb55b71d66e, 7 e540c1b86dabba26, 99 ffb6d5361bdb3a5d, 1234 bca08a0f327892fe, 2026 5fb3b699b4118a84).
-U2. **Warned early:** on every unattended seed with a thirst death, `lead >= 10` sols (the stock at the low threshold is about 16 sols at constant population, so 10 leaves room for a falling population; about 4 real minutes at 1x).
+U2. **Warned early:** on every unattended seed with a thirst death, `lead >= 10` sols (`low` begins at 15 sols of water at today's drinking, so 10 leaves room for growth in population; about 4 real minutes at 1x). Also report `low_sol` per seed: it must be greater than 0 on every seed (a `low_sol` of 0 means the rule or the start is wrong, not that the warning is early).
 U3. **Declines, does not collapse:** no 50-sol window loses more than 35% of the population at the window start, counted only for windows that start with population >= 10 (small colonies are noisy). Also report, per seed, sols from the first thirst death to population at most half the peak.
 U4. **Not fine alone:** report seeds alive at 1,500 and each seed's final population. Two seeds currently reach 1,500, so this is a margin report, not a pass/fail; the owner's direction needs most unattended colonies to be clearly worse than attended, which U5 and A1 test.
 
@@ -185,7 +188,7 @@ Dissent recorded: emergence wanted Grace or Inspire to matter for water (rejecte
 
 ## 8. Implementation work this creates (godot-engineer; sim-test-engineer for 5)
 
-1. `data/powers.json`: new recharge numbers; `guide.chance`; `water.*`; `hud.soon_below_sols` (0.5); `texts` (failure reasons, log templates).
+1. `data/powers.json`: new recharge numbers; `guide.chance`; `water.low_sols` 15, `water.low_clear_sols` 20, `water.falling_sols` 25 (rev 3; old fraction keys removed); `hud.soon_below_sols` (0.5); `texts` (failure reasons, log templates).
 2. `SimWorld`: failure codes; Guide target rule and ice-only sites; `power_active_left`, `water_outlook`, `dark_building_count`, `ice_at_sol_start`; expiry, ready-again, water_low and water_ok lines; stats `guide_trips`, `ice_trips_total`, `guide_hauled`.
 3. `choose_site` / `Being` guide hook: weight 0.7 instead of override; need floor applied to the ice term only.
 4. Named log lines (Inspire builder, Grace pair, Sign most and least, Guide first volunteer).
