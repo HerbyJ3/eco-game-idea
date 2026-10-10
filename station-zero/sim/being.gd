@@ -48,6 +48,16 @@ var wander_target := Vector2.ZERO
 var construction_suit := false
 ## When the last `suit_low_air` line was logged for this being (guard for the repeat interval).
 var _low_air_logged_t := -1e9
+## Emotions (emotions.md 3): the present mood, its baseline and half-life (sols) from the temperament, the per-tick decay
+## fraction, the band index (0 heavy .. 4 bright), the stored why, and the two line timestamps. Written only by Moods.
+var mood := 0.0
+var mood_base := 0.0
+var mood_halflife := 4.0
+var mood_k := 0.0
+var mood_band := 2
+var mood_why: Variant = null
+var mood_quiet_t := -1e9
+var mood_down_t: Variant = null
 
 
 ## What the view draws (spec section 4): none inside; construction for a builder's suit, from
@@ -144,7 +154,11 @@ func update(w: SimWorld, dt: float) -> void:
 	if state == "sleep":
 		_sleep_step(w, dt)
 		return
-	energy = clampf(energy - drain_per_h() * dt, 0.0, float(e.max))
+	var drain := drain_per_h()
+	# Emotions effect 2 (emotions.md 5.5): idle only, skipped at gain 0 so the dormant path is Task 5's arithmetic.
+	if w.mood_energy_gain > 0.0 and state != "eva" and state != "mining" and state != "work":
+		drain *= 1.0 - w.mood_energy_gain * clampf(mood, w.mood_clamp_low, w.mood_clamp_high)
+	energy = clampf(energy - drain * dt, 0.0, float(e.max))
 	if is_outside():
 		if _can_turn_back() and energy < float(e.exhausted_turn_back):
 			_turn_back(w, "exhausted")
@@ -302,7 +316,12 @@ func _restless_travel(w: SimWorld) -> bool:
 	if nb.is_empty():
 		return false
 	var r: Dictionary = _cfg().restless
-	if not w.rng.chance(float(r.travel_base) + float(r.travel_coef) * _trait("restless")):
+	var p_travel := float(r.travel_base) + float(r.travel_coef) * _trait("restless")
+	# Emotions effect 1 (emotions.md 5.5): only the argument of the one draw; skipped at gain 0.
+	if w.mood_travel_gain > 0.0:
+		p_travel = clampf(p_travel + w.mood_travel_gain * clampf(mood, w.mood_clamp_low, w.mood_clamp_high),
+				w.mood_travel_floor, 1.0)
+	if not w.rng.chance(p_travel):
 		return false
 	var rp: Dictionary = _cfg().room_pull
 	var weights: Array[float] = []

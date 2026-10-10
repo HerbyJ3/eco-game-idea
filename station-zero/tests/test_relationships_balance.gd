@@ -21,7 +21,8 @@ func test_web_column_is_last_after_age_with_two_decimals(t) -> void:
 	var lib: GDScript = load("res://tests/balance_lib.gd")
 	var P: GDScript = load("res://tests/age_hash_proof.gd")
 	var r: Dictionary = lib.run(42, SOLS, {}, 30)
-	var body: Array = P.body_of(r.lines)
+	# The trailing debug column `md` (emotions.md 9) follows cn; this test judges the table without it.
+	var body: Array = load("res://tests/mood_hash_proof.gd").strip_md(P.body_of(r.lines)).body
 	t.check(body.size() >= 3, "the table has a header and rows")
 	var head: PackedStringArray = str(body[0]).split(" ", false)
 	t.eq(head[head.size() - 1], "cn", "the last header field is cn")

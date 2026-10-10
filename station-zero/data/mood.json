@@ -1,0 +1,183 @@
+{
+ "temperament": {
+  "inner_key": {
+   "mars": "deimos",
+   "earth": "moon"
+  },
+  "element_base": {
+   "fire": 0.12,
+   "air": 0.06,
+   "earth": -0.04,
+   "water": -0.14
+  },
+  "modality_base": {
+   "cardinal": 0.03,
+   "fixed": 0.0,
+   "mutable": -0.03
+  },
+  "halflife_sols": {
+   "cardinal": 4.0,
+   "fixed": 2.0,
+   "mutable": 8.0
+  },
+  "halflife_mult": {
+   "fire": 0.9,
+   "air": 1.0,
+   "earth": 0.8,
+   "water": 1.3
+  },
+  "neutral": {
+   "base": 0.0,
+   "halflife_sols": 4.0
+  }
+ },
+ "range": {
+  "floor_dev": -0.7,
+  "ceil_dev": 0.7
+ },
+ "rest_eps": 0.001,
+ "push": {
+  "friend": 0.1,
+  "close": 0.15,
+  "lapse": -0.05,
+  "lapse_close": -0.12,
+  "grief_min": -0.25,
+  "grief_max": -0.6,
+  "birth_parent": 0.24,
+  "hard_sol": -0.02,
+  "hard_floor_dev": -0.3,
+  "pledge": 0.1,
+  "company": 0.006,
+  "company_ceil_dev": 0.15
+ },
+ "bands": {
+  "heavy": -0.4,
+  "low": -0.18,
+  "light": 0.18,
+  "bright": 0.4,
+  "hyst": 0.03
+ },
+ "why": {
+  "min_push": 0.04,
+  "show_dev": 0.15,
+  "fresh_sols": 1.0
+ },
+ "selection": {
+  "refresh_hz": 2,
+  "hold_s": 1.0,
+  "died_beat_s": 2.0,
+  "tap_radius_px": 18,
+  "outline_px": 2.0,
+  "outline_color": [
+   255,
+   244,
+   222
+  ],
+  "open_cut_min": 0.5
+ },
+ "calibration": {
+  "control_gain": 0.0001,
+  "control_gain_next": 0.001
+ },
+ "effects": {
+  "travel_coef": 0.0,
+  "energy_coef": 0.0,
+  "fallback_travel_coef": 0.075,
+  "fallback_energy_coef": 0.125,
+  "clamp_low": -0.6,
+  "clamp_high": 0.4,
+  "travel_floor": 0.02
+ },
+ "lines": {
+  "max_per_sol": 1,
+  "quiet_cooldown_sols": 20,
+  "relief_min_sols": 3
+ },
+ "nature": {
+  "base_hi": 0.135,
+  "base_lo": -0.155,
+  "slow_halflife": 7.6,
+  "quick_halflife": 1.7
+ },
+ "text": {
+  "panel": {
+   "who": "{name} is {description}.",
+   "k1": "{name} knows no one well yet.",
+   "close": "{name} is close to {other}.",
+   "friend": "{name} counts {other} as a friend.",
+   "died": "{name} has died."
+  },
+  "band": {
+   "heavy": "{name} is struggling.",
+   "low": "{name} is out of spirits.",
+   "light": "{name} is in good spirits.",
+   "bright": "{name} is lit up."
+  },
+  "why": {
+   "grief_new": "They are mourning {other}.",
+   "grief_still": "They are still mourning {other}.",
+   "friend": "They have just found a friend in {other}.",
+   "friend_old": "They have grown fond of {other}.",
+   "close": "They have grown close to {other}.",
+   "close_old": "They are close to {other}.",
+   "lapse": "They miss {other}'s company.",
+   "birth": "They were there when {other} was born.",
+   "hard": "The hard days have weighed on them.",
+   "pledge": "The council's promise has lifted them."
+  },
+  "nature": {
+   "bright": "{name} usually sees the bright side.",
+   "heavy": "{name} takes things to heart.",
+   "slow": "{name} is slow to shake off a mood.",
+   "quick": "{name} soon shakes off a mood."
+  },
+  "lines": {
+   "quiet_grief": {
+    "a": "{name} has gone quiet since {other} died.",
+    "b": "{name} keeps to the quiet corners since {other} died."
+   },
+   "quiet_lapse": {
+    "a": "{name} has gone quiet without {other}.",
+    "b": "{name} misses {other} and says little."
+   },
+   "quiet_hard": {
+    "a": "{name} has gone quiet. Times are hard.",
+    "b": "{name} says little these hard days."
+   },
+   "quiet": {
+    "a": "{name} has gone quiet.",
+    "b": "{name} is keeping to the quiet corners."
+   },
+   "relief": {
+    "a": "{name} is smiling again.",
+    "b": "{name} has found a smile again."
+   }
+  }
+ },
+ "balance": {
+  "mean_dev_min": 0.02,
+  "mean_dev_max": 0.25,
+  "even_share_min": 0.6,
+  "even_share_max": 0.97,
+  "mood_sd_min": 0.05,
+  "deimos_gap_min": 0.08,
+  "recovery_ratio_min": 2.5,
+  "trait_corr_drop_max": 0.05,
+  "mood_trait_span_max": 0.5,
+  "death_rise_max": 0.25,
+  "heavy_share_max": 0.3,
+  "tick_ms_max": 0.5,
+  "tick_ms_peak_max": 1.5,
+  "step_share_max": 0.01,
+  "being_step_ms_max": 0.1,
+  "boundary_add_ms_max": 1.0,
+  "lines_per5_max": 0.5,
+  "log_share_max": 0.25,
+  "lonely_share_rise_max": 0.03,
+  "friend_sd_rise_max": 0.1,
+  "nature_margin_base": 0.01,
+  "nature_margin_halflife": 0.05,
+  "nature_signs_min": 3,
+  "nature_signs_max": 5
+ }
+}
