@@ -1,0 +1,63 @@
+== E1
+     42 final    0 peak   13 births    6 firstBirth   280 thirstDeaths  13 firstThirst   360 firstDry   360 air 0 eva 0 airTB 0 T5 PASS settle 302
+      7 final    0 peak    9 births    5 firstBirth   286 thirstDeaths  12 firstThirst   300 firstDry   300 air 0 eva 0 airTB 0 T5 PASS settle <null>
+     99 final    0 peak   12 births    6 firstBirth   292 thirstDeaths  13 firstThirst   350 firstDry   470 air 0 eva 0 airTB 0 T5 PASS settle 309
+   1234 final    0 peak   16 births   10 firstBirth   288 thirstDeaths  17 firstThirst   360 firstDry   640 air 0 eva 0 airTB 0 T5 PASS settle 312
+   2026 final    0 peak   12 births    5 firstBirth   285 thirstDeaths  12 firstThirst   520 firstDry   720 air 0 eva 0 airTB 0 T5 FAIL settle <null>
+  alive at 1500: 0/5
+== E2
+     42 final    0 peak   12 births    6 firstBirth   286 thirstDeaths  13 firstThirst   310 firstDry   310 air 0 eva 0 airTB 0 T5 PASS settle 296
+      7 final    0 peak    7 births    0 firstBirth <null> thirstDeaths   7 firstThirst   130 firstDry   130 air 0 eva 0 airTB 0 T5 PASS settle <null>
+     99 final    0 peak   13 births    6 firstBirth   291 thirstDeaths  13 firstThirst   410 firstDry   410 air 0 eva 0 airTB 0 T5 PASS settle 298
+   1234 final    0 peak   13 births    6 firstBirth   286 thirstDeaths  13 firstThirst   350 firstDry   350 air 0 eva 0 airTB 0 T5 PASS settle 303
+   2026 final    0 peak    7 births    0 firstBirth <null> thirstDeaths   7 firstThirst   200 firstDry   200 air 0 eva 0 airTB 0 T5 PASS settle <null>
+  alive at 1500: 0/5
+== E3
+     42 final    0 peak   17 births   18 firstBirth   277 thirstDeaths  25 firstThirst   600 firstDry   600 air 0 eva 0 airTB 0 T5 PASS settle 291
+      7 final    0 peak   17 births   11 firstBirth   284 thirstDeaths  18 firstThirst   580 firstDry   580 air 0 eva 0 airTB 0 T5 PASS settle 555
+     99 final   18 peak   24 births   26 firstBirth   293 thirstDeaths  15 firstThirst   600 firstDry  1280 air 0 eva 0 airTB 0 T5 FAIL settle 304
+   1234 final   24 peak   24 births   28 firstBirth   278 thirstDeaths  11 firstThirst   850 firstDry   980 air 0 eva 0 airTB 0 T5 PASS settle 306
+   2026 final    0 peak   19 births   13 firstBirth   303 thirstDeaths  20 firstThirst   700 firstDry   840 air 0 eva 0 airTB 0 T5 PASS settle 317
+  alive at 1500: 2/5
+== E4v
+     42 final    0 peak   19 births   12 firstBirth   280 thirstDeaths  19 firstThirst   800 firstDry   800 air 0 eva 0 airTB 0 T5 FAIL settle 290
+      7 final    0 peak   12 births    5 firstBirth   286 thirstDeaths  12 firstThirst   310 firstDry   320 air 0 eva 0 airTB 0 T5 PASS settle <null>
+     99 final    0 peak   18 births   15 firstBirth   292 thirstDeaths  22 firstThirst   850 firstDry   850 air 0 eva 0 airTB 0 T5 PASS settle 309
+   1234 final    0 peak   13 births    9 firstBirth   288 thirstDeaths  16 firstThirst   390 firstDry   390 air 0 eva 0 airTB 0 T5 PASS settle 312
+   2026 final    0 peak   17 births   17 firstBirth   285 thirstDeaths  24 firstThirst   640 firstDry  1310 air 0 eva 0 airTB 0 T5 FAIL settle 325
+  alive at 1500: 0/5
+== E5
+     42 final    3 peak   16 births   17 firstBirth   277 thirstDeaths  21 firstThirst   580 firstDry  None air 0 eva 0 airTB 0 T5 PASS settle 305
+      7 final    0 peak   12 births    6 firstBirth   297 thirstDeaths  13 firstThirst   330 firstDry   340 air 0 eva 0 airTB 0 T5 PASS settle <null>
+     99 final   10 peak   20 births   24 firstBirth   291 thirstDeaths  21 firstThirst   660 firstDry   660 air 0 eva 0 airTB 0 T5 FAIL settle 301
+   1234 final    0 peak   16 births   15 firstBirth   278 thirstDeaths  22 firstThirst   400 firstDry  1130 air 0 eva 0 airTB 0 T5 PASS settle 292
+   2026 final    0 peak   14 births   16 firstBirth   292 thirstDeaths  23 firstThirst   500 firstDry   880 air 0 eva 0 airTB 1 T5 FAIL settle 321
+  alive at 1500: 2/5
+== E7
+     42 final    0 peak   19 births   12 firstBirth   280 thirstDeaths  19 firstThirst   800 firstDry   800 air 0 eva 0 airTB 0 T5 FAIL settle 290
+      7 final    0 peak   12 births    5 firstBirth   286 thirstDeaths  12 firstThirst   310 firstDry   320 air 0 eva 0 airTB 0 T5 PASS settle <null>
+     99 final    0 peak   18 births   15 firstBirth   292 thirstDeaths  22 firstThirst   850 firstDry   850 air 0 eva 0 airTB 0 T5 PASS settle 309
+   1234 final    0 peak   13 births    9 firstBirth   288 thirstDeaths  16 firstThirst   390 firstDry   390 air 0 eva 0 airTB 0 T5 PASS settle 312
+   2026 final    0 peak   17 births   17 firstBirth   285 thirstDeaths  24 firstThirst   640 firstDry  1310 air 0 eva 0 airTB 0 T5 FAIL settle 325
+  alive at 1500: 0/5
+== E8
+     42 final    0 peak   19 births   13 firstBirth   277 thirstDeaths  20 firstThirst   820 firstDry   830 air 0 eva 0 airTB 0 T5 PASS settle 291
+      7 final    9 peak   25 births   21 firstBirth   284 thirstDeaths  19 firstThirst   970 firstDry   980 air 0 eva 0 airTB 0 T5 PASS settle 555
+     99 final    0 peak   19 births   18 firstBirth   293 thirstDeaths  25 firstThirst   850 firstDry   860 air 0 eva 0 airTB 0 T5 FAIL settle 304
+   1234 final    0 peak   31 births   24 firstBirth   278 thirstDeaths  31 firstThirst  1350 firstDry  1360 air 0 eva 0 airTB 0 T5 FAIL settle 310
+   2026 final   30 peak   30 births   28 firstBirth   303 thirstDeaths   5 firstThirst  1100 firstDry  None air 0 eva 0 airTB 0 T5 PASS settle 317
+  alive at 1500: 2/5
+== INVALID-E4
+     42 final   35 peak   35 births   28 firstBirth   280 thirstDeaths   0 firstThirst  None firstDry  None air 0 eva 0 airTB 0 T5 PASS settle 289
+      7 final   17 peak   17 births   10 firstBirth   286 thirstDeaths   0 firstThirst  None firstDry  None air 0 eva 0 airTB 0 T5 FAIL settle 294
+     99 final   36 peak   36 births   29 firstBirth   293 thirstDeaths   0 firstThirst  None firstDry  None air 0 eva 0 airTB 0 T5 FAIL settle 334
+   1234 final   37 peak   37 births   30 firstBirth   288 thirstDeaths   0 firstThirst  None firstDry  None air 0 eva 0 airTB 0 T5 FAIL settle 316
+   2026 final   32 peak   32 births   25 firstBirth   285 thirstDeaths   0 firstThirst  None firstDry  None air 0 eva 0 airTB 0 T5 PASS settle 295
+  alive at 1500: 5/5
+== base
+     42 final    0 peak   13 births   10 firstBirth   280 thirstDeaths  17 firstThirst   380 firstDry   560 air 0 eva 0 airTB 0 T5 PASS settle 290
+      7 final    0 peak    9 births    5 firstBirth   286 thirstDeaths  12 firstThirst   300 firstDry   300 air 0 eva 0 airTB 0 T5 PASS settle <null>
+     99 final    0 peak   12 births    8 firstBirth   292 thirstDeaths  15 firstThirst   350 firstDry   630 air 0 eva 0 airTB 0 T5 PASS settle 309
+   1234 final    0 peak   13 births   10 firstBirth   288 thirstDeaths  17 firstThirst   530 firstDry   690 air 0 eva 0 airTB 0 T5 PASS settle 312
+   2026 final    0 peak   12 births    8 firstBirth   285 thirstDeaths  15 firstThirst   400 firstDry   660 air 0 eva 0 airTB 0 T5 FAIL settle 328
+  alive at 1500: 0/5

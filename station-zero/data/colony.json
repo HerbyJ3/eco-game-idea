@@ -1,7 +1,8 @@
 {
   "start": { "oxygen": 140, "food": 110, "ice": 60, "regolith": 80 },
   "production": { "o2_per_green_room": 1.4, "food_per_green_room": 1.0 },
-  "consumption": { "o2_per_being": 0.05, "food_per_being": 0.035, "ice_per_being": 0.01 },
+  "consumption": { "o2_per_being": 0.05, "food_per_being": 0.035, "ice_per_being": 0.01,
+    "ice_stage_mult": { "baby": 1.0, "toddler": 1.0, "child": 1.0, "teen": 1.0, "adult": 1.0 } },
   "caps": { "o2_base": 400, "o2_per_green_room": 150, "food_base": 300, "food_per_green_room": 120 },
   "targets": { "ice_min": 120, "ice_per_being": 8, "regolith_base": 160, "regolith_per_building": 12 },
   "death": { "air_interval_h": 2, "thirst_interval_h": 5, "hunger_interval_h": 6, "chance": 0.4 },

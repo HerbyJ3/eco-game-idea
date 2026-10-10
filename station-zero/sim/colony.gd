@@ -105,8 +105,10 @@ func air_food_warnings(t: float) -> Array:
 
 
 ## Phase 5 (ice part): drain, then the thirst warning. Returns [{kind, text}] to log.
-func drain_ice(t: float, dt: float) -> Array:
-	ice = maxf(0.0, ice - pop() * float(cfg.consumption.ice_per_being) * dt)
+## water_pop: stage-weighted head count (spec water-throughput W4); negative means use pop().
+func drain_ice(t: float, dt: float, water_pop: float = -1.0) -> Array:
+	var heads := float(pop()) if water_pop < 0.0 else water_pop
+	ice = maxf(0.0, ice - heads * float(cfg.consumption.ice_per_being) * dt)
 	var out: Array = []
 	if ice <= 0.0 and _due(t, thirst_warn_t, float(cfg.warnings.thirst_repeat_sols) * sol_h):
 		thirst_warn_t = t

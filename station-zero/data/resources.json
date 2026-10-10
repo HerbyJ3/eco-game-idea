@@ -28,5 +28,6 @@
   },
   "mine_will": { "steady": 0.45, "drive": 0.35, "restless": 0.2 },
   "mine_attempt": { "chance": 0.4, "floor": 0.15, "o2_gate": 10 },
+  "throughput": { "urgent_redirect": false, "launch_energy_min": 0, "commute_pause": false, "water_before_construction": false },
   "want": { "ice_urgent_below": 30, "ice_bias": 0.15, "need_sum_bias": 0.3, "stop_factor": 1.3 }
 }

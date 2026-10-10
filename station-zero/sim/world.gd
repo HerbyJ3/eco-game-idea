@@ -291,7 +291,7 @@ func step() -> void:
 	_manage_power()
 	for w in colony.air_food_warnings(t):
 		_log(w.kind, w.text)
-	for w in colony.drain_ice(t, fixed_step):
+	for w in colony.drain_ice(t, fixed_step, _water_heads()):
 		_log(w.kind, w.text)
 	if scouting_enabled and resources.scout(fixed_step) != null:
 		stats.scouts_found += 1
@@ -614,6 +614,22 @@ func _create_newborn(hb: Buildings.Building, parent: Being = null) -> void:
 ## Which site a miner heads for, or null. Lives here (not in Resources) because it reads the colony
 ## stocks and the rng. Draws one chance only when ice >= ice_urgent_below and live ice fields exist,
 ## then one pick of the pool.
+## Stage-weighted head count for water (spec water-throughput W4). -1 (use pop) when every
+## multiplier is 1.0, so the shipped game skips the per-being stage lookup.
+func _water_heads() -> float:
+	var mult: Dictionary = colony.cfg.consumption.ice_stage_mult
+	var plain := true
+	for k in mult:
+		if float(mult[k]) != 1.0:
+			plain = false
+	if plain:
+		return -1.0
+	var sum := 0.0
+	for b in beings:
+		sum += float(mult.get(lifecycle.stage(b, t), 1.0))
+	return sum
+
+
 func choose_site() -> Resources.Site:
 	var wn: Dictionary = SimData.resources().want
 	var limit := resources.trip_limit()

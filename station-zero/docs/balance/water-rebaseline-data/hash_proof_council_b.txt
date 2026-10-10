@@ -1,0 +1,5 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+seed 99: cn present, web present, age present | drop cn 40d46838bb39aee5 expected d31bc86c094bcff4 DIFFERENT | drop cn and web 80407b975e346c1e expected 6c0df749c1c1e7ec DIFFERENT | drop cn, web and age 58115f266ae42627 expected 2463601427badf0b DIFFERENT
+seed 1234: cn present, web present, age present | drop cn 55c479815f1f47ac expected bc78b23075c71ef4 DIFFERENT | drop cn and web 0cc6764008aed14f expected 9ea6315f71b0c371 DIFFERENT | drop cn, web and age 6f86c2e2daee62c0 expected 86b199e697f98d0a DIFFERENT
+seed 2026: cn present, web present, age present | drop cn 27b48573b9aed8e2 expected f404077296a86f66 DIFFERENT | drop cn and web 11ff36bd5fe69349 expected 798b786bae4905c1 DIFFERENT | drop cn, web and age 2ffb039806dce940 expected 12ebeb75ad29220c DIFFERENT

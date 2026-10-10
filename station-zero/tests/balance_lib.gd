@@ -24,6 +24,13 @@ static func apply_param(path: String, value: Variant, saved: Array) -> String:
 	var leaf := parts[parts.size() - 1]
 	if not (node is Dictionary) or not node.has(leaf):
 		return "no key %s" % path
+	# An override must keep the data's type (int and float are interchangeable); a value that failed to
+	# parse as JSON arrives as a String and would otherwise run a silently broken experiment.
+	var old_t := typeof(node[leaf])
+	var new_t := typeof(value)
+	var numeric := (old_t == TYPE_INT or old_t == TYPE_FLOAT) and (new_t == TYPE_INT or new_t == TYPE_FLOAT)
+	if old_t != new_t and not numeric:
+		return "type mismatch for %s: data has %s, override is %s (%s)" % [path, type_string(old_t), type_string(new_t), str(value)]
 	saved.append([node, leaf, node[leaf]])
 	node[leaf] = value
 	return ""

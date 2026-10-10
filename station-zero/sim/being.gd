@@ -82,6 +82,10 @@ func _cfg() -> Dictionary:
 	return SimData.beings()
 
 
+func _tp() -> Dictionary:
+	return SimData.resources().throughput
+
+
 func _trait(trait_name: String) -> float:
 	return float(persona.traits[trait_name])
 
@@ -198,13 +202,21 @@ func enter(w: SimWorld, to_building: int) -> void:
 	construction_suit = false
 	building_id = to_building
 	state = "idle"
-	wait_h = w.fixed_step if sleep_intent else idle_wait(w.rng)
+	var hurry := mine_intent != null and not bool(_tp().commute_pause)
+	wait_h = w.fixed_step if sleep_intent or hurry else idle_wait(w.rng)
 
 
 ## When to_door elapses (spec 6.2 order): (a) miner suit-up at the building door, (b) builder
 ## suit-up at the corridor end p1, (c) enter the tunnel.
 func _door_action(w: SimWorld) -> void:
 	if suit_up and mine != null:
+		# Spec water-throughput W2: too tired to go out; keep the plan, sleep first.
+		if energy < float(_tp().launch_energy_min):
+			suit_up = false
+			mine_intent = mine.site
+			mine = null
+			go_sleep(w)
+			return
 		_suit_up_miner(w)
 		return
 	if suit_up and job != null:
@@ -256,6 +268,10 @@ func decide(w: SimWorld) -> void:
 			return
 		wait_h = idle_wait(w.rng)
 		return
+	if bool(_tp().water_before_construction) and mine_intent != null \
+			and (mine_intent as Resources.Site).kind == "ice" and w.colony.ice < w.colony.ice_target():
+		if _resume_mine_intent(w):
+			return
 	if _try_join_construction(w):
 		return
 	if _resume_mine_intent(w):
@@ -589,6 +605,11 @@ func _resume_mine_intent(w: SimWorld) -> bool:
 	if mine_intent == null:
 		return false
 	var site: Resources.Site = mine_intent
+	# Spec water-throughput W1: a water emergency drops a pending regolith plan.
+	if bool(_tp().urgent_redirect) and site.kind != "ice" \
+			and w.colony.ice < float(SimData.resources().want.ice_urgent_below):
+		mine_intent = null
+		return false
 	var launch := w.resources.launch_for(site)
 	if launch == null or (site.kind == "ice" and site.amount <= 0.0) \
 			or not (w.resources.trip_time(site) < w.resources.trip_limit()):
