@@ -27,6 +27,10 @@ var resources: Resources
 var scouting_enabled := false
 var t: float
 var step_index := 0
+## Stored ice at the start of the current sol, for the water outlook's "falling" (influence-powers.md 4.1).
+var ice_at_sol_start := 0.0
+## Water outlook latch: true from the step ice drops below low_frac x target until it reaches low_clear_frac x target.
+var _water_low := false
 ## Event log, newest last, capped at colony.log_cap. Entries: {t, sol, kind, text, being_id?}.
 var log: Array = []
 ## Run-wide counters (spec section 16). Never derived from the log.
@@ -102,6 +106,7 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 		ages.begin(self, false)
 		relationships.begin(self, false)
 		council.begin(self, false)
+	ice_at_sol_start = colony.ice
 
 
 func _init_stats() -> void:
@@ -119,6 +124,8 @@ func _init_stats() -> void:
 		"sol_samples": 0, "reachable_ok_samples": 0,
 		"hours_waiting_regolith": 0.0, "hours_site_no_crew": 0.0, "site_busy_h": 0.0,
 		"first_new_reactor_sol": null, "first_birth_sol": null,
+		"guide_trips": 0, "ice_trips_total": 0, "ice_trips_guided_window": 0, "guide_hauled": 0.0,
+		"first_low_sol": null,
 		"being_steps": 0, "asleep_being_steps": 0, "energy_sum": 0.0, "max_sleep_h": 0.0,
 		"pop_by_sol": [], "min_pop": null,
 		"min_oxygen": null, "min_food": null, "min_ice": null, "min_ice_after30": null,
@@ -289,10 +296,12 @@ func step() -> void:
 	colony.step_stocks(fixed_step)
 	_sol_boundary()
 	_manage_power()
+	_power_upkeep()
 	for w in colony.air_food_warnings(t):
 		_log(w.kind, w.text)
 	for w in colony.drain_ice(t, fixed_step, _water_heads()):
 		_log(w.kind, w.text)
+	_update_water()
 	if scouting_enabled and resources.scout(fixed_step) != null:
 		stats.scouts_found += 1
 		_log("scouts_found", "Scouts found a new ice field.")
@@ -354,6 +363,7 @@ func _sol_boundary() -> void:
 	if t - clock.start_hour >= _next_sol_boundary * clock.sol_h - STEP_EPS:
 		_next_sol_boundary += 1
 		stats.shorts_this_sol = 0
+		ice_at_sol_start = colony.ice
 		_sol_started = true
 
 
@@ -460,22 +470,36 @@ func start_site(kind: String, spot: Dictionary = {}) -> bool:
 	var s := buildings.create_site(kind, where, t)
 	colony.regolith -= cost
 	stats.builds_started += 1
-	if powers.inspire_kind(t) == kind:
+	var inspired := powers.inspire_kind(t) == kind
+	if inspired:
 		powers.inspire = {}
 	_log("ground_broken", "Ground broken for a new %s." % buildings.cfg.kinds[kind].label.to_lower(),
 			{"building_id": s.building_id})
+	if inspired:
+		var builder := _ready_builder()
+		var label: String = buildings.cfg.kinds[kind].label.to_lower()
+		if builder != null:
+			_log("power_inspire_start", _txt("inspire_start", {"builder": builder.name, "label": label}),
+					{"being_id": builder.id})
+		else:
+			_log("power_inspire_start", _txt("inspire_start_anon", {"label": label}))
 	return true
 
 
 ## A builder is ready when one is inside (a sleeper counts) an online workshop.
 func _builder_ready() -> bool:
+	return _ready_builder() != null
+
+
+## The first ready builder (ascending id), or null.
+func _ready_builder() -> Being:
 	for b in beings:
 		if b.role != "builder" or not b.is_inside() or not lifecycle.is_adult(b, t):
 			continue
 		var home := buildings.get_building(b.building_id)
 		if home != null and home.kind == "workshop" and home.online():
-			return true
-	return false
+			return b
+	return null
 
 
 ## Phase 8: every build.check_interval_h.
@@ -559,6 +583,8 @@ func _birth_phase() -> void:
 			continue
 		var parent: Being = rng.pick(here)
 		lifecycle.conceive(parent, hb.id, t)
+		if powers.grace_active_for(hb.id, t):
+			powers.grace.conceptions += 1
 		# Zero gestation is an explicit fixture for tests of the independent birth gates and newborn fields.
 		if int(lifecycle.cfg.pregnancy_months) == 0:
 			_deliver_births()
@@ -623,24 +649,33 @@ func _create_newborn(hb: Buildings.Building, parent: Being = null) -> void:
 ## Stage-weighted head count for water (spec water-throughput W4). -1 (use pop) when every
 ## multiplier is 1.0, so the shipped game skips the per-being stage lookup.
 func _water_heads() -> float:
-	var mult: Dictionary = colony.cfg.consumption.ice_stage_mult
+	var mult: Variant = colony.cfg.consumption.ice_stage_mult
+	if not mult is Dictionary:
+		push_error("colony.consumption.ice_stage_mult must be a Dictionary; using the plain head count")
+		return -1.0
 	var plain := true
 	for k in mult:
+		if not (mult[k] is float or mult[k] is int):
+			push_error("colony.consumption.ice_stage_mult.%s must be a number; using the plain head count" % k)
+			return -1.0
 		if float(mult[k]) != 1.0:
 			plain = false
 	if plain:
 		return -1.0
 	var sum := 0.0
 	for b in beings:
-		sum += float(mult.get(lifecycle.stage(b, t), 1.0))
+		sum += maxf(0.0, float(mult.get(lifecycle.stage(b, t), 1.0)))
 	return sum
 
 
 func choose_site() -> Resources.Site:
 	var wn: Dictionary = SimData.resources().want
 	var limit := resources.trip_limit()
+	# Guide (influence-powers.md 3.3): a weight, not an override; it draws only while a guide is active and the
+	# tanks are not already above the stop line.
 	var guided := powers.guided_site(t)
-	if guided != null and _site_live(guided):
+	if guided != null and _site_live(guided) and colony.ice <= float(wn.stop_factor) * colony.ice_target() \
+			and rng.chance(float(SimData.powers().guide.chance)):
 		return guided
 	var live_ice: Array[Resources.Site] = []
 	for f in resources.ice_fields:
@@ -674,6 +709,22 @@ func choose_site() -> Resources.Site:
 # ---------------------------------------------------------------- influence powers (docs/specs/influence-powers.md)
 
 const POWER_NAMES := ["fortune", "inspire", "grace", "sign", "guide"]
+const WATER_STATES := ["steady", "falling", "low", "dry"]
+
+
+## World-voice text from data/powers.json `texts`, with {placeholders} filled from `vars`.
+func _txt(key: String, vars: Dictionary = {}) -> String:
+	return str(SimData.powers().texts[key]).format(vars)
+
+
+## The HUD text for a failed use (data `texts.fail.<reason>`).
+func power_fail_text(reason: String) -> String:
+	var fails: Dictionary = SimData.powers().texts.fail
+	return str(fails.get(reason, reason))
+
+
+func _power_label(power_name: String) -> String:
+	return str(SimData.powers().names[power_name])
 
 
 ## Ice left (pits never run dry) and the round trip fits a suit tank.
@@ -683,70 +734,250 @@ func _site_live(site: Resources.Site) -> bool:
 	return resources.trip_time(site) < resources.trip_limit()
 
 
-## Resource sites in guide-target order: ice fields, then pits.
-func power_sites() -> Array:
-	var out: Array = []
-	out.append_array(resources.ice_fields)
-	out.append_array(resources.pits)
-	return out
+## Index in resources.ice_fields of the richest live ice field (ties: lowest index), or -1.
+func richest_live_ice() -> int:
+	var best := -1
+	var best_amt := 0.0
+	for i in resources.ice_fields.size():
+		var f: Resources.Site = resources.ice_fields[i]
+		if _site_live(f) and (best < 0 or f.amount > best_amt):
+			best = i
+			best_amt = f.amount
+	return best
 
 
 func power_ready_in(power_name: String) -> float:
 	return powers.ready_in(power_name, t)
 
 
-## Applies an influence power. target: building id (inspire, grace) or index into power_sites() (guide).
+## Hours of effect remaining (0 = inactive).
+func power_active_left(power_name: String) -> float:
+	return powers.active_left(power_name, t)
+
+
+## Finished buildings that are offline.
+func dark_building_count() -> int:
+	return _dark_ids().size()
+
+
+func _dark_ids() -> Array:
+	var out: Array = []
+	for b in buildings.list:
+		if b.finished() and b.offline:
+			out.append(b.id)
+	return out
+
+
+## Water outlook (spec 4.1): {state, sols, ice, target}. A pure read of the stock, the latch kept by
+## _update_water and `ice_at_sol_start`. `sols` is how long the stock lasts at today's drinking, ignoring supply.
+func water_outlook() -> Dictionary:
+	var wc: Dictionary = SimData.powers().water
+	var ice := colony.ice
+	var target := colony.ice_target()
+	var heads := _water_heads()
+	if heads < 0.0:
+		heads = float(colony.pop())
+	var per_sol := heads * float(colony.cfg.consumption.ice_per_being) * clock.sol_h
+	var sols := ice / per_sol if per_sol > 0.0 else 0.0
+	var state := "steady"
+	if ice <= 0.0:
+		state = "dry"
+	elif _water_is_low(ice, target):
+		state = "low"
+	elif ice < float(wc.falling_frac) * target \
+			and ice_at_sol_start - ice >= float(wc.falling_drop_frac_per_sol) * target:
+		state = "falling"
+	return {"state": state, "sols": sols, "ice": ice, "target": target}
+
+
+func _water_is_low(ice: float, target: float) -> bool:
+	var wc: Dictionary = SimData.powers().water
+	return ice < float(wc.low_frac) * target or (_water_low and ice < float(wc.low_clear_frac) * target)
+
+
+## Phase 3b: keeps the low latch and logs the crossing into and out of `low` (once per crossing). Reads only.
+func _update_water() -> void:
+	var low := _water_is_low(colony.ice, colony.ice_target())
+	if low == _water_low:
+		return
+	_water_low = low
+	if low:
+		if stats.first_low_sol == null:
+			stats.first_low_sol = sol()
+		_log("water_low", _txt("water_low", {"n": int(round(float(water_outlook().sols)))}))
+	else:
+		_log("water_ok", _txt("water_ok"))
+
+
+func _fail(reason: String) -> Dictionary:
+	return {"ok": false, "reason": reason}
+
+
+## Applies an influence power. target: a building id (inspire, grace) or an index into resources.ice_fields
+## (guide; -1 = the richest live ice field). On failure nothing is spent and `reason` is a code from data texts.fail.
 func use_power(power_name: String, target: int = -1) -> Dictionary:
 	if not power_name in POWER_NAMES:
-		return {"ok": false, "reason": "unknown_power"}
+		return _fail("unknown_power")
 	if powers.ready_in(power_name, t) > 0.0:
-		return {"ok": false, "reason": "recharging"}
+		return _fail("recharging")
 	var pc: Dictionary = SimData.powers()
 	var sol_h := clock.sol_h
+	var res := {"ok": true, "reason": ""}
 	match power_name:
 		"fortune":
-			powers.set_power_multiplier(t + float(buildings.cfg.fortune.duration_sols) * sol_h)
-			_log("power_fortune", "Good fortune: the reactors run hot for a sol.")
+			var dark := _dark_ids()
+			var until := t + float(buildings.cfg.fortune.duration_sols) * sol_h
+			powers.set_power_multiplier(until)
+			powers.fortune = {"until": until, "dark_ids": dark}
+			var line := _txt("fortune_use")
+			if dark.size() == 1:
+				line += _txt("fortune_dark_one")
+			elif dark.size() > 1:
+				line += _txt("fortune_dark_many", {"n": dark.size()})
+			_log("power_fortune", line)
 		"inspire":
-			var b := buildings.get_building(target)
-			if b == null or not b.finished():
-				return {"ok": false, "reason": "bad_target"}
-			powers.inspire = {"kind": b.kind, "until": t + float(pc.inspire.duration_sols) * sol_h}
+			var b := buildings.get_building(target) if target >= 0 else null
+			if b == null:
+				return _fail("no_target")
+			if not b.finished():
+				return _fail("not_finished")
 			var label: String = buildings.cfg.kinds[b.kind].label.to_lower()
-			_log("power_inspire", "Inspiration: the builders dream of another %s." % label, {"building_id": b.id})
+			powers.inspire = {"kind": b.kind, "label": label, "until": t + float(pc.inspire.duration_sols) * sol_h}
+			_log("power_inspire", _txt("inspire_use", {"label": label}), {"building_id": b.id})
 		"grace":
-			var h := buildings.get_building(target)
-			if h == null or h.kind != "habitat" or not h.finished() or not h.online():
-				return {"ok": false, "reason": "bad_target"}
-			powers.grace = {"habitat_id": h.id, "until": t + float(pc.grace.duration_sols) * sol_h}
-			_log("power_grace", "Grace: it feels like a good time to start a family here.", {"building_id": h.id})
+			var h := buildings.get_building(target) if target >= 0 else null
+			if h == null:
+				return _fail("no_target")
+			if not h.finished():
+				return _fail("not_finished")
+			if h.kind != "habitat":
+				return _fail("not_habitat")
+			if not h.online():
+				return _fail("habitat_dark")
+			powers.grace = {"habitat_id": h.id, "until": t + float(pc.grace.duration_sols) * sol_h, "conceptions": 0}
+			var adults: Array[Being] = []
+			for b in beings:
+				if adults.size() < 2 and b.building_id == h.id and b.is_inside() and lifecycle.is_adult(b, t):
+					adults.append(b)
+			if adults.size() == 2:
+				_log("power_grace", _txt("grace_use_pair", {"a": adults[0].name, "b": adults[1].name}), {"building_id": h.id})
+			else:
+				_log("power_grace", _txt("grace_use_none"), {"building_id": h.id})
 		"sign":
-			_send_sign(pc.sign)
+			res.merge(_send_sign(pc.sign))
 		"guide":
-			var sites := power_sites()
-			if target < 0 or target >= sites.size() or not _site_live(sites[target]):
-				return {"ok": false, "reason": "bad_target"}
-			var site: Resources.Site = sites[target]
-			powers.guide = {"site": site, "until": t + float(pc.guide.duration_sols) * sol_h}
-			var what := "the ice field" if site.kind == "ice" else "the regolith pit"
-			_log("power_guide", "Guidance: the colony feels drawn to %s." % what)
+			var idx := target
+			if idx < 0:
+				idx = richest_live_ice()
+				if idx < 0:
+					return _fail("no_ice")
+			elif idx >= resources.ice_fields.size() or not _site_live(resources.ice_fields[idx]):
+				return _fail("bad_field")
+			var site: Resources.Site = resources.ice_fields[idx]
+			powers.guide = {"site": site, "number": idx + 1, "until": t + float(pc.guide.duration_sols) * sol_h,
+					"trips": 0, "hauled": 0.0, "announced": false}
+			_log("power_guide", _txt("guide_use", {"field": idx + 1, "amount": int(round(site.amount))}))
 	powers.ready_at[power_name] = t + float(pc.recharge_sols[power_name]) * sol_h
+	powers.ready_pending[power_name] = true
 	stats["powers_used"] = int(stats.get("powers_used", 0)) + 1
-	return {"ok": true, "reason": ""}
+	return res
 
 
-## Send a sign: curious, restless colonists go to look; steady ones keep working.
-func _send_sign(sc: Dictionary) -> void:
+## Phase 3a: expiry and outcome lines, the Guide stop rule, and "ready again". Touches no RNG; with no power
+## ever used it returns at once.
+func _power_upkeep() -> void:
+	if powers.fortune.is_empty() and powers.inspire.is_empty() and powers.grace.is_empty() \
+			and powers.guide.is_empty() and powers.ready_pending.is_empty():
+		return
+	if not powers.fortune.is_empty() and t >= float(powers.fortune.until):
+		var dark: Array = powers.fortune.dark_ids
+		var lit := 0
+		for id in dark:
+			var b := buildings.get_building(int(id))
+			if b != null and not b.offline:
+				lit += 1
+		if dark.is_empty():
+			_log("power_end", _txt("fortune_end_none"))
+		else:
+			_log("power_end", _txt("fortune_end", {"n": lit, "m": dark.size()}))
+		powers.fortune = {}
+	if not powers.inspire.is_empty() and t >= float(powers.inspire.until):
+		_log("power_end", _txt("inspire_end", {"label": powers.inspire.label}))
+		powers.inspire = {}
+	if not powers.grace.is_empty() and t >= float(powers.grace.until):
+		var h := buildings.get_building(int(powers.grace.habitat_id))
+		var n := int(powers.grace.conceptions)
+		var hab := h.kind.replace("_", " ") if h != null else "habitat"
+		_log("power_end", _txt("grace_end_one" if n == 1 else "grace_end", {"n": n, "habitat": hab}))
+		powers.grace = {}
+	if not powers.guide.is_empty():
+		var g: Dictionary = powers.guide
+		var stop := colony.ice > float(SimData.resources().want.stop_factor) * colony.ice_target()
+		if t >= float(g.until) or stop or not _site_live(g.site):
+			_end_guide()
+	for p in POWER_NAMES:
+		if powers.ready_pending.has(p) and t >= float(powers.ready_at[p]):
+			powers.ready_pending.erase(p)
+			_log("power_ready", _txt("ready_again", {"power": _power_label(p)}))
+
+
+func _end_guide() -> void:
+	var g: Dictionary = powers.guide
+	powers.guide = {}
+	var trips := int(g.trips)
+	if trips == 0:
+		_log("power_end", _txt("guide_end_none"))
+	else:
+		var hauled := str(int(round(float(g.hauled))))
+		_log("power_end", _txt("guide_end_one" if trips == 1 else "guide_end", {"trips": trips, "hauled": hauled}))
+
+
+## Called by a miner as a trip begins (Being._suit_up_miner): guided-vs-total trip counts and the
+## first-volunteer line. Returns true when the trip is to the guided field.
+func note_ice_trip(b: Being, site: Resources.Site) -> bool:
+	stats.ice_trips_total += 1
+	var g: Dictionary = powers.guide
+	if g.is_empty() or t >= float(g.until):
+		return false
+	stats.ice_trips_guided_window += 1
+	if g.site != site:
+		return false
+	stats.guide_trips += 1
+	g.trips += 1
+	if not g.announced:
+		g.announced = true
+		_log("power_guide_first", _txt("guide_first", {"name": b.name, "field": g.number}), {"being_id": b.id})
+	return true
+
+
+## Send a sign: curious, restless colonists go to look; steady ones keep working. Returns
+## {went, stayed, eligible} and logs the most and least pulled by name when two or more were eligible.
+func _send_sign(sc: Dictionary) -> Dictionary:
 	var went := 0
 	var stayed := 0
+	var top: Being = null
+	var low: Being = null
+	var top_pull := 0.0
+	var low_pull := 0.0
 	for b in beings:
 		if not b.is_inside() or b.state == "sleep" or lifecycle.stage(b, t) == "baby":
 			continue
 		var tr: Dictionary = b.persona.traits
 		var pull := float(tr.curiosity) + float(sc.restless) * float(tr.restless) - float(sc.steady) * float(tr.steady) \
 				+ rng.randf_range(-float(sc.jitter), float(sc.jitter))
+		if top == null or pull > top_pull:
+			top = b
+			top_pull = pull
+		if low == null or pull < low_pull:
+			low = b
+			low_pull = pull
 		if pull > float(sc.threshold) and b.state == "idle" and b.look_at_sign(self):
 			went += 1
 		else:
 			stayed += 1
-	_log("power_sign", "A light crossed the sky. %d went to look, %d stayed put." % [went, stayed])
+	var eligible := went + stayed
+	if eligible >= 2:
+		_log("power_sign", _txt("sign_named", {"a": top.name, "z": low.name, "went": went, "stayed": stayed}))
+	else:
+		_log("power_sign", _txt("sign_counts", {"went": went, "stayed": stayed}))
+	return {"went": went, "stayed": stayed, "eligible": eligible}

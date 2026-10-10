@@ -12,11 +12,8 @@ const THROTTLE_NOTE := "The colony is too large to run this fast."
 const SPEEDS := {KEY_1: 1.0, KEY_2: 10.0, KEY_3: 100.0, KEY_4: 1000.0}
 const STATES: Array[String] = ["idle", "sleep", "work", "mining", "eva", "transit"]
 const POWER_KEYS := {KEY_F1: "fortune", KEY_F2: "inspire", KEY_F3: "grace", KEY_F4: "sign", KEY_F5: "guide"}
-const POWER_LABELS := {"fortune": "Good fortune", "inspire": "Inspire", "grace": "Grace", "sign": "Send a sign",
-		"guide": "Guide"}
-const POWER_REASONS := {"recharging": "still recharging", "bad_target": "select a fitting target first",
-		"unknown_power": "unknown power"}
-const POWER_NOTE_S := 4.0
+## Keys of the colony panel's Water line, by water_outlook() state.
+const WATER_WORDS := {"steady": "steady", "falling": "falling", "low": "LOW", "dry": "DRY"}
 
 var _clock: Label
 var _colony: Label
@@ -128,22 +125,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		use_power(POWER_KEYS[k.keycode])
 
 
-## The player uses a power. Inspire and Grace target the selected building; Guide targets the site nearest the
-## selected building, or the richest reachable ice field when nothing is selected. Returns the sim result.
+## The player uses a power. Inspire and Grace target the selected building; Guide ignores the selection and draws
+## toward the richest live ice field (the sim names it in the log). Returns the sim result.
 func use_power(power_name: String) -> Dictionary:
 	var w: SimWorld = _sim.world
 	var sel := _selected_id()
 	var target := -1
 	if power_name == "inspire" or power_name == "grace":
 		target = sel
-	elif power_name == "guide":
-		target = _guide_target(w, sel)
 	var res := w.use_power(power_name, target)
 	if res.ok:
-		_power_note = "%s used." % POWER_LABELS[power_name]
+		_power_note = "%s used." % _power_label(power_name)
 	else:
-		_power_note = "%s: %s." % [POWER_LABELS[power_name], POWER_REASONS.get(res.reason, res.reason)]
-	_power_note_s = POWER_NOTE_S
+		_power_note = w.power_fail_text(res.reason)
+	_power_note_s = float(SimData.powers().hud.note_s)
 	refresh()
 	return res
 
@@ -155,37 +150,58 @@ func _selected_id() -> int:
 	return id if id > 0 else -1
 
 
-static func _guide_target(w: SimWorld, sel: int) -> int:
-	var sites := w.power_sites()
-	var best := -1
-	var b := w.buildings.get_building(sel) if sel > 0 else null
-	if b != null:
-		var door := b.door(float(w.buildings.cfg.tile_px))
-		var best_d := INF
-		for i in sites.size():
-			var s: Resources.Site = sites[i]
-			var d := door.distance_to(Vector2(s.x, s.y))
-			if w._site_live(s) and d < best_d:
-				best = i
-				best_d = d
-		return best
-	var best_amt := -1.0
-	for i in sites.size():
-		var s: Resources.Site = sites[i]
-		if s.kind == "ice" and w._site_live(s) and s.amount > best_amt:
-			best = i
-			best_amt = s.amount
-	return best
+static func _power_label(power_name: String) -> String:
+	return str(SimData.powers().names[power_name])
 
 
-## One line: each power with its key and readiness, then the last result for a few seconds.
+## "ready", "soon" (under hud.soon_below_sols), or the sols left with one decimal.
+static func _ready_word(left_h: float, sol_h: float) -> String:
+	if left_h <= 0.0:
+		return "ready"
+	var sols := left_h / sol_h
+	if sols < float(SimData.powers().hud.soon_below_sols):
+		return "soon"
+	return "%.1f sols" % sols
+
+
+## The button text for one power: `[F5] Guide - ice low` when ready and it would help right now.
+static func _button_text(w: SimWorld, power_name: String, key_n: int) -> String:
+	var label := _power_label(power_name)
+	var left := w.power_active_left(power_name)
+	if left > 0.0:
+		var name_part := ""
+		if power_name == "guide":
+			name_part = ": field %d" % int(w.powers.guide.number)
+		return "[F%d] %s on%s (%.1f sols)" % [key_n, label, name_part, left / w.clock.sol_h]
+	var ready_in := w.power_ready_in(power_name)
+	if ready_in > 0.0:
+		return "[F%d] %s %s" % [key_n, label, _ready_word(ready_in, w.clock.sol_h)]
+	var mark := ""
+	if power_name == "guide":
+		var st: String = w.water_outlook().state
+		if st == "low" or st == "dry":
+			mark = " - ice low"
+	elif power_name == "fortune" and w.dark_building_count() > 0:
+		mark = " - a room is dark"
+	return "[F%d] %s%s" % [key_n, label, mark] if mark != "" else "[F%d] %s ready" % [key_n, label]
+
+
+## The Water line of the colony panel.
+static func _water_text(w: SimWorld) -> String:
+	var o := w.water_outlook()
+	var st: String = o.state
+	var line := "Water    " + str(WATER_WORDS[st])
+	if st == "falling" or st == "low":
+		line += " (about %d sols)" % int(round(float(o.sols)))
+	return line
+
+
+## The Influence line (beside the Water line): each power with its key and state, then the last failure text.
 func _powers_text(w: SimWorld) -> String:
 	var parts: Array[String] = []
 	var i := 1
 	for p in ["fortune", "inspire", "grace", "sign", "guide"]:
-		var left := w.power_ready_in(p)
-		var state := "ready" if left <= 0.0 else "%.1f sols" % (left / w.clock.sol_h)
-		parts.append("[F%d] %s %s" % [i, POWER_LABELS[p], state])
+		parts.append(_button_text(w, p, i))
 		i += 1
 	var line := "Influence: " + "  ".join(parts)
 	if _power_note_s > 0.0 and _power_note != "":
@@ -218,7 +234,7 @@ func refresh() -> void:
 	_beings.text = _beings_text(w)
 	_chapters.text = _chapters_text(w)
 	_log.text = _log_text(w)
-	_controls.text = _powers_text(w) + "\n" + _controls_text()
+	_controls.text = _controls_text()
 	_map.queue_redraw()
 	_fit_shade.call_deferred()
 	if not _printed:
@@ -274,7 +290,7 @@ func _controls_text() -> String:
 		line += " (running about %dx)" % int(round(_achieved))
 		if _achieved < float(SimData.sim().speed_throttle_below) * _sim.speed:
 			line += "  " + THROTTLE_NOTE
-	return line + "   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x"
+	return line + "   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x  [F1-F5] influence"
 
 
 func _clock_text(w: SimWorld) -> String:
@@ -381,6 +397,8 @@ func _colony_text(w: SimWorld) -> String:
 		"Oxygen   %7.1f / %.0f   %+.2f /h%s" % [col.oxygen, col.o2_cap(), col.o2_net(), _low_word(w, "oxygen")],
 		"Food     %7.1f / %.0f   %+.2f /h%s" % [col.food, col.food_cap(), col.food_net(), _low_word(w, "food")],
 		"Ice      %7.1f (target %.0f)   %+.2f /h%s" % [col.ice, col.ice_target(), ice_rate, _low_word(w, "ice")],
+		_water_text(w),
+		_powers_text(w),
 		"Regolith %7.1f (target %.0f)   %+.2f /h" % [col.regolith, col.regolith_target(), reg_rate],
 	])
 

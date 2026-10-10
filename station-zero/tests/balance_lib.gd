@@ -101,10 +101,19 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 		player: RefCounted = null) -> Dictionary:
 	var saved: Array = []
 	var lines: Array[String] = []
+	var failed := false
 	for k in params:
 		var err := apply_param(str(k), params[k], saved)
 		if err != "":
 			lines.append("PARAM ERROR: %s" % err)
+			failed = true
+	if failed:
+		# A bad override would run a silently different experiment: restore what was applied and simulate nothing.
+		for e in saved:
+			e[0][e[1]] = e[2]
+		lines.append("ABORTED: nothing simulated because an override was rejected")
+		return {"lines": lines, "table_hash": "", "verdicts": [], "steps": 0, "world": null, "std": {},
+				"error": true}
 	var w := SimWorld.new(seed_in)
 	var pstr := " ".join(PackedStringArray(params.keys().map(func(k): return "%s=%s" % [k, str(params[k])])))
 	lines.append("# station zero balance run: seed=%d sols=%d overrides=[%s] fixed_step=%s data_hash=%s%s" % [

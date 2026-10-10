@@ -132,6 +132,59 @@ func test_w4_children_drink_less(t) -> void:
 				"W4: drain uses the weighted head count"))
 
 
+func test_w4_off_everyone_drinks_alike(t) -> void:
+	# Shipped multipliers (all 1.0): the stage lookup is skipped and a baby drinks like an adult.
+	var s := _world()
+	var w: SimWorld = s.w
+	w.add_being(s.A)
+	w.add_being(s.A)
+	var baby := w.add_being(s.A)
+	baby.born_t = w.t
+	t.check(w.lifecycle.stage(baby, w.t) == "baby", "setup: a newborn is a baby")
+	t.check(w._water_heads() == -1.0, "W4 off: plain head count")
+	w.colony.ice = 100.0
+	w.colony.drain_ice(w.t, 1.0, w._water_heads())
+	t.check(is_equal_approx(w.colony.ice, 100.0 - 3.0 * float(SimData.colony().consumption.ice_per_being)),
+			"W4 off: the baby drinks like an adult (3 heads)")
+
+
+func test_w4_bad_data_falls_back_to_plain(t) -> void:
+	# Not a Dictionary, or a non-number entry: push_error and the plain head count (-1.0), never a crash.
+	for bad in ["not a table", 3, [1.0]]:
+		_with("colony.json", ["consumption", "ice_stage_mult"], bad, func():
+			var s := _world()
+			s.w.add_being(s.A)
+			t.check(s.w._water_heads() == -1.0, "W4: ice_stage_mult %s falls back to -1.0" % str(bad)))
+	_with("colony.json", ["consumption", "ice_stage_mult"], {"baby": "lots", "adult": 1.0}, func():
+		var s := _world()
+		s.w.add_being(s.A)
+		t.check(s.w._water_heads() == -1.0, "W4: a non-numeric multiplier falls back to -1.0"))
+	# A negative multiplier is clamped to zero, never a negative head count.
+	_with("colony.json", ["consumption", "ice_stage_mult"], {"baby": -2.0, "toddler": 1.0, "child": 1.0, "teen": 1.0, "adult": 1.0}, func():
+		var s := _world()
+		var w: SimWorld = s.w
+		w.add_being(s.A)
+		var baby := w.add_being(s.A)
+		baby.born_t = w.t
+		t.check(is_equal_approx(w._water_heads(), 1.0), "W4: a negative multiplier counts as 0 (one adult plus a baby at 0)"))
+
+
+func test_w5_off_construction_keeps_its_builders(t) -> void:
+	# Same setup as the W5-on test, with a certain join: with the switch off construction goes first.
+	_with("buildings.json", ["construction", "join_chance"], 1.0, func():
+		var s := _world()
+		var w: SimWorld = s.w
+		w.colony.regolith = 500.0
+		w.start_site("habitat", {"parent_id": s.R, "dir": "u", "tw": 10, "th": 8, "gap": 5})
+		var f := w.resources.add_ice_field(140.0, 150.0, 300.0, 20.0)
+		var b := w.add_being(w.resources.launch_for(f).id)
+		b.mine_intent = f
+		b.energy = 90.0
+		w.colony.ice = 20.0
+		b.decide(w)
+		t.check(b.mine == null and b.state == "to_door", "W5 off: the builder heads for the site, the ice plan waits"))
+
+
 func test_w5_water_before_construction(t) -> void:
 	_with("resources.json", ["throughput", "water_before_construction"], true, func():
 		var s := _world()

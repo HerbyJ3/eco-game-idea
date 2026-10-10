@@ -1,7 +1,45 @@
 {
-  "recharge_sols": { "fortune": 3, "inspire": 2, "grace": 2, "sign": 1, "guide": 2 },
+  "recharge_sols": { "fortune": 4, "inspire": 3, "grace": 3, "sign": 2, "guide": 3 },
   "inspire": { "duration_sols": 2, "chance": 0.75 },
   "grace": { "duration_sols": 1.5, "bonus": 0.35 },
   "sign": { "restless": 0.5, "steady": 0.6, "jitter": 0.15, "threshold": 0.35 },
-  "guide": { "duration_sols": 1, "need_floor": 0.6 }
+  "guide": { "duration_sols": 1, "chance": 0.7, "need_floor": 0.6 },
+  "water": { "low_frac": 0.5, "low_clear_frac": 0.6, "falling_frac": 0.8, "falling_drop_frac_per_sol": 0.01 },
+  "hud": { "soon_below_sols": 0.5, "note_s": 4.0 },
+  "names": { "fortune": "Fortune", "inspire": "Inspire", "grace": "Grace", "sign": "Sign", "guide": "Guide" },
+  "texts": {
+    "fail": {
+      "recharging": "Not yet. The colony is still feeling the last one.",
+      "unknown_power": "That is not something anyone can do.",
+      "no_target": "Choose a building first.",
+      "not_finished": "That is still only a plan.",
+      "not_habitat": "Only a home can be blessed this way.",
+      "habitat_dark": "No one can settle in the dark.",
+      "no_ice": "There is no ice left to be drawn to.",
+      "bad_field": "That field cannot be reached."
+    },
+    "fortune_use": "Good fortune: the reactors run hot for a sol.",
+    "fortune_dark_one": " A dark room stirs.",
+    "fortune_dark_many": " {n} dark rooms stir.",
+    "fortune_end_none": "Good fortune ended.",
+    "fortune_end": "Good fortune ended: {n} of {m} dark rooms are lit again.",
+    "inspire_use": "Inspiration: the builders dream of another {label}.",
+    "inspire_start": "{builder} sketches another {label}.",
+    "inspire_start_anon": "The builders sketch another {label}.",
+    "inspire_end": "The inspiration passed; no one started a {label}.",
+    "grace_use_pair": "Grace: {a} and {b} linger together.",
+    "grace_use_none": "Grace: it feels like a good time to start a family here.",
+    "grace_end": "Grace ended: {n} new lives begun in the {habitat}.",
+    "grace_end_one": "Grace ended: 1 new life begun in the {habitat}.",
+    "sign_named": "A light crossed the sky. {a} was pulled most and {z} least. {went} went to look, {stayed} stayed put.",
+    "sign_counts": "A light crossed the sky. {went} went to look, {stayed} stayed put.",
+    "guide_use": "Guidance: the colony feels drawn to ice field {field} ({amount} ice left).",
+    "guide_first": "{name} sets out for ice field {field}.",
+    "guide_end": "Guidance ended: {trips} trips, {hauled} hauled.",
+    "guide_end_one": "Guidance ended: 1 trip, {hauled} hauled.",
+    "guide_end_none": "Guidance ended: no one set out.",
+    "ready_again": "{power} is ready again.",
+    "water_low": "The water tanks are below half: about {n} sols at today's use.",
+    "water_ok": "The water is holding again."
+  }
 }
