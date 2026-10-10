@@ -1,5 +1,5 @@
 extends "res://tests/minds_lib.gd"
-## Task 6b, step 3 (tests first, red): ledger, replay and adversarial provider tests. Spec docs/specs/ai-minds.md revision 4,
+## Task 6b, step 3 (tests first, red): ledger, replay and adversarial provider tests. Spec docs/specs/ai-minds.md revision 5,
 ## section 14 tests 11 to 16 and 38 (slice 1; the `roam` adversary of test 16(b) is slice 2 and is skipped below).
 ##
 ## Method: a six-being colony stepped with the REAL world step (`w.step()`, so beings act and a bias can change behaviour).

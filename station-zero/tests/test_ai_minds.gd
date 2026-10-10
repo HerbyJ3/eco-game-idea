@@ -1,5 +1,5 @@
 extends "res://tests/minds_lib.gd"
-## Task 6b, step 3 (tests first, red): sim-side AI minds tests, SLICE 1. Spec: docs/specs/ai-minds.md revision 4 (APPROVED by
+## Task 6b, step 3 (tests first, red): sim-side AI minds tests, SLICE 1. Spec: docs/specs/ai-minds.md revision 5 (revision 4 was APPROVED by
 ## the code-reviewer), section 14 tests 4 to 10, 21 (data parity), 32 to 37, 39, 40 and the perf test 30. The rest live in:
 ##   tests/test_ai_minds_hashes.gd   tests 1 to 3 (five 300-sol seeds, heavy) and 31 (hash columns and the four proof scripts)
 ##   tests/test_ai_minds_replay.gd   tests 11 to 16 and 38 (ledger, replay, adversarial providers)
@@ -333,7 +333,7 @@ func test_t06c_ties_go_by_the_pure_key_then_the_lowest_id(t) -> void:
 	var key := func(id: int) -> int: return (id * int(s.cell_mult) + sol * int(s.cell_step)) % int(s.tie_mod)
 	var a: int = c.f1.id
 	var b: int = c.f2.id
-	# AMBIGUITY: the spec does not say whether the tie key sorts ascending; ascending is assumed (a total order either way).
+	# Ascending: the smaller pure tie key goes first, then the lower id (spec 5.3, revision 5 decision 2).
 	var first: int = a if (key.call(a) < key.call(b) or (key.call(a) == key.call(b) and a < b)) else b
 	var m: Array = w.minds.menu_for(w, c.s)
 	t.eq(str(m[1]), "visit:%d" % first, "equal last_visit_t: the lower pure tie key wins, then the lowest id")
@@ -355,9 +355,13 @@ func test_t06d_validity_stay_children_dead_and_purity(t) -> void:
 	_kill_being(w, c.f1)
 	var m2: Array = w.minds.menu_for(w, c.s)
 	t.check(not m2.any(func(k): return str(k) == "visit:%d" % c.f1.id), "a dead friend is not offered")
-	var kid = _young(w, HAB)
-	var mk: Array = w.minds.menu_for(w, kid)
-	t.eq(mk, ["carry_on"], "a child's menu is carry_on only")
+	# Young beings (revision 5, 5.3): toddler, child and teen all get a carry_on-only menu, even with friends around.
+	for stage in ["toddler", "child", "teen"]:
+		var kid = _young(w, HAB, false, stage)
+		t.eq(str(w.lifecycle.stage(kid, w.t)), stage, "staged being is a %s" % stage)
+		_friends(w, kid.id, c.f2.id)
+		var mk: Array = w.minds.menu_for(w, kid)
+		t.eq(mk, ["carry_on"], "a %s's menu is carry_on only" % stage)
 	_end(t)
 
 
@@ -385,8 +389,7 @@ func _assert_rejected_whole(t, w, b, reason: String, label: String, before: Dict
 
 func _snap(w) -> Dictionary:
 	return {"total": _rejected_total(w), "bad_key": _rej(w, "bad_key"), "not_in_menu": _rej(w, "not_in_menu"),
-			"stale_target": _rej(w, "stale_target"), "dead": _rej(w, "dead"), "child": _rej(w, "child"),
-			"no_neighbour": _rej(w, "no_neighbour")}
+			"stale_target": _rej(w, "stale_target"), "dead": _rej(w, "dead")}
 
 
 func test_t07a_whole_entry_rejections(t) -> void:
@@ -434,19 +437,21 @@ func test_t07a_whole_entry_rejections(t) -> void:
 	t.eq(_rej(c.w, "dead"), int(before.dead) + 1, "dead being: counter `dead` +1")
 	t.eq(c.w.minds.ledger.size(), 0, "dead being: nothing in the ledger")
 	t.check(not c.w.minds.says.has(int(c.s.id)), "dead being: no line remains")
-	# child being: never takes a bias (AMBIGUITY: with a carry_on-only stored menu the order of 5.4 step 2 reports not_in_menu,
-	# the spec lists `child` as its own reason; either counter is accepted, exactly one must move)
-	c = _cast("llm")
-	var kid = _young(c.w, HAB)
-	d = _open_slot(c.w, kid)
-	before = _snap(c.w)
-	_deliver(c.w, kid.id, d.k, "stay")
-	_resolve(c.w, kid.id, d.k)
-	t.eq(_rejected_total(c.w), int(before.total) + 1, "child: the whole entry is rejected (one counter moved)")
-	t.check(_rej(c.w, "child") == int(before.child) + 1 or _rej(c.w, "not_in_menu") == int(before.not_in_menu) + 1, "child: reason child or not_in_menu")
-	t.check(kid.mind_bias == null and c.w.minds.ledger.size() == 0, "child: no bias, nothing logged")
-	# AMBIGUITY (not tested here): `no_neighbour` is reachable only for roam/quiet (slice 2); a slice-1 menu has no entry whose
-	# validity is "has a neighbour", the visit case reports stale_target.
+	# Young beings (revision 5, 5.4 step 2): the stored menu is carry_on only, so any other choice fails as `not_in_menu`
+	# (the `child` reason no longer exists). A toddler and a teen are young beings like the child.
+	for stage in ["toddler", "child", "teen"]:
+		c = _cast("llm")
+		var kid = _young(c.w, HAB, false, stage)
+		d = _open_slot(c.w, kid)
+		before = _snap(c.w)
+		_deliver(c.w, kid.id, d.k, "stay")
+		_resolve(c.w, kid.id, d.k)
+		t.eq(_rejected_total(c.w), int(before.total) + 1, "%s: the whole entry is rejected (one counter moved)" % stage)
+		t.eq(_rej(c.w, "not_in_menu"), int(before.not_in_menu) + 1, "%s: reason not_in_menu" % stage)
+		t.check(not c.w.stats.minds.rejected.has("child"), "%s: there is no `child` rejection reason" % stage)
+		t.check(kid.mind_bias == null and c.w.minds.ledger.size() == 0, "%s: no bias, nothing logged" % stage)
+	# SLICE 2 (not tested here): `no_neighbour` is reachable only for roam/quiet; a slice-1 menu has no entry whose validity is
+	# "has a neighbour", and a visit that lost its neighbours is `stale_target`. See test_s2_t07_no_neighbour below.
 	_end(t)
 
 
@@ -546,11 +551,11 @@ func test_t08b_stay_combined_with_a_nonzero_mood_term(t) -> void:
 	_set_bias(w, c.s, "stay")
 	var mult: float = float(_md().bias.stay_travel_mult)
 	var got := _p_of(c)
-	# AMBIGUITY: 5.5 says the clamp comes "after any bias and after the 6a mood term" but not which of the two multiplies first.
-	# Both orders are accepted: (base + mood) x mult, or base x mult + mood; each clamped to [floor, bias.travel_cap].
-	var a := clampf(p_mood * mult, float(w.mood_travel_floor), float(_md().bias.travel_cap))
-	var b := clampf(_base_p(0.5) * mult + term, float(w.mood_travel_floor), float(_md().bias.travel_cap))
-	t.check(absf(got - a) < 1e-12 or absf(got - b) < 1e-12, "stay with a mood term: %.6f is %.6f or %.6f" % [got, a, b])
+	# Spec 5.5 (revision 5 decision 1): mood term first, then the bias, then the final clamp [mood_travel_floor, bias.travel_cap].
+	# Only this order is accepted. The upper clamp can bind only through `roam`, so that assertion is in the slice-2 test.
+	var want := clampf(p_mood * mult, float(w.mood_travel_floor), float(_md().bias.travel_cap))
+	t.near(got, want, 1e-12, "stay with a mood term: %.6f is clamp(p_mood x mult) = %.6f" % [got, want])
+	t.check(got >= float(w.mood_travel_floor) - 1e-12, "never below world.mood_travel_floor")
 	_end(t)
 
 
@@ -697,7 +702,7 @@ func test_t09a_survival_and_work_come_before_the_bias(t) -> void:
 	_end(t)
 
 
-func test_t09b_expiry_never_extends_and_children_hold_none(t) -> void:
+func test_t09b_expiry_never_extends_and_young_beings_hold_none(t) -> void:
 	if not _api(t):
 		return
 	var c := _cast("llm")
@@ -713,10 +718,13 @@ func test_t09b_expiry_never_extends_and_children_hold_none(t) -> void:
 		_mini(w)
 		guard += 1
 	t.check(c.s.mind_bias == null, "the bias is gone after ttl_h")
-	var kid = _young(w, HAB)
+	var kids: Array = []
+	for stage in ["toddler", "child", "teen"]:
+		kids.append(_young(w, HAB, false, stage))
 	_mini_to_sol(w, _sol(w) + 1)
 	_mini(w, 600)
-	t.check(kid.mind_bias == null, "a child never holds a bias")
+	for i in kids.size():
+		t.check(kids[i].mind_bias == null, "a %s never holds a bias" % ["toddler", "child", "teen"][i])
 	_end(t)
 
 
@@ -975,10 +983,13 @@ func test_t33a_the_worth_gate(t) -> void:
 	var c := _cast("llm")
 	var w = c.w
 	var asked := {}
+	var sol_m := 2
 	var extra := []
 	for i in 30:
 		extra.append(_being(w, HAB).id)
-	_mini_to_sol(w, 5)
+	# Revision 5 (5.6): a being's first-ever slot is not a season change, so the gate can be measured in the first full sol
+	# (sol 2; sol 1 lacks the ticks of cells 0 to 5) without dodging the season trigger.
+	_mini_to_sol(w, 2)
 	_mini(w, 40)
 	w.minds.outbox.clear()
 	_mini(w, 440)
@@ -988,10 +999,15 @@ func test_t33a_the_worth_gate(t) -> void:
 	for b in w.beings:
 		if int(b.mind_slot_n) == 0:
 			continue
-		var sampled: bool = (int(b.id) + 5) % sample_every == 0
+		var sampled: bool = (int(b.id) + sol_m) % sample_every == 0
 		if asked.has(int(b.id)) != sampled:
 			sample_ok = false
-	t.check(sample_ok, "in sol 5 exactly the beings with (id + sol) mod %d == 0 were asked, no other calm even being" % sample_every)
+	t.check(sample_ok, "in sol %d exactly the beings with (id + sol) mod %d == 0 were asked, no other calm even being" % [sol_m, sample_every])
+	var seen_ok := true
+	for b in w.beings:
+		if int(b.mind_slot_n) > 0 and not w.minds.season_seen.has(int(b.id)):
+			seen_ok = false
+	t.check(seen_ok, "every being that had a slot has a season_seen record (the first slot only records the season)")
 	t.check(not asked.is_empty(), "at least one calm sample was asked in the sol")
 	# A moment is a request.
 	var c2 := _cast("llm")
@@ -1001,6 +1017,18 @@ func test_t33a_the_worth_gate(t) -> void:
 	c2.w.minds.outbox.clear()
 	_mini_ticks(c2.w, 1)
 	t.check(c2.w.minds.outbox.any(func(r): return int(r.id) == int(c2.s.id)), "a grief moment is a request")
+	# Young beings (toddler, child, teen) get slots but are never put in a request, even with a grief moment (5.3, 5.6).
+	var c4 := _cast("llm")
+	var ykids: Array = []
+	for stage in ["toddler", "child", "teen"]:
+		ykids.append(_young(c4.w, HAB, false, stage))
+	_mini_to_sol(c4.w, 3)
+	_until_next_tick(c4.w, func(sol, cell): return cell < 24)
+	for k in ykids:
+		_why(k, "grief", c4.w.t, 9, "Gone-9")
+	c4.w.minds.outbox.clear()
+	_mini_ticks(c4.w, 1)
+	t.check(not c4.w.minds.outbox.any(func(r): return int(r.id) in ykids.map(func(k): return int(k.id))), "no young being is ever in a request")
 	# Asleep, children and mode rules produce no request.
 	var c3 := _cast("rules")
 	_mini_to_sol(c3.w, 3)
@@ -1227,7 +1255,7 @@ func test_t39_policy_flag_is_dormant(t) -> void:
 		return
 	t.eq(float(_md().rule.policy_gain), 0.0, "rule.policy_gain ships at 0.0")
 	var c := _cast("rules")
-	t.check("policy_calls" in c.w.minds, "the module exposes a policy call counter `policy_calls` (assumed name)")
+	t.check("policy_calls" in c.w.minds, "the module exposes a policy call counter `policy_calls` (spec 5.9)")
 	_mini_to_sol(c.w, 30)
 	if "policy_calls" in c.w.minds:
 		t.eq(int(c.w.minds.policy_calls), 0, "the policy function is never called at gain 0.0 (30 sols)")
@@ -1314,7 +1342,11 @@ func test_s2_t06_menu_roam_quiet_visit_new_and_overflow(t) -> void:
 
 
 func test_s2_t08_bias_roam_visit_new_quiet(t) -> void:
-	_skip(t, "test 8 slice-2 part: exact p_travel and weights for roam (+0.20, clamp at bias.travel_cap), visit_new, quiet; same-outcome draw parity for them")
+	_skip(t, "test 8 slice-2 part: exact p_travel and weights for roam (+0.20); the UPPER clamp at bias.travel_cap (revision 5: only reachable through roam, so asserted here: clamp(p_mood + roam_add, floor, travel_cap) with a large positive mood term), visit_new, quiet; same-outcome draw parity for them")
+
+
+func test_s2_t07_no_neighbour(t) -> void:
+	_skip(t, "test 7 slice-2 part: `no_neighbour` rejection for roam/quiet when the being has lost every neighbour (rejected whole, counter, nothing in the ledger)")
 
 
 func test_s2_t34_intent_roam_quiet_visit_new(t) -> void:

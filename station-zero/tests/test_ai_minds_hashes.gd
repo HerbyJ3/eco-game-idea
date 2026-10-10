@@ -1,5 +1,5 @@
 extends "res://tests/minds_lib.gd"
-## Task 6b, step 3 (tests first, red): the reference-hash tests. Spec docs/specs/ai-minds.md revision 4, section 14 tests 1, 2, 3
+## Task 6b, step 3 (tests first, red): the reference-hash tests. Spec docs/specs/ai-minds.md revision 5, section 14 tests 1, 2, 3
 ## and 31 (the `mn` hash column and the four proof scripts).
 ##
 ## HEAVY: tests 1 to 3 run five seeds at 300 sols, mode `off` and mode `rules`, twice each (20 runs of about 25 s; the runs are
@@ -10,8 +10,9 @@ extends "res://tests/minds_lib.gd"
 ## Mode is chosen through the balance parameter override `minds.mode.default` (data/minds.json `mode.default`), so the printed
 ## `overrides=[...]` header of every run is checked (CLAUDE.md section 4): a run whose override was refused (for example
 ## because data/minds.json does not exist yet) prints `PARAM ERROR` and the test fails on it.
-## The strip of `mn` then `md` is done HERE (a local function) so these tests do not depend on the proof-script edits, which
-## test 31 covers. The pinned values are read from tests/mood_hash_proof.gd EXPECTED_T5 (the table with `cn` last), not copied.
+## The strip of `mn` then `md` is done HERE (a local function) so tests 1 to 3 do not depend on the proof-script edits, which
+## test 31 covers (revision 5: all four proofs strip `mn` then `md` through the shared helper `strip_mn_md` in
+## tests/council_hash_proof.gd, and `mood_hash_proof.strip_md` delegates to it). The pinned values are read from tests/mood_hash_proof.gd EXPECTED_T5 (the table with `cn` last), not copied.
 
 var _runs := {}
 
@@ -138,6 +139,32 @@ func test_t31a_every_proof_strips_mn_then_md_then_its_own_chain(t) -> void:
 		t.eq(_hashes(proof, WITH_BOTH), plain, "%s: a table ending `age web cn md mn` gives the same hashes as the table without md and mn" % name)
 		t.eq(_hashes(proof, WITH_MD_ONLY), plain, "%s: a table without mn (ABSENT) still passes: md alone is stripped" % name)
 		t.check(_state_text(proof, WITH_MD_ONLY).contains("absent"), "%s: reports ABSENT for the missing mn" % name)
+
+
+func test_t31e_the_shared_strip_helper_and_the_delegation(t) -> void:
+	var council: GDScript = load("res://tests/council_hash_proof.gd")
+	var mood: GDScript = load("res://tests/mood_hash_proof.gd")
+	t.check(_has_static(council, "strip_mn_md"), "missing API: council_hash_proof.strip_mn_md(body) -> {body, mn, md}")
+	t.check(_has_static(mood, "strip_md"), "mood_hash_proof keeps the public name strip_md")
+	if not _has_static(council, "strip_mn_md") or not _has_static(mood, "strip_md"):
+		return
+	var plain: Array = WITHOUT.slice(2, 5)
+	var both: Array = WITH_BOTH.slice(2, 5)
+	var only_md: Array = WITH_MD_ONLY.slice(2, 5)
+	var r: Dictionary = council.strip_mn_md(both)
+	t.eq(r.body, plain, "strip_mn_md removes mn then md from a table ending `cn md mn`")
+	t.check(r.has("mn") and r.has("md"), "the result carries the states `mn` and `md`")
+	t.eq(council.strip_mn_md(only_md).body, plain, "a table without mn (ABSENT) still has md stripped")
+	t.check(JSON.stringify(council.strip_mn_md(only_md)).to_lower().contains("absent"), "the missing mn is reported ABSENT")
+	for fx in [MN_NOT_LAST, MD_MISPLACED]:
+		var body: Array = (fx as Array).slice(2, 5)
+		t.check(JSON.stringify(council.strip_mn_md(body)).to_lower().contains("misplaced"), "a misplaced column is reported MISPLACED")
+		t.check(council.strip_mn_md(body).body != plain, "a misplaced column is not silently stripped to the plain table")
+	# Delegation: strip_md gives the same body as the shared helper, so the two balance tests need no edit.
+	t.eq(mood.strip_md(both).body, plain, "mood_hash_proof.strip_md strips mn then md (delegates)")
+	t.eq(mood.strip_md(only_md).body, plain, "mood_hash_proof.strip_md on a table without mn still strips md")
+	var src := FileAccess.get_file_as_string("res://tests/mood_hash_proof.gd")
+	t.check(src.contains("strip_mn_md"), "mood_hash_proof.gd calls the shared helper strip_mn_md")
 
 
 func test_t31b_misplaced_columns_are_refused(t) -> void:

@@ -1,13 +1,17 @@
 extends "res://tests/minds_lib.gd"
 ## Task 6b, step 3 (tests first, red): the rule voice, the text filter, the source scans and the panel doors. Spec
-## docs/specs/ai-minds.md revision 4, section 14 tests 17 (rule voice coverage), 18 (filter table), 19 (source scan of sim/),
+## docs/specs/ai-minds.md revision 5, section 14 tests 17 (rule voice coverage), 18 (filter table), 19 (source scan of sim/),
 ## 20 (repository scan), 22 (BeingPanel with minds on and off, view source scan).
 ##
-## The filter is the driver's (`res://minds/filter.gd`); API ASSUMED: `Filter.check(text: String, allowed_names: Array) ->
-## Dictionary` with a bool `ok` (a bare bool is accepted too), static; it reads the limits from data/minds.json itself.
+## The filter is the driver's (`res://minds/filter.gd`); spec 5.9: static `Filter.check(text: String, allowed_names: Array) ->
+## Dictionary` with a bool `ok` and, when not ok, a non-empty String `reason`; it reads its limits from data/minds.json and its
+## word lists from data/minds_text.json itself. A bare bool is no longer accepted.
 
 const SITUATIONS := ["grief", "lapse", "friend", "close", "birth_parent", "season_turn", "hard", "pledge", "heavy_other", "low",
-		"light", "bright", "with_friend", "alone_even", "day_even", "night_even"]
+		"light", "bright", "with_friend", "alone_even", "day_even", "night_even", "even_spring", "even_summer", "even_autumn",
+		"even_winter"]
+## Revision 5 (5.7): the four seasonal even situations, one per entry of calendar.json `seasons`, in that order.
+const SEASONAL := ["even_spring", "even_summer", "even_autumn", "even_winter"]
 const NAMED := ["grief", "lapse", "friend", "close", "with_friend", "heavy_other"]
 const ALLOWED_PLACEHOLDERS := ["self", "other", "place", "season"]
 const CHART_TERMS := ["deimos", "phobos", "chart", "horoscope", "zodiac", "birth sign"]
@@ -24,6 +28,8 @@ func _voice_api(t) -> bool:
 	var sit: Variant = _mt().get("rule", {}).get("situations", null)
 	if not (sit is Dictionary):
 		missing.append("minds_text.json rule.situations")
+	if not (_mt().get("filter", {}).get("template_forbidden_words", null) is Array):
+		missing.append("minds_text.json filter.template_forbidden_words")
 	if FileAccess.file_exists("res://sim/minds_voice.gd") and not _has_static(load("res://sim/minds_voice.gd"), "line"):
 		missing.append("MindsVoice.line()")
 	t.check(missing.is_empty(), "missing API: " + ", ".join(PackedStringArray(missing)))
@@ -75,12 +81,10 @@ func test_t17a_every_situation_has_enough_templates(t) -> void:
 		t.check((sit[name] as Array).size() >= need, "`%s` has at least %d templates (%d)" % [name, need, (sit[name] as Array).size()])
 	if sit.has("season_turn"):
 		t.eq((sit.season_turn as Array).size(), 4, "season_turn has one line per season (4)")
-	# AMBIGUITY: the four seasonal `even` lines have no situation name in the spec; counted as at least four lines outside the 16.
-	var extra := 0
-	for name in sit:
-		if not (name in SITUATIONS):
-			extra += (sit[name] as Array).size()
-	t.check(extra >= 4, "four or more seasonal even lines exist outside the 16 named situations (%d)" % extra)
+	# Revision 5 decision 6: the four seasonal situations have fixed names, one per entry of calendar.json `seasons`.
+	t.eq(SimData.calendar().seasons.size(), SEASONAL.size(), "calendar.json has four seasons, one even_<season> situation each")
+	for name in SEASONAL:
+		t.check(sit.has(name) and (sit[name] as Array).size() >= vmin, "`%s` exists with at least rule.variants_min (%d) lines" % [name, vmin])
 
 
 func test_t17b_template_content_rules_on_the_raw_text(t) -> void:
@@ -120,8 +124,10 @@ func test_t17b_template_content_rules_on_the_raw_text(t) -> void:
 				t.check(not low.contains(s), "%s: no sign name `%s`" % [tag, s])
 			for term in CHART_TERMS:
 				t.check(not low.contains(term), "%s: no chart term `%s`" % [tag, term])
-			t.check(not low.contains("mood"), "%s: not the word mood" % tag)
 			var ws := _words(low)
+			# Revision 5 decision 7: whole-word, case-insensitive loop over the data list (replaces the vague trait-word rule).
+			for fw in _mt().filter.template_forbidden_words:
+				t.check(not (str(fw).to_lower() in ws), "%s: not the forbidden word `%s`" % [tag, fw])
 			for term in PLAYER_TERMS:
 				if " " in term:
 					t.check(not low.contains(term), "%s: no player term `%s`" % [tag, term])
@@ -200,11 +206,17 @@ func _filter_script() -> Variant:
 	return _script("res://minds/filter.gd")
 
 
-func _ok(f: Variant, text: String, allowed: Array) -> bool:
+## Filter.check returns {ok: bool, reason: String when not ok} (5.9). Returns null for a result that breaks that shape.
+func _res(f: Variant, text: String, allowed: Array) -> Variant:
 	var r: Variant = f.check(text, allowed)
-	if r is Dictionary:
-		return bool(r.get("ok", false))
-	return bool(r)
+	if not (r is Dictionary) or not (r.get("ok", null) is bool):
+		return null
+	return r
+
+
+func _ok(f: Variant, text: String, allowed: Array) -> bool:
+	var r: Variant = _res(f, text, allowed)
+	return r != null and bool(r.ok)
 
 
 func test_t18_filter_table(t) -> void:
@@ -261,7 +273,13 @@ func test_t18_filter_table(t) -> void:
 	]
 	t.check(cases.size() >= 30, "at least 30 cases (%d)" % cases.size())
 	for c in cases:
-		t.eq(_ok(f, str(c[0]), c[1]), bool(c[2]), "filter: %s" % str(c[3]))
+		var r: Variant = _res(f, str(c[0]), c[1])
+		t.check(r != null, "filter returns a Dictionary with a bool ok: %s" % str(c[3]))
+		if r == null:
+			continue
+		t.eq(bool(r.ok), bool(c[2]), "filter: %s" % str(c[3]))
+		if not bool(c[2]):
+			t.check(r.get("reason", null) is String and str(r.reason) != "", "filter: a rejection carries a reason (%s)" % str(c[3]))
 
 
 # ---------------------------------------------------------------- 19. source scan of sim/

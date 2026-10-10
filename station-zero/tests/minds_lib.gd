@@ -1,6 +1,6 @@
 extends RefCounted
-## Task 6b, step 3 (tests first, red): shared support for the AI minds test files. Spec: docs/specs/ai-minds.md revision 4
-## (APPROVED). It is not a test (no test_ prefix); the test files `extends "res://tests/minds_lib.gd"`.
+## Task 6b, step 3 (tests first, red): shared support for the AI minds test files. Spec: docs/specs/ai-minds.md revision 5
+## (section 5.9 is the API surface these tests are written against). It is not a test (no test_ prefix); the test files `extends "res://tests/minds_lib.gd"`.
 ##
 ## Method (same as tests/test_moods.gd): nothing here names `Minds`, `MindsVoice`, `world.minds` ... as a static type. Worlds,
 ## beings and the module are untyped Variants and scripts are reached with load(), so on a tree without the implementation
@@ -26,7 +26,7 @@ extends RefCounted
 ##                                                         slot_dropped_carry, calm_skipped_event, requests_built, applied_model,
 ##                                                         applied_rule, bias_applied {stay, roam, visit, visit_new, quiet},
 ##                                                         bias_skipped_asleep, says_model, says_rule, ledger_len, slot_no_answer,
-##                                                         rejected {bad_key, not_in_menu, stale_target, no_neighbour, dead, child},
+##                                                         rejected {bad_key, not_in_menu, stale_target, dead; no_neighbour is slice 2; no `child` reason since revision 5},
 ##                                                         apply_dropped_cap, say_rejected)
 ##   SimWorld.new(seed, {"minds_replay": Array of ledger entry dictionaries})   replay mode (mode llm, inbox preloaded)
 ##   SimData.minds() -> data/minds.json                    (tests read the file with SimData.load_json("minds.json"))
@@ -129,7 +129,7 @@ func _api(t) -> bool:
 			if not w.minds.has_method(m):
 				missing.append("world.minds.%s()" % m)
 		for f in ["cfg", "seen_ticks", "last_cell_key", "pending_open", "due", "outbox", "inbox", "ledger", "says", "last_visit_t",
-				"last_event_t", "seen_why_t", "applied_sol", "applied_this_sol"]:
+				"last_event_t", "seen_why_t", "season_seen", "applied_sol", "applied_this_sol", "policy_calls"]:
 			if not (f in w.minds):
 				missing.append("world.minds.%s" % f)
 	else:
@@ -191,10 +191,16 @@ func _being(w, bid: int, nm: String = "") -> Variant:
 	return b
 
 
-## A child (3 to 12 years) or a baby (under a year) at the world's time.
-func _young(w, bid: int, baby: bool = false) -> Variant:
+## A young being at the world's time. `stage`: "baby" (6 months), "toddler" (2 years), "child" (5 years, the default), "teen"
+## (14 years). The `baby` flag is kept for the older callers. The ages sit inside the stage bounds of data/lifecycle.json
+## (toddler 1, child 3, teen 13, adult 18 years); callers assert the stage with `w.lifecycle.stage(b, w.t)`.
+const _YOUNG_MONTHS := {"baby": 6, "toddler": 24, "child": 60, "teen": 168}
+
+
+func _young(w, bid: int, baby: bool = false, stage: String = "child") -> Variant:
 	var b = _being(w, bid)
-	b.born_t = w.lifecycle.add_months(w.t, -6 if baby else -5 * 12)
+	var st := "baby" if baby else stage
+	b.born_t = w.lifecycle.add_months(w.t, -int(_YOUNG_MONTHS[st]))
 	return b
 
 

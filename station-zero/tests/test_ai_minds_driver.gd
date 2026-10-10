@@ -1,5 +1,5 @@
 extends "res://tests/minds_lib.gd"
-## Task 6b, step 3 (tests first, red): the driver side, headless, with mocks only. Spec docs/specs/ai-minds.md revision 4,
+## Task 6b, step 3 (tests first, red): the driver side, headless, with mocks only. Spec docs/specs/ai-minds.md revision 5,
 ## section 14 tests 23 to 29 (slice 1 cases; the slice 2 budget cases of test 23 are skipped at the end). No network: the only
 ## provider is tests/mock_provider.gd and `Driver` is handed it. Everything under minds/ is OUTSIDE sim/.
 ##
