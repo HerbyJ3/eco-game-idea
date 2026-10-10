@@ -11,7 +11,10 @@ extends "res://tests/minds_lib.gd"
 ## Equality is judged on `_table(w)`: a digest of every being's room, state, energy and wait, the colony stocks and the death
 ## counters (the headless stand-in for the printed balance table; tests 1 to 3 use the real table).
 
-const STEPS := 1480  # three sols of 0.05 h steps
+## Three game sols in fixed steps, derived from data/calendar.json (sol_hours) and data/sim.json (fixed_step_hours): 1480 at the
+## shipped values. A function, not a constant, because the value comes from data.
+func _steps() -> int:
+	return _sol_steps(3.0)
 
 
 func _colony(mode: String, seed_in: int = 11, extra: Dictionary = {}) -> Variant:
@@ -95,10 +98,10 @@ func _parity(w) -> Dictionary:
 
 func _live_and_replay(seed_in: int = 11, opts: Dictionary = {}) -> Dictionary:
 	var live = _colony("llm", seed_in)
-	_run(live, STEPS, _mock(), opts)
+	_run(live, _steps(), _mock(), opts)
 	var ledger: Array = live.minds.ledger.duplicate(true)
 	var rep = _colony("llm", seed_in, {"minds_replay": ledger})
-	_run(rep, STEPS)
+	_run(rep, _steps())
 	return {"live": live, "rep": rep, "ledger": ledger}
 
 
@@ -122,7 +125,7 @@ func test_t12_replay_twice_and_live_then_replay_are_identical(t) -> void:
 		return
 	var r := _live_and_replay()
 	var rep2 = _colony("llm", 11, {"minds_replay": r.ledger.duplicate(true)})
-	_run(rep2, STEPS)
+	_run(rep2, _steps())
 	var a: String = _table(r.live)
 	t.eq(_table(r.rep), a, "live == replay 1")
 	t.eq(_table(rep2), a, "live == replay 2")
@@ -136,11 +139,13 @@ func test_t12_replay_twice_and_live_then_replay_are_identical(t) -> void:
 func test_t13_one_changed_choice_changes_the_table(t) -> void:
 	if not _api(t):
 		return
-	# A being that never travels under `stay` (multiplier 0.0, a 10,000 h expiry, moods off so the floor is 0.0) and travels
-	# freely (restless 1.0, chance 0.4 a decision) under `carry_on`: the effect of the one early choice is certain.
+	# One early ledger choice (`stay` against `carry_on`) on a being that travels freely otherwise (restless 1.0, chance 0.4 a
+	# decision) under a very small stay multiplier and a long expiry. Spec 14 test 13 (revision 6, 5.5): the floor is NOT zero
+	# (world.mood_travel_floor is 0.02 even with moods off), so the test does NOT claim the stay being never travels. It
+	# asserts only that the two tables differ and that the bias was applied (counters and the ledger line).
 	_cfg_edit("minds.json", ["bias", "stay_travel_mult"], 0.0)
 	_cfg_edit("minds.json", ["bias", "ttl_h"], 10000.0)
-	var tables := []
+	var runs := {}
 	for choice in ["stay", "carry_on"]:
 		var entry := {"v": 1, "id": 1, "k": 1, "apply_step": 0, "choice": choice, "say": "", "model": "mock"}
 		var w = _world("llm", 5, false, {"minds_replay": [entry]})
@@ -148,12 +153,19 @@ func test_t13_one_changed_choice_changes_the_table(t) -> void:
 		b.persona.traits["restless"] = 1.0
 		b.energy = 100.0
 		_being(w, WORK)
-		for i in STEPS:
+		for i in _steps():
 			w.step()
-		tables.append([_table(w), b.building_id, b.mind_bias != null])
-	t.check(tables[0][2], "with the stay entry the bias was applied")
-	t.eq(tables[0][1], HAB, "the stay being never left its room")
-	t.check(tables[0][0] != tables[1][0], "changing the one early ledger choice changes the table hash")
+		runs[choice] = {"table": _table(w), "bias": b.mind_bias, "applied": int(w.stats.minds.applied_model), "stay": int(w.stats.minds.bias_applied.get("stay", 0)),
+				"ledger": w.minds.ledger.duplicate(true)}
+	var st: Dictionary = runs["stay"]
+	var co: Dictionary = runs["carry_on"]
+	t.check(st.bias != null and str(st.bias.kind) == "stay", "with the stay entry the being holds a stay bias")
+	t.check(int(st.applied) >= 1, "stats.minds.applied_model counts the applied decision (%d)" % int(st.applied))
+	t.check(int(st.stay) >= 1, "stats.minds.bias_applied.stay counts it (%d)" % int(st.stay))
+	t.check(not (st.ledger as Array).is_empty() and str(st.ledger[0].choice) == "stay", "and the ledger holds the stay line")
+	t.eq(int(co.applied), 0, "with the carry_on entry nothing behaviour-changing is applied")
+	t.check(co.bias == null, "and no bias is held")
+	t.check(st.table != co.table, "changing the one early ledger choice changes the table hash")
 	_end(t)
 
 
@@ -169,7 +181,7 @@ func test_t14_changing_every_say_changes_nothing_behavioural(t) -> void:
 		for e in altered:
 			e["say"] = variant
 		var w = _colony("llm", 11, {"minds_replay": altered})
-		_run(w, STEPS)
+		_run(w, _steps())
 		t.eq(_table(w), _table(r.rep), "say %s: the table hash is unchanged" % JSON.stringify(variant))
 		t.eq(w.minds.ledger_hash(), r.rep.minds.ledger_hash(), "say %s: the ledger_hash is unchanged" % JSON.stringify(variant))
 	_end(t)
@@ -237,13 +249,13 @@ func test_t16_adversarial_providers(t) -> void:
 	if not _api(t):
 		return
 	var rules = _colony("rules")
-	_run(rules, STEPS)
+	_run(rules, _steps())
 	var base: String = _table(rules)
 	for adv in [["always_invalid", true], ["never", true], ["late", true], ["always_stay", false], ["always_first_visit", false]]:
 		var w = _colony("llm")
 		var m = _mock(str(adv[0]))
-		_run(w, STEPS, m)
-		t.check(w.step_index == STEPS, "%s: the run completed without an exception" % adv[0])
+		_run(w, _steps(), m)
+		t.check(w.step_index == _steps(), "%s: the run completed without an exception" % adv[0])
 		t.check(m.calls > 0 or str(adv[0]) == "never", "%s: the provider was asked" % adv[0])
 		if bool(adv[1]):
 			t.eq(_table(w), base, "%s: equals the rules run exactly" % adv[0])

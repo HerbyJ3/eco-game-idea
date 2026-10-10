@@ -27,8 +27,8 @@ var fixed_say := ""
 var fail_rate := 0.15
 var latency_lo_s := 0.3
 var latency_hi_s := 3.0
-## Real seconds one sim step takes at the speed under test (data sim.json real_seconds_per_hour_at_1x / 20 steps an hour at 1x).
-var seconds_per_step := 0.05
+## Real seconds one sim step takes at 1x, derived in _init from data/sim.json (fixed_step_hours x real_seconds_per_hour_at_1x).
+var seconds_per_step := 0.0
 var calls := 0
 var failures := 0
 var remarks: Array[String] = ["Feeling steady today.", "A quiet sort of day.", "Tired but glad of it.", "Something is on my mind.",
@@ -36,6 +36,7 @@ var remarks: Array[String] = ["Feeling steady today.", "A quiet sort of day.", "
 
 
 func _init(seed_in: int = FALLBACK_SEED) -> void:
+	seconds_per_step = float(SimData.sim().fixed_step_hours) * float(SimData.sim().real_seconds_per_hour_at_1x)
 	rng.seed = seed_in if seed_in != FALLBACK_SEED else mock_seed()
 
 

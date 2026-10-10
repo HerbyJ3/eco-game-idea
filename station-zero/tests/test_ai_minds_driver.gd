@@ -1,5 +1,5 @@
 extends "res://tests/minds_lib.gd"
-## Task 6b, step 3 (tests first, red): the driver side, headless, with mocks only. Spec docs/specs/ai-minds.md revision 5,
+## Task 6b, step 3 (tests first, red): the driver side, headless, with mocks only. Spec docs/specs/ai-minds.md revision 6,
 ## section 14 tests 23 to 29 (slice 1 cases; the slice 2 budget cases of test 23 are skipped at the end). No network: the only
 ## provider is tests/mock_provider.gd and `Driver` is handed it. Everything under minds/ is OUTSIDE sim/.
 ##
@@ -7,8 +7,9 @@ extends "res://tests/minds_lib.gd"
 ## author). All scripts are reached with load(); static functions are called on the script.
 ##   minds/budget.gd   Budget.new(budget_cfg: Dictionary)
 ##       check(req, ctx) -> String          "" when a call may go, else the refusal reason: prices, calls_per_sol, in_flight,
-##                                          tokens_day. req {est_in: int, beings: int}; ctx {utc_day: int, sol: int, in_flight: int}
-##       reserve(req, ctx) -> int           charges the worst case (est_in + max_out_tokens_per_being x beings), returns a handle
+##                                          tokens_day. req {est_in: int, beings: int, max_out: int} (revision 6: the driver passes
+##                                          prompt.max_out_tokens_per_being as max_out); ctx {utc_day: int, sol: int, in_flight: int}
+##       reserve(req, ctx) -> int           charges the worst case exactly: est_in + beings x max_out, returns a handle
 ##       settle(handle, in_tokens, out_tokens)    reconciles the reservation to actuals
 ##       charge_tokens(utc_day, n)          test seam: books n tokens on a day
 ##       tokens_used(utc_day) -> int, allowance(utc_day) -> int    (the taper of section 8)
@@ -26,9 +27,6 @@ extends "res://tests/minds_lib.gd"
 ##       static resolve_mode(requested: String, key_present: bool, prices_set: bool, adapter_present: bool) -> String
 ##       budget: Budget, breaker: Breaker, skipped: Dictionary reason -> count
 ##   Request records in world.minds.outbox: {id, k, deadline_step, facts, menu (an Array of option KEYS), priority}.
-
-const GAME_HOURS_PER_SEC_AT_1X := 1.0
-
 
 func _drv_api(t) -> bool:
 	var missing: Array[String] = []
@@ -58,37 +56,69 @@ func test_t23a_prices_unset_refuses_everything(t) -> void:
 		return
 	var b = load("res://minds/budget.gd").new(_budget_cfg(false))
 	t.eq(float(_md().budget.price_in_per_mtok), 0.0, "the shipped prices are 0.0 (unset)")
-	t.eq(b.check({"est_in": 100, "beings": 1}, {"utc_day": 1, "sol": 1, "in_flight": 0}), "prices", "unset prices refuse every call (fail closed)")
+	t.eq(b.check(_req(100, 1), {"utc_day": 1, "sol": 1, "in_flight": 0}), "prices", "unset prices refuse every call (fail closed)")
 	var half := _budget_cfg(true)
 	half["price_out_per_mtok"] = 0.0
 	var b2 = load("res://minds/budget.gd").new(half)
-	t.eq(b2.check({"est_in": 100, "beings": 1}, {"utc_day": 1, "sol": 1, "in_flight": 0}), "prices", "either price at 0 refuses")
+	t.eq(b2.check(_req(100, 1), {"utc_day": 1, "sol": 1, "in_flight": 0}), "prices", "either price at 0 refuses")
 	var ok = load("res://minds/budget.gd").new(_budget_cfg(true))
-	t.eq(ok.check({"est_in": 100, "beings": 1}, {"utc_day": 1, "sol": 1, "in_flight": 0}), "", "with both prices set a small call may go")
+	t.eq(ok.check(_req(100, 1), {"utc_day": 1, "sol": 1, "in_flight": 0}), "", "with both prices set a small call may go")
+
+
+## A budget request as the driver passes it (spec 5.9, revision 6): {est_in, beings, max_out}; max_out is
+## prompt.max_out_tokens_per_being, a key of the PROMPT section that the driver adds to every check and reserve.
+func _req(est_in: int, beings: int) -> Dictionary:
+	return {"est_in": est_in, "beings": beings, "max_out": int(_md().prompt.max_out_tokens_per_being)}
 
 
 func test_t23b_day_tokens_reserve_and_worst_case_reconcile(t) -> void:
 	if not _drv_api(t):
 		return
 	var cfg := _budget_cfg()
-	var b = load("res://minds/budget.gd").new(cfg)
+	var Budget = load("res://minds/budget.gd")
 	var ctx := {"utc_day": 100, "sol": 1, "in_flight": 0}
-	var req := {"est_in": 1070, "beings": 4}
-	var worst: int = 1070 + int(cfg.get("max_out_per_being", _md().prompt.max_out_tokens_per_being)) * 4
+	var req := _req(1070, 4)
+	# Worst case, exactly: est_in + beings x max_out (spec 5.9: 1070 + 4 x 70 = 1350 at the shipped max_out).
+	var worst: int = int(req.est_in) + int(req.beings) * int(req.max_out)
+	t.eq(int(req.max_out), 70, "prompt.max_out_tokens_per_being ships at 70")
+	t.eq(worst, 1350, "the worst case of the spec example is 1350")
+	var b = Budget.new(cfg)
 	var h: int = b.reserve(req, ctx)
-	t.eq(b.tokens_used(100), worst, "the reservation charges the worst case (input estimate + max_out x beings)")
+	t.eq(b.tokens_used(100), worst, "the reservation charges exactly est_in + beings x max_out")
 	b.settle(h, 1000, 150)
 	t.eq(b.tokens_used(100), 1150, "and is reconciled to the actual tokens on response")
-	# reserve_frac: calls stop when 90% of the cap is spent.
-	var cap: int = int(cfg.tokens_day)
-	var limit: float = float(cap) * (1.0 - float(cfg.reserve_frac))
-	b.charge_tokens(100, int(limit) - b.tokens_used(100) - 10)
-	t.eq(b.check({"est_in": 5, "beings": 1}, ctx), "", "just under the reserve line a tiny call may still go")
-	b.charge_tokens(100, 400)
-	t.eq(b.check(req, ctx), "tokens_day", "past the reserve line (90% of tokens_day) the call is refused")
+	# The refusal rule: tokens_day when tokens_used + worst > floor(tokens_day x (1 - reserve_frac)); 270000 at shipped values.
+	var line: int = int(floor(float(cfg.tokens_day) * (1.0 - float(cfg.reserve_frac))))
+	t.eq(line, 270000, "the reserve line is 270000 at the shipped values")
+	# Exactly on the line goes, one token more is refused (fresh meters; the sol differs from the reservations above).
+	var on_line = Budget.new(cfg)
+	on_line.charge_tokens(100, line - worst)
+	t.eq(on_line.tokens_used(100), line - worst, "precondition: used + worst == the line")
+	t.eq(on_line.check(req, {"utc_day": 100, "sol": 2, "in_flight": 0}), "", "used + worst == 270000: the call goes")
+	var over = Budget.new(cfg)
+	over.charge_tokens(100, line - worst + 1)
+	t.eq(over.check(req, {"utc_day": 100, "sol": 2, "in_flight": 0}), "tokens_day", "used + worst == 270001: refused with tokens_day")
+	var under = Budget.new(cfg)
+	under.charge_tokens(100, line - worst - 1)
+	t.eq(under.check(req, {"utc_day": 100, "sol": 2, "in_flight": 0}), "", "one token below the line also goes")
+	# Open reservations count as used: one reservation outstanding takes `worst` of the room.
+	var held = Budget.new(cfg)
+	held.reserve(req, ctx)
+	held.charge_tokens(100, line - 2 * worst)  # used = reservation (worst) + this = line - worst
+	t.eq(held.tokens_used(100), line - worst, "precondition: an open reservation is part of tokens_used")
+	t.eq(held.check(req, {"utc_day": 100, "sol": 2, "in_flight": 0}), "", "reservation counted: on the line still goes")
+	held.charge_tokens(100, 1)
+	t.eq(held.check(req, {"utc_day": 100, "sol": 2, "in_flight": 0}), "tokens_day", "reservation counted: one token more is refused")
+	# The worst case grows with beings and max_out (not a fixed number): a bigger batch is refused where a smaller one goes.
+	var edge = Budget.new(cfg)
+	edge.charge_tokens(100, line - worst)
+	var small := _req(1070, 3)
+	t.eq(edge.check(small, {"utc_day": 100, "sol": 2, "in_flight": 0}), "", "a smaller batch (3 beings) fits where the 4-being worst case just fits")
+	var big := _req(1070, 5)
+	t.eq(edge.check(big, {"utc_day": 100, "sol": 2, "in_flight": 0}), "tokens_day", "and a bigger one (5 beings) does not")
 	# UTC day rollover.
-	t.eq(b.tokens_used(101), 0, "a new UTC day starts at zero")
-	t.eq(b.check(req, {"utc_day": 101, "sol": 1, "in_flight": 0}), "", "and calls may go again")
+	t.eq(over.tokens_used(101), 0, "a new UTC day starts at zero")
+	t.eq(over.check(req, {"utc_day": 101, "sol": 2, "in_flight": 0}), "", "and calls may go again")
 
 
 func test_t23c_calls_per_sol_in_flight_and_taper(t) -> void:
@@ -96,7 +126,7 @@ func test_t23c_calls_per_sol_in_flight_and_taper(t) -> void:
 		return
 	var cfg := _budget_cfg()
 	var b = load("res://minds/budget.gd").new(cfg)
-	var req := {"est_in": 100, "beings": 1}
+	var req := _req(100, 1)
 	var calls_max: int = int(cfg.calls_per_sol_max)
 	for i in calls_max:
 		t.eq(b.check(req, {"utc_day": 5, "sol": 7, "in_flight": 0}), "", "call %d in the sol may go" % (i + 1))
@@ -207,7 +237,7 @@ func _driven(kinds: Array, opts: Dictionary = {}) -> Dictionary:
 		_why(b, "grief", w.t, 99, "Gone-99")
 	for i in 700:
 		_mini(w)
-		drv.pump(w, float(w.step_index) * 0.05, 1.0)
+		drv.pump(w, float(w.step_index) * _real_s_per_step(1.0), 1.0)
 	return {"w": w, "mock": mock, "drv": drv, "c": c}
 
 
@@ -256,10 +286,35 @@ func test_t25_failure_matrix_ends_in_the_rule_answer(t) -> void:
 		t.check(not line.contains("Bad 7"), "filtered remark: the digit remark is never displayed (%s)" % line)
 	t.check(int(r2.w.stats.minds.say_rejected) > 0 or not any_intent_only, "filtered remark: the sim counted a dropped remark")
 	_restore()
-	# A partial batch: the unanswered beings keep the rule answer, nothing throws.
+	# A partial batch: the provider answers only the first slot of a batch. The unanswered beings keep the rule answer (their
+	# view strings equal the rules run), the world keeps running.
 	var r3 := _driven([], {"partial": true})
 	t.check(r3.mock.calls > 0, "partial batch: the provider was asked")
-	t.check(int(r3.w.stats.minds.slots_opened.event) > 0, "partial batch: slots opened and the world kept running")
+	var multi := 0
+	var sent_slots := {}
+	for body in r3.mock.sent:
+		var slots: Array = (body as Dictionary).get("slots", [])
+		multi += 1 if slots.size() >= 2 else 0
+		for sl in slots:
+			sent_slots[str(sl.slot)] = true
+	t.check(multi >= 1, "partial batch: at least one call carried two or more slots, so a partial answer is possible (%d such calls)" % multi)
+	var answered := {}
+	for e in r3.w.minds.ledger:
+		answered[int(e.id)] = true
+	var unanswered := 0
+	var base_by_id := {}
+	for v in base:
+		base_by_id[int(v[0])] = v
+	for v in _voices(r3.w):
+		var id := int(v[0])
+		if answered.has(id):
+			continue
+		unanswered += 1
+		t.eq(v, base_by_id.get(id, []), "partial batch: being %d has no applied answer and shows exactly the rules-run strings" % id)
+		t.eq(str(r3.w.minds.says.get(id, {}).get("source", "")), "rule", "partial batch: being %d line is the rule answer" % id)
+	t.check(unanswered >= 1, "partial batch: at least one being was left unanswered (%d)" % unanswered)
+	t.check(answered.size() < sent_slots.size(), "partial batch: fewer beings were answered than were asked (%d of %d)" % [answered.size(), sent_slots.size()])
+	t.check(int(r3.w.stats.minds.slots_opened.event) > 0, "partial batch: event slots opened and the world kept running")
 	_end(t)
 
 
@@ -275,6 +330,20 @@ func _facts_batch(n: int) -> Array:
 			out.append({"id": int(b.id), "k": 1, "facts": f, "menu": w.minds.menu_for(w, b), "priority": [2, -1.0, 0]})
 		seed_i += 1
 	return out.slice(0, n)
+
+
+## Every chart term the built prompt must never hold (spec 5.7, 6.3, test 26): the 12 sign names, the data list
+## filter.chart_terms, "moon" and "birth sign" (case-insensitive substrings; the scan is deliberately stricter than whole words).
+func _chart_terms() -> Array[String]:
+	var banned: Array[String] = ["deimos", "moon", "phobos", "chart", "horoscope", "zodiac", "birth sign"]
+	for s in SimData.signs():
+		banned.append(str(s.name).to_lower())
+	var listed: Variant = _mt().get("filter", {}).get("chart_terms", [])
+	for w in listed:
+		var low := str(w).to_lower()
+		if not (low in banned):
+			banned.append(low)
+	return banned
 
 
 func test_t26_prompt_builder(t) -> void:
@@ -298,33 +367,47 @@ func test_t26_prompt_builder(t) -> void:
 	var rules_text: Variant = text.prompt.output_rules
 	for piece in _values_of(rules_text):
 		t.check(str(a.static_prefix).contains(str(piece)) or str(a.body).contains(str(piece)), "the output-rules text is present: %s" % str(piece).substr(0, 40))
-	# No chart term anywhere for 200 beings.
-	var banned: Array[String] = ["deimos", "moon", "phobos", "chart", "horoscope", "zodiac"]
-	for s in SimData.signs():
-		banned.append(str(s.name).to_lower())
+	# Slot strings are "<id>:<k>" (spec 5.9): the body names each requested slot that way, because the reply echoes it.
+	for r in batch1:
+		t.check(str(a.body).contains("%d:%d" % [int(r.id), int(r.k)]), "the body names the slot \"%d:%d\" (the id:k form)" % [int(r.id), int(r.k)])
+	# The provider interface lives in minds/provider.gd (5.9, revision 6).
+	t.check(FileAccess.file_exists("res://minds/provider.gd"), "the provider interface file is minds/provider.gd")
+	# No chart term anywhere: the authored text itself (system block, output rules, being block) and the whole built prompt
+	# (static prefix + body) for 200 beings. The system block was reworded in revision 6, so the banned list is kept whole.
+	var banned := _chart_terms()
+	var authored := ""
+	for key in ["system", "output_rules", "being"]:
+		authored += "\n".join(PackedStringArray(_values_of(text.prompt.get(key, "")))) + "\n"
+	var low_authored := authored.to_lower()
+	for word in banned:
+		t.check(not low_authored.contains(word), "prompt.system / output_rules / being hold no chart term (%s)" % word)
 	var all := _facts_batch(200)
 	t.check(all.size() >= 200, "200 beings were built (%d)" % all.size())
 	var i := 0
-	var leaked := 0
+	var leaked: Array[String] = []
 	while i < all.size():
 		var p: Dictionary = P.build(all.slice(i, i + 4), text, cfg)
 		var low := (str(p.static_prefix) + "\n" + str(p.body)).to_lower()
 		for word in banned:
 			if low.contains(word):
-				leaked += 1
+				leaked.append(word)
 		i += 4
-	t.eq(leaked, 0, "no chart term in any built prompt")
-	# Trimming: near goes first, then bonds, before any being is dropped.
+	t.check(leaked.is_empty(), "no chart term in any whole built prompt (static prefix included) for 200 beings; first: %s" % (leaked[0] if not leaked.is_empty() else ""))
+	# Trimming: near goes first, then bonds, before any being is dropped (names pinned in 5.9: "near", "bonds", "being").
 	var cfg3: Dictionary = cfg.duplicate(true)
 	cfg3.prompt.max_in_tokens = int(a.est_in) - 120
 	var tr: Dictionary = P.build(batch1, text, cfg3)
 	var order: Array = tr.trimmed
+	var rank := {"near": 0, "bonds": 1, "being": 2}
 	t.check(order.size() >= 1 and str(order[0]) == "near", "batch trimming drops near first")
-	if order.size() >= 2:
-		var ni: int = order.find("bonds")
-		t.check(ni == -1 or ni > order.find("near"), "then bonds")
-		var bi: int = order.find("being")
-		t.check(bi == -1 or bi > maxi(order.find("near"), order.find("bonds")), "and a being only after both fields")
+	var only_known := true
+	var in_order := true
+	for j in order.size():
+		only_known = only_known and rank.has(str(order[j]))
+		if j > 0 and rank.has(str(order[j])) and rank.has(str(order[j - 1])):
+			in_order = in_order and int(rank[str(order[j])]) >= int(rank[str(order[j - 1])])
+	t.check(only_known, "trimmed holds only the pinned names near, bonds, being")
+	t.check(in_order, "and in the order of the drops: near, then bonds, then being")
 	_end(t)
 
 
@@ -377,8 +460,8 @@ func test_t28_deadline_and_speed_skip(t) -> void:
 	t.check(_has_static(D, "skip_reason"), "missing API: Driver.skip_reason()")
 	if not _has_static(D, "skip_reason"):
 		return
-	var calm: int = int(round(float(_md().sim.think_h) / 0.05))
-	var event: int = int(round(float(_md().sim.think_event_h) / 0.05))
+	var calm: int = _steps_of(float(_md().sim.think_h))
+	var event: int = _steps_of(float(_md().sim.think_event_h))
 	t.eq(D.skip_reason(calm, 0, 1.0), "", "calm slot at 1x is sent (6.0 s window)")
 	t.eq(D.skip_reason(calm, 0, 2.0), "", "calm slot at 2x is sent (3.0 s window)")
 	t.check(D.skip_reason(calm, 0, 3.0) != "", "calm slot at 3x is skipped (2.0 s window)")
@@ -394,14 +477,22 @@ func test_t28_deadline_and_speed_skip(t) -> void:
 	var c := _cast("llm", 3)
 	var mock = load("res://tests/mock_provider.gd").new()
 	var drv = load("res://minds/driver.gd").new(mock, _md())
+	var fresh_meter := JSON.stringify(load("res://minds/budget.gd").new(_md().budget).save())
+	var speed := 6.0
+	t.check(speed > float(_md().driver.speed_gate_x), "the staged speed (%sx) is above driver.speed_gate_x" % str(speed))
 	_mini_to_sol(c.w, 3)
 	for b in c.w.beings:
 		_why(b, "grief", c.w.t, 99, "Gone-99")
 	for i in 400:
 		_mini(c.w)
-		drv.pump(c.w, float(c.w.step_index) * 0.05, 6.0)
+		drv.pump(c.w, float(c.w.step_index) * _real_s_per_step(speed), speed)
+	t.check(int(c.w.stats.minds.requests_built) > 0, "requests were built (%d), so there was something to skip" % int(c.w.stats.minds.requests_built))
 	t.eq(mock.calls, 0, "at 6x the provider is never called")
-	t.eq(drv.budget.tokens_used(0), 0, "and nothing is charged")
+	var skipped := 0
+	for k in drv.skipped:
+		skipped += int(drv.skipped[k])
+	t.check(skipped > 0, "and the driver counted the requests as skipped (%d)" % skipped)
+	t.eq(JSON.stringify(drv.budget.save()), fresh_meter, "and nothing is charged: the saved meter equals a fresh one")
 	_end(t)
 
 

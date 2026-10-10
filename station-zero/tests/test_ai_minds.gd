@@ -1,6 +1,6 @@
 extends "res://tests/minds_lib.gd"
-## Task 6b, step 3 (tests first, red): sim-side AI minds tests, SLICE 1. Spec: docs/specs/ai-minds.md revision 5 (revision 4 was APPROVED by
-## the code-reviewer), section 14 tests 4 to 10, 21 (data parity), 32 to 37, 39, 40 and the perf test 30. The rest live in:
+## Task 6b, step 3 (tests first, red): sim-side AI minds tests, SLICE 1. Spec: docs/specs/ai-minds.md revision 6 (revision 4 was APPROVED by
+## the code-reviewer; the revision 6 review fixes are in), section 14 tests 4 to 10, 21 (data parity), 32 to 37, 39, 40 and the perf test 30. The rest live in:
 ##   tests/test_ai_minds_hashes.gd   tests 1 to 3 (five 300-sol seeds, heavy) and 31 (hash columns and the four proof scripts)
 ##   tests/test_ai_minds_replay.gd   tests 11 to 16 and 38 (ledger, replay, adversarial providers)
 ##   tests/test_ai_minds_voice.gd    tests 17 to 20 and 22 (rule voice, filter, source scans, the panel doors)
@@ -206,7 +206,6 @@ func test_t04d_events_skip_the_calm_slot_and_the_skip_is_counted(t) -> void:
 	_mini_ticks(w, 1)
 	t.eq(int(_stat(w, "slots_opened").event), e1 + 1, "y's event slot opens")
 	t.eq(int(_stat(w, "calm_skipped_event")), s1, "no calm slot was due, so nothing is counted as skipped")
-	# Babies never, dead never.
 	_end(t)
 
 
@@ -218,14 +217,17 @@ func test_t04e_babies_and_the_dead_never_open_slots(t) -> void:
 	var baby = _young(w, HAB, true)
 	var dead = _being(w, HAB)
 	w._kill(dead, "other")
+	t.eq(str(w.lifecycle.stage(baby, w.t)), "baby", "the staged being is a baby")
 	_mini_to_sol(w, 4)
-	_mini(w, 500)
+	_mini(w, _sol_steps(1.0) + 40)  # one whole sol and a little: every adult's calm cell has come round
 	t.eq(int(baby.mind_slot_n), 0, "a baby opens no slot in a sol")
 	t.eq(int(dead.mind_slot_n), 0, "a dead being opens no slot")
-	var adult_slots := 0
-	for id in ids:
-		adult_slots += 1
-	t.check(int(_stat(w, "slots_opened").calm) > 0, "adults do open slots in the same run")
+	var without_slot := 0
+	for b in w.beings:
+		if int(b.id) in ids and int(b.mind_slot_n) == 0:
+			without_slot += 1
+	t.eq(without_slot, 0, "every one of the %d adults in the same run did open a slot" % ids.size())
+	t.check(int(_stat(w, "slots_opened").calm) >= ids.size(), "and stats.minds.slots_opened.calm counts at least one per adult")
 	_end(t)
 
 
@@ -297,7 +299,13 @@ func test_t06a_slice1_menu_order_and_contents(t) -> void:
 	t.check(not (c.x.id in vis), "a non-friend neighbour is not offered under `visit`")
 	t.check("stay" in m, "stay is offered to a being inside a building")
 	t.check(m.size() <= int(_md().menu.max), "at most menu.max entries")
-	t.eq(m.size(), (m as Array).duplicate().size(), "menu is a plain list")
+	var uniq := {}
+	var all_strings := true
+	for k in m:
+		uniq[str(k)] = true
+		all_strings = all_strings and k is String
+	t.eq(uniq.size(), m.size(), "no option key is listed twice")
+	t.check(all_strings, "the menu is a list of option-key Strings")
 	_end(t)
 
 
@@ -307,36 +315,93 @@ func test_t06b_visit_prefers_the_longest_unseen_then_the_highest_bond(t) -> void
 	var c := _cast("llm")
 	var w = c.w
 	var f4 = _being(w, COMMS, "Mio-31")
+	# Staged so that neither a lowest-id rule nor a highest-bond-first rule can produce the expected first entry:
+	# f2 (not the lowest id) is the longest unseen with the LOWEST bond; f4 has the highest bond and the highest id.
 	_friends(w, c.s.id, f4.id, 0.95)
 	w.relationships.debug_set_bond(c.s.id, c.f2.id, 0.5)
 	w.relationships.debug_set_bond(c.s.id, c.f1.id, 0.6)
-	w.minds.last_visit_t[c.s.id] = {c.f1.id: 5.0, c.f2.id: 50.0, f4.id: 60.0}
+	t.check(c.f1.id < c.f2.id and c.f2.id < f4.id, "precondition: ids rise f1 < f2 < f4")
+	w.minds.last_visit_t[c.s.id] = {c.f1.id: 50.0, c.f2.id: 5.0, f4.id: 60.0}
 	var m: Array = w.minds.menu_for(w, c.s)
-	t.eq(str(m[1]), "visit:%d" % c.f1.id, "the longest-unseen friend (smallest last_visit_t) is first")
+	t.eq(str(m[1]), "visit:%d" % c.f2.id, "the longest-unseen friend (smallest last_visit_t) is first, though it is neither the lowest id nor the highest bond")
 	t.eq(str(m[2]), "visit:%d" % f4.id, "the second is the highest-bond other friend")
 	t.eq(m.filter(func(k): return str(k).begins_with("visit:")).size(), int(_md().menu.visit_max), "menu.visit_max (2) holds with three candidates")
-	# Never visited counts as the oldest.
-	w.minds.last_visit_t[c.s.id] = {c.f1.id: 5.0, f4.id: 6.0}
+	# Never visited counts as the oldest: f2 has no record at all while f4 has the smallest recorded time.
+	w.minds.last_visit_t[c.s.id] = {c.f1.id: 50.0, f4.id: 6.0}
 	m = w.minds.menu_for(w, c.s)
-	t.eq(str(m[1]), "visit:%d" % c.f2.id, "a never-visited friend counts as the oldest")
+	t.eq(str(m[1]), "visit:%d" % c.f2.id, "a never-visited friend counts as the oldest (older than the smallest recorded time)")
+	t.eq(str(m[2]), "visit:%d" % f4.id, "and the highest-bond other friend follows")
 	_end(t)
+
+
+## The pure tie key of spec 5.3, written out independently of the code under test.
+func _tie_key(id: int, sol: int) -> int:
+	var s: Dictionary = _md().slot
+	return (id * int(s.cell_mult) + sol * int(s.cell_step)) % int(s.tie_mod)
+
+
+## The id with the smallest pure tie key (then the lowest id) among `ids`.
+func _tie_winner(ids: Array, sol: int) -> int:
+	var winner := int(ids[0])
+	for id in ids:
+		var ka := _tie_key(int(id), sol)
+		var kw := _tie_key(winner, sol)
+		if ka < kw or (ka == kw and int(id) < winner):
+			winner = int(id)
+	return winner
+
+
+## Stages a cast and enough extra friends (all with the same last_visit_t) that the shipped tie key disagrees with plain id order;
+## returns {c, ids (friend ids), winner (smallest key, then lowest id), lowest (lowest id)}.
+func _tie_cast() -> Dictionary:
+	var c := _cast("llm")
+	var w = c.w
+	var rooms := [WORK, GREEN, COMMS]
+	var ids: Array = [int(c.f1.id), int(c.f2.id)]
+	var sol := _sol(w)
+	var winner := _tie_winner(ids, sol)
+	var tries := 0
+	while winner == int(ids.min()) and tries < 14:
+		var extra = _being(w, rooms[tries % 3])
+		_friends(w, c.s.id, extra.id)
+		ids.append(int(extra.id))
+		winner = _tie_winner(ids, sol)
+		tries += 1
+	var lv := {}
+	for id in ids:
+		lv[int(id)] = 10.0
+	w.minds.last_visit_t[c.s.id] = lv
+	return {"c": c, "ids": ids, "winner": winner, "lowest": int(ids.min())}
 
 
 func test_t06c_ties_go_by_the_pure_key_then_the_lowest_id(t) -> void:
 	if not _api(t):
 		return
+	# Ascending: the smaller pure tie key goes first, then the lower id (spec 5.3, revision 5 decision 2). The staged ids are
+	# chosen (more friends are added until it holds) so that the key winner is NOT the lowest id: an id-order implementation fails.
+	var r := _tie_cast()
+	var w = r.c.w
+	t.check(int(r.winner) != int(r.lowest), "precondition: the lowest tie key is not the lowest id (winner %d, lowest id %d)" % [int(r.winner), int(r.lowest)])
+	var m: Array = w.minds.menu_for(w, r.c.s)
+	t.eq(str(m[1]), "visit:%d" % int(r.winner), "equal last_visit_t: the lowest pure tie key goes first, not the lowest id")
+	var n_friends: int = (r.ids as Array).size()
+	var winner_shipped: int = int(r.winner)
+	# The final tiebreak: with slot.tie_mod 1 every key is 0, so the order falls to the lowest id.
+	_cfg_edit("minds.json", ["slot", "tie_mod"], 1)
 	var c := _cast("llm")
-	var w = c.w
-	w.minds.last_visit_t[c.s.id] = {c.f1.id: 10.0, c.f2.id: 10.0}
-	var sol := _sol(w)
-	var s: Dictionary = _md().slot
-	var key := func(id: int) -> int: return (id * int(s.cell_mult) + sol * int(s.cell_step)) % int(s.tie_mod)
-	var a: int = c.f1.id
-	var b: int = c.f2.id
-	# Ascending: the smaller pure tie key goes first, then the lower id (spec 5.3, revision 5 decision 2).
-	var first: int = a if (key.call(a) < key.call(b) or (key.call(a) == key.call(b) and a < b)) else b
-	var m: Array = w.minds.menu_for(w, c.s)
-	t.eq(str(m[1]), "visit:%d" % first, "equal last_visit_t: the lower pure tie key wins, then the lowest id")
+	var rooms := [WORK, GREEN, COMMS]
+	var ids: Array = [int(c.f1.id), int(c.f2.id)]
+	for i in n_friends - 2:
+		var extra = _being(c.w, rooms[i % 3])
+		_friends(c.w, c.s.id, extra.id)
+		ids.append(int(extra.id))
+	var lv := {}
+	for id in ids:
+		lv[int(id)] = 10.0
+	c.w.minds.last_visit_t[c.s.id] = lv
+	var m2: Array = c.w.minds.menu_for(c.w, c.s)
+	t.eq(str(m2[1]), "visit:%d" % int(ids.min()), "all keys equal (tie_mod 1): the lowest id goes first")
+	t.check(int(ids.min()) != winner_shipped, "and that is not the entry the shipped key would pick")
 	_end(t)
 
 
@@ -532,9 +597,31 @@ func test_t08a_stay_scales_the_travel_chance(t) -> void:
 	t.near(_p_of(c), _base_p(0.5), 1e-12, "no bias: the baseline chance (argument unchanged)")
 	_set_bias(c.w, c.s, "stay")
 	t.near(_p_of(c), clampf(_base_p(0.5) * mult, floor_v, cap), 1e-12, "stay: baseline x bias.stay_travel_mult, clamped")
+	# Shipped values at restless 0 (spec 5.5, revision 6): 0.08 x 0.30 = 0.024, above the floor 0.02, so the floor does NOT bind.
 	c.s.persona.traits["restless"] = 0.0
-	t.near(_p_of(c), clampf(_base_p(0.0) * mult, floor_v, cap), 1e-12, "stay at restless 0: clamped to the floor when below it")
-	t.check(_p_of(c) >= floor_v - 1e-12, "never below world.mood_travel_floor")
+	var p0 := _p_of(c)
+	t.near(floor_v, float(SimData.moods().effects.travel_floor), 1e-12, "world.mood_travel_floor is mood.json effects.travel_floor (set even with moods off, moods.gd:75)")
+	t.near(floor_v, 0.02, 1e-12, "and it ships at 0.02")
+	t.near(p0, _base_p(0.0) * mult, 1e-12, "stay at restless 0 with the shipped multiplier: the unclamped product")
+	t.near(p0, 0.024, 1e-9, "which is 0.024 at the shipped values")
+	t.check(p0 > floor_v + 1e-12, "and the floor did not bind (0.024 > 0.02)")
+	_restore()
+	# The binding case, staged: stay_travel_mult 0.1 at restless 0 gives 0.08 x 0.1 = 0.008, clamped up to the floor 0.02.
+	_cfg_edit("minds.json", ["bias", "stay_travel_mult"], 0.1)
+	var c2 := _bias_world(0.0)
+	_set_bias(c2.w, c2.s, "stay")
+	var floor2: float = float(c2.w.mood_travel_floor)
+	t.check(_base_p(0.0) * 0.1 < floor2, "precondition: the product %.4f is below the floor %.4f" % [_base_p(0.0) * 0.1, floor2])
+	t.near(_p_of(c2), floor2, 1e-12, "stay_travel_mult 0.1 at restless 0: p is clamped up to world.mood_travel_floor")
+	t.near(_p_of(c2), 0.02, 1e-12, "which is 0.02")
+	_restore()
+	# Sub-case: a multiplier of 0.0 reduces but never zeroes travel; p is the floor, not 0.
+	_cfg_edit("minds.json", ["bias", "stay_travel_mult"], 0.0)
+	var c3 := _bias_world(0.5)
+	_set_bias(c3.w, c3.s, "stay")
+	var p3 := _p_of(c3)
+	t.near(p3, float(c3.w.mood_travel_floor), 1e-12, "stay_travel_mult 0.0: p equals the floor")
+	t.check(p3 > 0.0, "and is not zero")
 	_end(t)
 
 
@@ -682,6 +769,7 @@ func test_t09a_survival_and_work_come_before_the_bias(t) -> void:
 		logs.append([c.s.state, c.s.job != null, c.rng.calls])
 	t.eq(logs[1], logs[0], "construction: a biased builder decides exactly as an unbiased one")
 	t.check(logs[0][2].size() >= 1, "the join chance was drawn")
+	t.check(bool(logs[0][1]), "and the unbiased builder joined the site (it holds a job), so the comparison is not vacuous")
 	# Resuming a mine intent is checked the same way on a founder world's ice field (identical state and call logs).
 	var mlogs := []
 	for biased in [false, true]:
@@ -697,8 +785,10 @@ func test_t09a_survival_and_work_come_before_the_bias(t) -> void:
 		if biased:
 			_set_bias(w, b, "stay")
 		b.decide(w)
-		mlogs.append([b.state, b.mine_intent == null, rng.calls])
+		mlogs.append([b.state, b.mine_intent == null, rng.calls, b.mine != null or b.mine_intent != null])
 	t.eq(mlogs[1], mlogs[0], "mine intent: a biased being decides exactly as an unbiased one")
+	t.check(bool(mlogs[0][3]), "the pending mine intent was resumed (a trip started or the walk to the launch building began), so the comparison is not vacuous")
+	t.check(bool(mlogs[1][3]), "and the biased being resumed it too")
 	_end(t)
 
 
@@ -720,7 +810,14 @@ func test_t09b_expiry_never_extends_and_young_beings_hold_none(t) -> void:
 	t.check(c.s.mind_bias == null, "the bias is gone after ttl_h")
 	var kids: Array = []
 	for stage in ["toddler", "child", "teen"]:
-		kids.append(_young(w, HAB, false, stage))
+		var kid = _young(w, HAB, false, stage)
+		kids.append(kid)
+		# A bias is delivered to the young being at its slot: refused (stored menu is carry_on only, reason not_in_menu).
+		var refused0 := _rej(w, "not_in_menu")
+		var dd := _decide(w, kid, "stay", "Quiet evening.")
+		t.check(not dd.is_empty(), "a %s opened a slot to deliver to" % stage)
+		t.check(kid.mind_bias == null, "a %s that is delivered `stay` holds no bias (refused)" % stage)
+		t.eq(_rej(w, "not_in_menu"), refused0 + 1, "a %s: the delivery is counted as rejected not_in_menu" % stage)
 	_mini_to_sol(w, _sol(w) + 1)
 	_mini(w, 600)
 	for i in kids.size():
@@ -775,6 +872,7 @@ func test_t10_apply_max_per_sol(t) -> void:
 
 # ---------------------------------------------------------------- 21. data parity (key list, literals, sanity is test 40)
 
+## Spec section 15 Group A: the key paths of the fenced list (the first line token of each line), for data/minds.json.
 func _spec_keys() -> Array:
 	var spec := FileAccess.get_file_as_string("res://docs/specs/ai-minds.md")
 	var i0 := spec.find("## 15. Tunables")
@@ -794,19 +892,70 @@ func _spec_keys() -> Array:
 	return out
 
 
+## Spec section 15 Group B: the backticked key paths of the "Group B" paragraph (parenthetical notes removed first, so the
+## shipped word lists quoted inside them are not read as keys). Placeholders `<name>` and a trailing `[]` are cut, leaving a
+## prefix: the data file must hold at least one leaf at or under it.
+func _spec_keys_b() -> Array:
+	var spec := FileAccess.get_file_as_string("res://docs/specs/ai-minds.md")
+	var i0 := spec.find("**Group B:")
+	if i0 < 0:
+		return []
+	var i1 := spec.find("\n", i0)
+	var para := spec.substr(i0, i1 - i0)
+	var paren := RegEx.create_from_string("\\([^()]*\\)")
+	para = paren.sub(para, "", true)
+	var tick := RegEx.create_from_string("`([^`]+)`")
+	var out: Array = []
+	for m in tick.search_all(para):
+		var k: String = m.get_string(1)
+		if k.contains("minds_text.json"):
+			continue
+		k = k.replace("[]", "")
+		var lt := k.find(".<")
+		if lt >= 0:
+			k = k.substr(0, lt)
+		out.append(k)
+	return out
+
+
+func _under(leaf: String, prefix: String) -> bool:
+	return leaf == prefix or leaf.begins_with(prefix + ".")
+
+
 func test_t21a_key_path_parity_both_ways(t) -> void:
 	if not FileAccess.file_exists("res://data/minds.json"):
 		t.check(false, "missing API: data/minds.json")
 		return
+	# Group A against data/minds.json: exact, both ways. The expected count is whatever the spec list gives (no literal).
 	var keys := _spec_keys()
-	t.check(keys.size() >= 100, "the spec key list parses (%d keys)" % keys.size())
+	t.check(not keys.is_empty(), "the spec Group A key list parses (%d keys)" % keys.size())
 	var leaves: Array = []
 	_leaves(_md(), "", leaves)
+	var dup := {}
 	for k in keys:
-		t.check(k in leaves, "spec key %s is in data/minds.json" % k)
+		t.check(not dup.has(k), "spec key %s is listed once" % k)
+		dup[k] = true
+		t.check(k in leaves, "spec key %s is a leaf of data/minds.json" % k)
 	for l in leaves:
-		t.check(l in keys, "data key %s is in the spec list" % l)
+		t.check(l in keys, "data/minds.json leaf %s is in the spec Group A list" % l)
+	t.eq(leaves.size(), keys.size(), "data/minds.json has exactly as many leaves as the Group A list has keys")
 	t.eq(int(_md().get("tests", {}).get("mock_seed", -1)), 1013, "tests.mock_seed is the fixed constant 1013")
+	# Group B against data/minds_text.json (a different file: the same prefix `filter.` is legal in both).
+	if not FileAccess.file_exists("res://data/minds_text.json"):
+		t.check(false, "missing API: data/minds_text.json")
+		return
+	var keys_b := _spec_keys_b()
+	t.check(not keys_b.is_empty(), "the spec Group B key list parses (%d keys)" % keys_b.size())
+	var leaves_b: Array = []
+	_leaves(_mt(), "", leaves_b)
+	for k in keys_b:
+		t.check(leaves_b.any(func(l): return _under(str(l), str(k))), "spec key %s has a leaf in data/minds_text.json" % k)
+	for l in leaves_b:
+		t.check(keys_b.any(func(k): return _under(str(l), str(k))), "data/minds_text.json leaf %s is under a spec Group B key" % l)
+	for k in ["filter.template_forbidden_words", "filter.player_terms", "filter.chart_terms"]:
+		t.check(k in leaves_b, "%s is in data/minds_text.json (Group B)" % k)
+		t.check(not (k in leaves), "and not in data/minds.json")
+	t.check("filter.caps_min_len" in leaves and not ("filter.caps_min_len" in leaves_b), "filter.caps_min_len is in data/minds.json only (Group A)")
 
 
 func _code_only(src: String) -> String:
@@ -830,7 +979,7 @@ func _literals(src: String) -> Array[String]:
 		var l: String = idx.sub(line, "[]", true)
 		for m in num.search_all(l):
 			var s := m.get_string()
-			if s in ["0", "1", "2", "0.0", "1.0", "2.0", "0.5"]:
+			if s in ["0", "1", "2", "0.0", "1.0", "2.0"]:  # spec 14 test 21: only 0, 1, -1 (as 1) and 2 may stay literal
 				continue
 			out.append("%s in `%s`" % [s, line.strip_edges()])
 	return out
@@ -839,6 +988,10 @@ func _literals(src: String) -> Array[String]:
 func test_t21b_no_tunable_literal_in_sim_minds(t) -> void:
 	t.eq(_literals("var a = 0.25 + 3").size(), 2, "the scanner finds 0.25 and 3")
 	t.eq(_literals("var a = 0 + 1 + 2.0 + b[3] # 7 in a comment").size(), 0, "0, 1, 2, indices and comments are fine")
+	# Revision 6: the last-cell key multiplier is the data key slot.cell_key_mult, so a bare 64 is a finding and the named key is not.
+	t.eq(_literals("var k = sol * 64 + cell").size(), 1, "a literal 64 in the last-cell key is a finding")
+	t.eq(_literals("var k = sol * cfg.slot.cell_key_mult + cell").size(), 0, "the data key slot.cell_key_mult is not")
+	t.eq(_literals("var h = 0.5 * x").size(), 1, "0.5 is not on the allowlist (spec: only 0, 1, -1 and 2)")
 	var scanned := 0
 	for f in ["res://sim/minds.gd", "res://sim/minds_voice.gd"]:
 		if not FileAccess.file_exists(f):
@@ -848,6 +1001,9 @@ func test_t21b_no_tunable_literal_in_sim_minds(t) -> void:
 		var found := _literals(FileAccess.get_file_as_string(f))
 		t.check(found.is_empty(), "%s has hard-coded numbers (%d), first: %s" % [f, found.size(), found[0] if not found.is_empty() else ""])
 	t.eq(scanned, 2, "both module files exist and were scanned")
+	if FileAccess.file_exists("res://sim/minds.gd"):
+		var code := _code_only(FileAccess.get_file_as_string("res://sim/minds.gd"))
+		t.check(code.contains("cell_key_mult"), "sim/minds.gd builds last_cell_key from the data key slot.cell_key_mult")
 
 
 # ---------------------------------------------------------------- 30. perf (the probe discipline of 6a; E)
@@ -879,11 +1035,22 @@ func test_t30_minds_tick_budget_at_pop_159(t) -> void:
 	samples.sort()
 	var median := samples[samples.size() / 2]
 	var worst := samples[samples.size() - 1]
-	print("minds tick at pop 159: median %.3f ms, max %.3f ms (limits %s / %s)" % [median, worst,
-			str(_md().balance.minds_tick_ms_max), str(_md().balance.minds_tick_ms_peak_max)])
+	var med_max: float = float(_md().balance.minds_tick_ms_max)
+	var peak_max: float = float(_md().balance.minds_tick_ms_peak_max)
+	var mult: float = float(_md().balance.minds_tick_fail_mult)
+	var strict := _has_user_arg("--perf")
+	# Spec 14 test 30 (revision 6): record and print the measured figures every run; fail only above the generous multiple
+	# (balance.minds_tick_fail_mult x each figure) unless the user arg --perf asks for the strict section-12 thresholds.
+	print("minds tick at pop 159: median %.3f ms, max %.3f ms (strict limits %s / %s, fail multiple %s, mode %s)" % [median, worst,
+			str(med_max), str(peak_max), str(mult), "STRICT (--perf)" if strict else "generous"])
 	t.check(samples.size() >= 60, "60 ticks were sampled")
-	t.check(median <= float(_md().balance.minds_tick_ms_max), "median %.3f ms <= balance.minds_tick_ms_max" % median)
-	t.check(worst <= float(_md().balance.minds_tick_ms_peak_max), "max %.3f ms <= balance.minds_tick_ms_peak_max" % worst)
+	t.check(mult >= 1.0, "balance.minds_tick_fail_mult is at least 1 (sanity rule)")
+	var med_limit: float = med_max if strict else med_max * mult
+	var peak_limit: float = peak_max if strict else peak_max * mult
+	t.check(median <= med_limit, "median %.3f ms <= %.3f ms (%s)" % [median, med_limit, "balance.minds_tick_ms_max" if strict else "fail multiple x balance.minds_tick_ms_max"])
+	t.check(worst <= peak_limit, "max %.3f ms <= %.3f ms (%s)" % [worst, peak_limit, "balance.minds_tick_ms_peak_max" if strict else "fail multiple x balance.minds_tick_ms_peak_max"])
+	if not strict and (median > med_max or worst > peak_max):
+		print("FINDING t30: the strict section-12 figure is breached without the fail multiple (median %.3f > %.3f or max %.3f > %.3f ms); not a red test, triggers the section 12 cut order" % [median, med_max, worst, peak_max])
 	_end(t)
 
 
@@ -975,41 +1142,160 @@ func test_t32c_event_window_arithmetic(t) -> void:
 
 # ---------------------------------------------------------------- 33. worth gate and fair rotation
 
-func test_t33a_the_worth_gate(t) -> void:
+## Steps to the next tick at which `b`'s calm cell is due (a cell below 24), clears the outbox, runs `stage` (a Callable that
+## sets up the world for that one tick) and steps the tick. Returns {opened, asked, kind}: whether `b` opened exactly one slot,
+## whether it was put in a request, and the kind of its due entry.
+func _calm_tick(w, b, stage: Callable) -> Dictionary:
+	var n0: int = int(b.mind_slot_n)
+	var due_cell := func(sol: int, cell: int) -> bool: return cell < 24 and _cell_of(w, int(b.id), sol, 0, 1) == cell
+	if not _until_next_tick(w, due_cell):
+		return {"opened": false, "asked": false, "kind": ""}
+	w.minds.outbox.clear()
+	stage.call()
+	_mini_ticks(w, 1)
+	var ds := _due_of(w, int(b.id))
+	return {"opened": int(b.mind_slot_n) == n0 + 1, "asked": _requested(w, b), "kind": str(ds[ds.size() - 1].kind) if not ds.is_empty() else ""}
+
+
+## Mini-steps through the end of sol `sol - 1` (see _mini_to_sol), collecting every request seen on the outbox after each step:
+## {"id:k": true}. Sampling every step means the measurement never depends on how long the outbox keeps an entry.
+func _collect_requests_to_sol(w, sol: int) -> Dictionary:
+	var seen := {}
+	var guard := 0
+	while int(w.clock.sol_index(w.t + w.fixed_step)) < sol and guard < 400000:
+		_mini(w)
+		guard += 1
+		for r in w.minds.outbox:
+			seen["%d:%d" % [int(r.id), int(r.k)]] = true
+	return seen
+
+
+func test_t33a_the_rare_calm_sample_and_nothing_else(t) -> void:
 	if not _api(t):
 		return
 	var sample_every: int = int(_md().gate.calm_every_n_sols)
-	# A calm, even-band being with no moment is not a request except on the rare calm sample (id + sol) mod 12 == 0.
-	var c := _cast("llm")
+	# Moods are OFF for this exact count: with no mood module there is no mood_why, so no event slot, no heavy or bright
+	# trigger and no company-bond `friend` event can open on a beings that is not sampled (5.2 step 3). Stocks are full, so no
+	# `hard_times` hint. What is left for a calm, even-band being is the season trigger (a first-ever slot only records the
+	# season, 5.6, and no season boundary falls in sol 2, 33) and the rare calm sample.
+	var c := _cast("llm", 1, false)
 	var w = c.w
-	var asked := {}
-	var sol_m := 2
-	var extra := []
 	for i in 30:
-		extra.append(_being(w, HAB).id)
-	# Revision 5 (5.6): a being's first-ever slot is not a season change, so the gate can be measured in the first full sol
-	# (sol 2; sol 1 lacks the ticks of cells 0 to 5) without dodging the season trigger.
-	_mini_to_sol(w, 2)
-	_mini(w, 40)
-	w.minds.outbox.clear()
-	_mini(w, 440)
-	for r in w.minds.outbox:
-		asked[int(r.id)] = true
-	var sample_ok := true
+		_being(w, HAB)
+	_mini_to_sol(w, 2)  # sol 1 lacks the ticks of cells 0 to 5; sol 2 is the first whole sol
+	w.minds.outbox.clear()  # before sol 2 starts, so no sol-2 request is ever deleted by the test
+	var n_before := {}
 	for b in w.beings:
-		if int(b.mind_slot_n) == 0:
+		n_before[int(b.id)] = int(b.mind_slot_n)
+	var reqs := _collect_requests_to_sol(w, 3)  # all of sol 2
+	var asked := {}
+	for key in reqs:
+		asked[int(str(key).split(":")[0])] = true
+	var checked := 0
+	var wrong: Array[String] = []
+	var sampled_n := 0
+	for b in w.beings:
+		var opened: int = int(b.mind_slot_n) - int(n_before[int(b.id)])
+		if opened != 1:
+			wrong.append("%d opened %d slots in sol 2" % [int(b.id), opened])
 			continue
-		var sampled: bool = (int(b.id) + sol_m) % sample_every == 0
+		var sampled: bool = (int(b.id) + 2) % sample_every == 0
+		sampled_n += 1 if sampled else 0
+		checked += 1
 		if asked.has(int(b.id)) != sampled:
-			sample_ok = false
-	t.check(sample_ok, "in sol %d exactly the beings with (id + sol) mod %d == 0 were asked, no other calm even being" % [sol_m, sample_every])
+			wrong.append("%d sampled=%s asked=%s" % [int(b.id), str(sampled), str(asked.has(int(b.id)))])
+	t.check(wrong.is_empty(), "per being: asked in sol 2 exactly when (id + 2) mod %d == 0 (rare calm sample), none other; first problem: %s" % [sample_every, wrong[0] if not wrong.is_empty() else ""])
+	t.eq(checked, w.beings.size(), "every being was examined (one calm slot each in sol 2)")
+	t.check(sampled_n > 0 and not asked.is_empty(), "the sol holds at least one sampled being and one request, so the test is not vacuous")
+	t.eq(reqs.size(), asked.size(), "and no being has two requests")
 	var seen_ok := true
 	for b in w.beings:
-		if int(b.mind_slot_n) > 0 and not w.minds.season_seen.has(int(b.id)):
-			seen_ok = false
+		seen_ok = seen_ok and w.minds.season_seen.has(int(b.id))
 	t.check(seen_ok, "every being that had a slot has a season_seen record (the first slot only records the season)")
-	t.check(not asked.is_empty(), "at least one calm sample was asked in the sol")
-	# A moment is a request.
+	# 0 disables the sample: the same sol, nobody is asked.
+	_restore()
+	_cfg_edit("minds.json", ["gate", "calm_every_n_sols"], 0)
+	var c0 := _cast("llm", 1, false)
+	for i in 30:
+		_being(c0.w, HAB)
+	_mini_to_sol(c0.w, 2)
+	c0.w.minds.outbox.clear()
+	var n0 := int(_stat(c0.w, "slots_opened").calm)
+	var reqs0 := _collect_requests_to_sol(c0.w, 3)
+	t.check(int(_stat(c0.w, "slots_opened").calm) - n0 >= c0.w.beings.size(), "gate.calm_every_n_sols 0: the calm slots still open in sol 2")
+	t.eq(reqs0.size(), 0, "and gate.calm_every_n_sols 0 disables the rare sample: no one is asked")
+	_end(t)
+
+
+func test_t33c_season_change_is_a_request_and_the_first_slot_only_records(t) -> void:
+	if not _api(t):
+		return
+	# The sample is disabled and moods are off, so the season trigger is the only thing that can make a calm being a request.
+	# There is no natural season boundary in a short run (Ls starts near 0.4 degrees; the first change is about sol 170), so
+	# the change is staged through season_seen (spec 14 test 33 (a)).
+	_cfg_edit("minds.json", ["gate", "calm_every_n_sols"], 0)
+	var c := _cast("llm", 1, false)
+	var w = c.w
+	_mini_to_sol(w, 3)
+	var cur := _season_index(w)
+	var seasons: int = w.clock.seasons.size()
+	var id := int(c.s.id)
+	w.minds.season_seen[id] = (cur + 1) % seasons
+	var r1 := _calm_tick(w, c.s, func(): pass)
+	t.check(bool(r1.opened), "the staged being opened its calm slot")
+	t.eq(str(r1.kind), "calm", "and it is a calm slot (no moment)")
+	t.check(bool(r1.asked), "season change (season_seen differs from the current index): the slot is a request")
+	t.eq(int(w.minds.season_seen.get(id, -1)), cur, "and season_seen then equals the current season index")
+	var r2 := _calm_tick(w, c.s, func(): pass)
+	t.check(bool(r2.opened), "the next calm slot opened")
+	t.check(not bool(r2.asked), "a second slot in the same season is not a request (the trigger fires once per season change)")
+	t.eq(int(w.minds.season_seen.get(id, -1)), cur, "and season_seen is unchanged")
+	# First-ever slot: a being with no season_seen entry only records the index; no request on that account.
+	var fresh = _being(w, HAB)
+	w.minds.season_seen.erase(int(fresh.id))
+	t.check(not w.minds.season_seen.has(int(fresh.id)), "precondition: the new being has no season_seen entry")
+	var r3 := _calm_tick(w, fresh, func(): pass)
+	t.check(bool(r3.opened), "the new being opened its first slot")
+	t.check(not bool(r3.asked), "first-ever slot: not a request on the season account")
+	t.eq(int(w.minds.season_seen.get(int(fresh.id), -1)), cur, "it only records the current season index")
+	_end(t)
+
+
+func test_t33d_hard_times_bright_and_the_asleep_case(t) -> void:
+	if not _api(t):
+		return
+	# Sample disabled; each case is a calm slot (the why keys used are NOT event keys: hard_sol and pledge only feed the gate,
+	# 5.2 step 3) on a being whose season_seen is current, so nothing but the case under test can make it a request.
+	_cfg_edit("minds.json", ["gate", "calm_every_n_sols"], 0)
+	var cases := [
+		{"label": "even band, no moment (control)", "key": "", "dev": 0.0, "state": "idle", "band": 2, "asked": false},
+		{"label": "hard times: heavy band with a fresh why", "key": "hard_sol", "dev": -0.5, "state": "idle", "band": 0, "asked": true},
+		{"label": "bright: band 4 with a fresh why", "key": "pledge", "dev": 0.5, "state": "idle", "band": 4, "asked": true},
+		{"label": "asleep: the hard-times case on a sleeping being is not a request", "key": "hard_sol", "dev": -0.5, "state": "sleep", "band": 0, "asked": false},
+	]
+	for cs in cases:
+		var c := _cast("llm")
+		var w = c.w
+		_mini_to_sol(w, 3)
+		w.minds.season_seen[int(c.s.id)] = _season_index(w)
+		var stage := func() -> void:
+			if str(cs.key) != "":
+				_why(c.s, str(cs.key), w.t)
+				c.s.mood = float(c.s.mood_base) + float(cs.dev)
+			c.s.state = str(cs.state)
+		var r := _calm_tick(w, c.s, stage)
+		t.check(bool(r.opened), "%s: the slot opened" % cs.label)
+		t.eq(str(r.kind), "calm", "%s: a calm slot" % cs.label)
+		t.eq(int(w.minds.facts_for(w, c.s).get("mood", {}).get("band", -1)), int(cs.band), "%s: facts carry mood band %d" % [cs.label, int(cs.band)])
+		t.eq(bool(r.asked), bool(cs.asked), "%s: request %s" % [cs.label, "built" if bool(cs.asked) else "not built"])
+	_end(t)
+
+
+func test_t33e_a_moment_is_a_request_young_beings_are_never_asked_and_rules_never_fills_the_outbox(t) -> void:
+	if not _api(t):
+		return
+	var sample_every: int = int(_md().gate.calm_every_n_sols)
+	# A moment is a request (the tick is chosen so the rare sample does not apply to the being).
 	var c2 := _cast("llm")
 	_mini_to_sol(c2.w, 3)
 	_until_next_tick(c2.w, func(sol, cell): return (int(c2.s.id) + sol) % sample_every != 0 and cell < 24)
@@ -1029,7 +1315,7 @@ func test_t33a_the_worth_gate(t) -> void:
 	c4.w.minds.outbox.clear()
 	_mini_ticks(c4.w, 1)
 	t.check(not c4.w.minds.outbox.any(func(r): return int(r.id) in ykids.map(func(k): return int(k.id))), "no young being is ever in a request")
-	# Asleep, children and mode rules produce no request.
+	# Mode rules produces no request.
 	var c3 := _cast("rules")
 	_mini_to_sol(c3.w, 3)
 	_until_next_tick(c3.w, func(sol, cell): return true)
@@ -1191,10 +1477,13 @@ func test_t36_dead_being_cleanup(t) -> void:
 	_why(c.s, "grief", w.t, 9, "Gone-9")
 	_mini_ticks(w, 1)
 	w.minds.last_visit_t[id] = {c.f1.id: w.t}
-	w.minds.last_visit_t[c.f2.id] = {id: w.t}
+	w.minds.last_visit_t[c.f2.id] = {id: w.t, c.f1.id: w.t}
+	w.minds.last_visit_t[c.f1.id] = {id: w.t}
 	var d_open := _due_of(w, id)
 	t.check(not d_open.is_empty(), "precondition: s has a due entry")
 	t.check(w.minds.says.has(id) and w.minds.last_event_t.has(id) and w.minds.seen_why_t.has(id), "precondition: says, last_event_t and seen_why_t hold s")
+	t.check(w.minds.season_seen.has(id), "precondition: season_seen holds s (it recorded the season at its slot)")
+	t.check(w.minds.last_visit_t[c.f2.id].has(id) and w.minds.last_visit_t[c.f1.id].has(id), "precondition: two other beings' last_visit_t hold an entry for s")
 	t.check(w.minds.outbox.any(func(r): return int(r.id) == id), "precondition: s has an outbox entry")
 	_kill_being(w, c.s)
 	_mini_ticks(w, 1)
@@ -1202,9 +1491,15 @@ func test_t36_dead_being_cleanup(t) -> void:
 	t.check(not w.minds.last_visit_t.has(id), "last_visit_t of the dead cleared")
 	t.check(not w.minds.last_event_t.has(id), "last_event_t cleared")
 	t.check(not w.minds.seen_why_t.has(id), "seen_why_t cleared")
+	t.check(not w.minds.season_seen.has(id), "season_seen cleared")
 	t.check(not w.minds.pending_open.any(func(e): return int(e.id) == id), "pending_open cleared")
 	t.check(not w.minds.outbox.any(func(r): return int(r.id) == id), "outbox cleared")
 	t.check(not w.minds.last_visit_t.get(int(c.f2.id), {}).has(id), "another being's last_visit_t entry for the dead id is deleted")
+	var still_listed := false
+	for other in w.minds.last_visit_t:
+		still_listed = still_listed or w.minds.last_visit_t[other].has(id)
+	t.check(not still_listed, "no being's last_visit_t holds an entry [dead id] any more")
+	t.check(w.minds.last_visit_t.get(int(c.f2.id), {}).has(int(c.f1.id)), "and the living entries are left alone")
 	t.check(not _due_of(w, id).is_empty(), "the due entry stays until its deadline")
 	var k: int = int(d_open[0].k)
 	_deliver(w, id, k, "stay")
@@ -1265,8 +1560,16 @@ func test_t39_policy_flag_is_dormant(t) -> void:
 
 # ---------------------------------------------------------------- 40. sanity rules as tests
 
-## Every sanity rule of spec section 15 as {rule id: ok} for a minds data dictionary.
-func _sanity(m: Dictionary) -> Dictionary:
+## The clock chain of spec section 15, one rule per link (revision 6):
+## beings.night.end_hour <= calendar.dawn_hour < dawn end (dawn_hour + time.dawn_len_h) < time.dusk_h < beings.night.start_hour
+## < calendar.hours_per_sol_clock.
+const CLOCK_RULES := ["clock_night_end_le_dawn", "clock_dawn_lt_dawn_end", "clock_dawn_end_lt_dusk", "clock_dusk_lt_night_start",
+		"clock_night_start_lt_day_end"]
+
+
+## Every sanity rule of spec section 15 as {rule id: ok} for a minds data dictionary. `ext` overrides values that live in other
+## data files so a link there can be broken on a copy: night_end, night_start, dawn_hour, day_end (hours_per_sol_clock).
+func _sanity(m: Dictionary, ext: Dictionary = {}) -> Dictionary:
 	var r := {}
 	var fs: float = float(SimData.sim().fixed_step_hours)
 	var rd: Dictionary = SimData.relationships()
@@ -1276,6 +1579,7 @@ func _sanity(m: Dictionary) -> Dictionary:
 	var multiple := func(x: float) -> bool: return absf(x / fs - round(x / fs)) < 1e-6
 	r["grid_equals_tick"] = absf(float(m.slot.grid_h) - float(rd.tick_h)) < 1e-12
 	r["cells_per_sol_24"] = cells == 24
+	r["cell_key_mult"] = int(m.slot.cell_key_mult) > cells + 1
 	r["think_multiples"] = multiple.call(float(m.sim.think_h)) and multiple.call(float(m.sim.think_event_h))
 	var top: float = float(be.restless.travel_base) + float(be.restless.travel_coef) * 1.0
 	r["travel_cap_equals_max_plus_roam"] = absf(float(m.bias.travel_cap) - (top + float(m.bias.roam_travel_add))) < 1e-9
@@ -1285,13 +1589,21 @@ func _sanity(m: Dictionary) -> Dictionary:
 			>= float(m.driver.latency_p50_s) * float(m.driver.deadline_margin) + float(m.driver.batch_wait_s)
 	r["capacity"] = int(m.sim.max_slots_per_tick) * cells >= int(m.sanity.population_design)
 	var n: Dictionary = be.night
-	r["clock_order"] = float(n.end_hour) < float(cal.dawn_hour) + float(m.time.dawn_len_h) \
-			and float(cal.dawn_hour) + float(m.time.dawn_len_h) < float(m.time.dusk_h) \
-			and float(m.time.dusk_h) < float(n.start_hour) and float(n.start_hour) < float(cal.hours_per_sol_clock)
+	var night_end: float = float(ext.get("night_end", n.end_hour))
+	var night_start: float = float(ext.get("night_start", n.start_hour))
+	var dawn_hour: float = float(ext.get("dawn_hour", cal.dawn_hour))
+	var day_end: float = float(ext.get("day_end", cal.hours_per_sol_clock))
+	var dawn_end: float = dawn_hour + float(m.time.dawn_len_h)
+	r["clock_night_end_le_dawn"] = night_end <= dawn_hour
+	r["clock_dawn_lt_dawn_end"] = dawn_hour < dawn_end
+	r["clock_dawn_end_lt_dusk"] = dawn_end < float(m.time.dusk_h)
+	r["clock_dusk_lt_night_start"] = float(m.time.dusk_h) < night_start
+	r["clock_night_start_lt_day_end"] = night_start < day_end
 	r["variants"] = int(m.rule.variants_min) >= 3 and int(m.rule.variants_min_plain) >= 2
 	r["reserve_frac"] = float(m.budget.reserve_frac) > 0.0 and float(m.budget.reserve_frac) < 0.5
 	r["taper_frac"] = float(m.budget.taper_below_frac) > 0.0 and float(m.budget.taper_below_frac) < 1.0
 	r["calls_min_max"] = int(m.budget.calls_per_sol_min) <= int(m.budget.calls_per_sol_max)
+	r["tick_fail_mult"] = float(m.balance.minds_tick_fail_mult) >= 1.0
 	return r
 
 
@@ -1300,39 +1612,69 @@ func test_t40a_sanity_rules_hold_on_the_shipped_data(t) -> void:
 		t.check(false, "missing API: data/minds.json")
 		return
 	var r := _sanity(_md())
-	t.check(r.size() >= 13, "all sanity rules are evaluated (%d)" % r.size())
+	t.check(not r.is_empty(), "the sanity rules are evaluated (%d)" % r.size())
 	for k in r:
 		t.check(bool(r[k]), "sanity rule %s holds on the shipped data" % k)
+	# The shipped clock values themselves (5.5 <= 6 < 8.0 < 18.0 < 21.5 < 24 at the shipped data; read, not copied).
+	var cal: Dictionary = SimData.calendar()
+	var n: Dictionary = SimData.beings().night
+	t.check(float(n.end_hour) <= float(cal.dawn_hour), "shipped: beings.night.end_hour (%s) <= calendar.dawn_hour (%s)" % [str(n.end_hour), str(cal.dawn_hour)])
+	# The two non-strict/strict edges of the chain: equality passes the first link, fails the second.
+	t.check(bool(_sanity(_md(), {"night_end": float(cal.dawn_hour)}).clock_night_end_le_dawn), "night.end_hour equal to dawn_hour still passes (<=)")
+	var eq_dawn := _md().duplicate(true)
+	eq_dawn.time.dawn_len_h = 0.0
+	t.check(not bool(_sanity(eq_dawn).clock_dawn_lt_dawn_end), "dawn end equal to dawn_hour fails (the second link is strict)")
 
 
 func test_t40b_each_sanity_rule_fails_on_one_broken_copy(t) -> void:
 	if not FileAccess.file_exists("res://data/minds.json"):
 		t.check(false, "missing API: data/minds.json")
 		return
+	var cal: Dictionary = SimData.calendar()
+	var cells := int(floor(float(cal.sol_hours) / float(_md().slot.grid_h)))
+	# {rule, path in the minds data (or [] when the broken value lives in another file and is passed in `ext`), value, ext}
 	var breaks := [
-		["grid_equals_tick", ["slot", "grid_h"], 2.0],
-		["cells_per_sol_24", ["slot", "grid_h"], 2.0],
-		["think_multiples", ["sim", "think_h"], 6.03],
-		["travel_cap_equals_max_plus_roam", ["bias", "travel_cap"], 0.5],
-		["tired_above_sleep", ["facts", "tired_below"], 20.0],
-		["say_total", ["say", "total_max_chars"], 100],
-		["event_window", ["sim", "think_event_h"], 2.0],
-		["capacity", ["sim", "max_slots_per_tick"], 4],
-		["clock_order", ["time", "dusk_h"], 22.0],
-		["variants", ["rule", "variants_min"], 2],
-		["reserve_frac", ["budget", "reserve_frac"], 0.6],
-		["taper_frac", ["budget", "taper_below_frac"], 1.5],
-		["calls_min_max", ["budget", "calls_per_sol_min"], 9],
+		{"rule": "grid_equals_tick", "path": ["slot", "grid_h"], "value": 2.0},
+		{"rule": "cells_per_sol_24", "path": ["slot", "grid_h"], "value": 2.0},
+		{"rule": "cell_key_mult", "path": ["slot", "cell_key_mult"], "value": cells + 1},
+		{"rule": "think_multiples", "path": ["sim", "think_h"], "value": 6.03},
+		{"rule": "travel_cap_equals_max_plus_roam", "path": ["bias", "travel_cap"], "value": 0.5},
+		{"rule": "tired_above_sleep", "path": ["facts", "tired_below"], "value": 20.0},
+		{"rule": "say_total", "path": ["say", "total_max_chars"], "value": 100},
+		{"rule": "event_window", "path": ["sim", "think_event_h"], "value": 2.0},
+		{"rule": "capacity", "path": ["sim", "max_slots_per_tick"], "value": 4},
+		# One failing case for each link of the clock chain (revision 6):
+		{"rule": "clock_night_end_le_dawn", "path": [], "value": null, "ext": {"night_end": float(cal.dawn_hour) + 0.5}},
+		{"rule": "clock_dawn_lt_dawn_end", "path": ["time", "dawn_len_h"], "value": 0.0},
+		{"rule": "clock_dawn_end_lt_dusk", "path": ["time", "dawn_len_h"], "value": 13.0},
+		{"rule": "clock_dusk_lt_night_start", "path": ["time", "dusk_h"], "value": 22.0},
+		{"rule": "clock_night_start_lt_day_end", "path": [], "value": null, "ext": {"night_start": float(cal.hours_per_sol_clock) + 0.5}},
+		{"rule": "variants", "path": ["rule", "variants_min"], "value": 2},
+		{"rule": "reserve_frac", "path": ["budget", "reserve_frac"], "value": 0.6},
+		{"rule": "taper_frac", "path": ["budget", "taper_below_frac"], "value": 1.5},
+		{"rule": "calls_min_max", "path": ["budget", "calls_per_sol_min"], "value": 9},
+		{"rule": "tick_fail_mult", "path": ["balance", "minds_tick_fail_mult"], "value": 0.5},
 	]
+	var covered := {}
 	for b in breaks:
+		covered[str(b.rule)] = true
 		var copy: Dictionary = _md().duplicate(true)
-		var node: Dictionary = copy
-		var path: Array = b[1]
-		for i in path.size() - 1:
-			node = node[path[i]]
-		node[path[path.size() - 1]] = b[2]
-		var r := _sanity(copy)
-		t.check(not bool(r[b[0]]), "rule %s fails on a copy broken at %s" % [b[0], ".".join(PackedStringArray(path))])
+		var path: Array = b.path
+		if not path.is_empty():
+			var node: Dictionary = copy
+			for i in path.size() - 1:
+				node = node[path[i]]
+			node[path[path.size() - 1]] = b.value
+		var r := _sanity(copy, b.get("ext", {}))
+		t.check(not bool(r[b.rule]), "rule %s fails on a copy broken at %s" % [b.rule, ".".join(PackedStringArray(path)) if not path.is_empty() else str(b.get("ext", {}))])
+		# A clock link fails on its own: the other links of the chain still hold on that copy.
+		if str(b.rule) in CLOCK_RULES:
+			for other in CLOCK_RULES:
+				if other != b.rule:
+					t.check(bool(r[other]), "breaking %s leaves clock link %s intact" % [b.rule, other])
+	for k in _sanity(_md()):
+		t.check(covered.has(k), "sanity rule %s has a failing case in this test" % k)
+	t.eq(covered.size(), _sanity(_md()).size(), "the failing-case table covers exactly the rules that are evaluated")
 
 
 # ---------------------------------------------------------------- SLICE 2: present, skipped with a reason

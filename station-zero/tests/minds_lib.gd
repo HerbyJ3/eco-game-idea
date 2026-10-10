@@ -216,6 +216,43 @@ func _sol(w) -> int:
 	return int(w.clock.sol_index(w.t))
 
 
+## Fixed step and real time, read from data/sim.json (revision 6 review: no literal 0.05 or 1.0 s/h in a test).
+func _step_h() -> float:
+	return float(SimData.sim().fixed_step_hours)
+
+
+## Real seconds one fixed step takes at `speed_x` (real_seconds_per_hour_at_1x x fixed_step_hours / speed).
+func _real_s_per_step(speed_x: float = 1.0) -> float:
+	return _step_h() * float(SimData.sim().real_seconds_per_hour_at_1x) / speed_x
+
+
+## Fixed steps in `hours` sim hours.
+func _steps_of(hours: float) -> int:
+	return int(round(hours / _step_h()))
+
+
+## Sim steps in `n_sols` game sols (sol length from the calendar).
+func _sol_steps(n_sols: float) -> int:
+	return int(round(n_sols * float(SimData.calendar().sol_hours) / _step_h()))
+
+
+## The index (0 to 3) of the sun's season now: the position of clock.season(t) in calendar.json `seasons` (spec 5.2/5.6).
+func _season_index(w) -> int:
+	return int(w.clock.seasons.find(w.clock.season(w.t)))
+
+
+## True when the user args (after `--`) contain `flag` (for example `--perf`).
+func _has_user_arg(flag: String) -> bool:
+	return flag in OS.get_cmdline_user_args()
+
+
+## True when the heavy hash tests were asked for: `-- --only test_ai_minds_hashes` (spec 14, revision 6).
+func _heavy_requested() -> bool:
+	var args := OS.get_cmdline_user_args()
+	var i := args.find("--only")
+	return i >= 0 and i + 1 < args.size() and args[i + 1] == "test_ai_minds_hashes"
+
+
 ## One fixed step of the sim as the sibling hook sees it: time, step index, the relationships accumulator, the mood tick and
 ## the minds hook, in the order of world.gd. Beings do not act (cheap); used wherever behaviour is not the subject.
 func _mini(w, n: int = 1) -> void:
@@ -327,6 +364,14 @@ func _due_of(w, id: int) -> Array:
 		if int(d.id) == id:
 			out.append(d)
 	return out
+
+
+## Whether the outbox holds a request for the slot `b` opened last (same id, k equal to its mind_slot_n).
+func _requested(w, b) -> bool:
+	for r in w.minds.outbox:
+		if int(r.id) == int(b.id) and int(r.k) == int(b.mind_slot_n):
+			return true
+	return false
 
 
 ## Runs mini-steps until `b` has opened one more slot (its `mind_slot_n` grew); returns its due entry or {}.

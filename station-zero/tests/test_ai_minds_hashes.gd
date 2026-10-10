@@ -1,10 +1,12 @@
 extends "res://tests/minds_lib.gd"
-## Task 6b, step 3 (tests first, red): the reference-hash tests. Spec docs/specs/ai-minds.md revision 5, section 14 tests 1, 2, 3
+## Task 6b, step 3 (tests first, red): the reference-hash tests. Spec docs/specs/ai-minds.md revision 6, section 14 tests 1, 2, 3
 ## and 31 (the `mn` hash column and the four proof scripts).
 ##
 ## HEAVY: tests 1 to 3 run five seeds at 300 sols, mode `off` and mode `rules`, twice each (20 runs of about 25 s; the runs are
-## cached between the three tests, so the file costs about 8 minutes once). Run it alone with
+## cached between the three tests, so the file costs about 8 minutes once). Revision 6 (spec 14): they run ONLY on request,
 ##   godot --headless --path station-zero --script res://tests/run_tests.gd -- --only test_ai_minds_hashes
+## Without those user args each of tests 1 to 3 prints `SKIP heavy: run with --only test_ai_minds_hashes` and records one check
+## that the skip reason was recorded (the zero-check rule). Test 31 (fixtures and proof contracts) is cheap and always runs.
 ## Everything else in the minds suite is fast.
 ##
 ## Mode is chosen through the balance parameter override `minds.mode.default` (data/minds.json `mode.default`), so the printed
@@ -57,6 +59,20 @@ func _hash16(body: Array) -> String:
 	return "\n".join(PackedStringArray(body)).sha256_text().substr(0, 16)
 
 
+const SKIP_HEAVY := "SKIP heavy: run with --only test_ai_minds_hashes"
+var _skip_log: Array[String] = []
+
+
+## True (after printing the skip line and recording one check) when the heavy runs were not asked for.
+func _skip_unless_heavy(t) -> bool:
+	if _heavy_requested():
+		return false
+	print("%s (%s)" % [SKIP_HEAVY, t._current])
+	_skip_log.append(SKIP_HEAVY)
+	t.check(_skip_log.back() == SKIP_HEAVY, "heavy test skipped on purpose; reason recorded: " + SKIP_HEAVY)
+	return true
+
+
 func _check_mode(t, mode: String) -> void:
 	if not FileAccess.file_exists("res://data/minds.json"):
 		t.check(false, "missing API: data/minds.json (the mode override `minds.mode.default` has nothing to override)")
@@ -75,10 +91,14 @@ func _check_mode(t, mode: String) -> void:
 
 
 func test_t01_mode_off_matches_the_pinned_hashes(t) -> void:
+	if _skip_unless_heavy(t):
+		return
 	_check_mode(t, "off")
 
 
 func test_t02_mode_rules_matches_the_pinned_hashes_and_off(t) -> void:
+	if _skip_unless_heavy(t):
+		return
 	_check_mode(t, "rules")
 	if not FileAccess.file_exists("res://data/minds.json"):
 		return
@@ -89,6 +109,8 @@ func test_t02_mode_rules_matches_the_pinned_hashes_and_off(t) -> void:
 
 
 func test_t03_rules_draws_nothing_from_simrng(t) -> void:
+	if _skip_unless_heavy(t):
+		return
 	if not FileAccess.file_exists("res://data/minds.json"):
 		t.check(false, "missing API: data/minds.json")
 		return
@@ -109,36 +131,77 @@ const MN_NOT_LAST := ["# header", "# more", "sol pop age web cn mn md", "30 5 L 
 const MD_MISPLACED := ["# header", "# more", "sol md pop age web cn mn", "30 +0.01 5 L 0.1 - 0", "60 -0.02 6 S 0.2 C 3", ""]
 
 
-## The hash entries of a proof result: a String (age proof) or the check* keys of a Dictionary.
+const STATES := ["ok", "absent", "misplaced"]
+const WITH_MN_ONLY := ["# header", "# more", "sol pop age web cn mn", "30 5 L 0.1 - 0", "60 6 S 0.2 C 3", ""]
+## The keys each proof returned before 6b (spec 10, contract item 3: they are kept) and the ones age_hash_proof must add (item 4).
+const KEPT_KEYS := {
+	"mood_hash_proof": ["check0", "check1", "check2", "check3"],
+	"relationships_hash_proof": ["check1", "check2", "web_absent", "age_absent"],
+	"council_hash_proof": ["check1", "check2", "check3", "cn_absent", "web_absent", "age_absent"],
+	"age_hash_proof": ["check1", "age_absent"],
+}
+
+
+## The hash entries of a proof result: the check* keys of its proof_hashes Dictionary (the contract of spec 10).
 func _hashes(proof: GDScript, lines: Array) -> Dictionary:
-	var r: Variant
-	if _has_static(proof, "proof_hashes"):
-		r = proof.proof_hashes(lines)
-	else:
-		r = proof.proof_hash(lines)
+	var out := {}
+	if not _has_static(proof, "proof_hashes"):
+		return out
+	var r: Variant = proof.proof_hashes(lines)
 	if r is Dictionary:
-		var out := {}
 		for k in r:
 			if str(k).begins_with("check"):
 				out[k] = r[k]
-		return out
-	return {"hash": str(r)}
+	return out
 
 
-func _state_text(proof: GDScript, lines: Array) -> String:
-	if _has_static(proof, "proof_hashes"):
-		return JSON.stringify(proof.proof_hashes(lines)).to_lower()
-	return JSON.stringify([proof.proof_hash(lines), proof.get_script_method_list().size()]).to_lower()
+## proof.proof_hashes(lines) when the contract's function exists and returns a Dictionary, else {}.
+func _result(proof: GDScript, lines: Array) -> Dictionary:
+	if not _has_static(proof, "proof_hashes"):
+		return {}
+	var r: Variant = proof.proof_hashes(lines)
+	return r if r is Dictionary else {}
+
+
+func _states(t, name: String, label: String, r: Dictionary, mn: String, md: String) -> void:
+	t.check(r.has("mn_state") and r.has("md_state"), "%s: %s: proof_hashes carries mn_state and md_state" % [name, label])
+	if r.has("mn_state"):
+		t.check(str(r.mn_state) in STATES, "%s: %s: mn_state is one of ok/absent/misplaced (got %s)" % [name, label, str(r.get("mn_state"))])
+		if mn != "":
+			t.eq(str(r.mn_state), mn, "%s: %s: mn_state" % [name, label])
+	if r.has("md_state"):
+		t.check(str(r.md_state) in STATES, "%s: %s: md_state is one of ok/absent/misplaced (got %s)" % [name, label, str(r.get("md_state"))])
+		if md != "":
+			t.eq(str(r.md_state), md, "%s: %s: md_state" % [name, label])
 
 
 func test_t31a_every_proof_strips_mn_then_md_then_its_own_chain(t) -> void:
 	for name in PROOFS:
 		var proof: GDScript = load("res://tests/%s.gd" % name)
+		t.check(_has_static(proof, "proof_hashes"), "%s: exposes static proof_hashes(lines) -> Dictionary (spec 5.9, 10)" % name)
+		if not _has_static(proof, "proof_hashes"):
+			continue
 		var plain := _hashes(proof, WITHOUT)
 		t.check(not plain.is_empty(), "%s: produces hashes for a pre-6b fixture" % name)
 		t.eq(_hashes(proof, WITH_BOTH), plain, "%s: a table ending `age web cn md mn` gives the same hashes as the table without md and mn" % name)
 		t.eq(_hashes(proof, WITH_MD_ONLY), plain, "%s: a table without mn (ABSENT) still passes: md alone is stripped" % name)
-		t.check(_state_text(proof, WITH_MD_ONLY).contains("absent"), "%s: reports ABSENT for the missing mn" % name)
+		t.eq(_hashes(proof, WITH_MN_ONLY), plain, "%s: a table without md (ABSENT) still passes: mn alone is stripped" % name)
+		# The uniform state contract, exact (no substring matching): ok / absent / misplaced, lowercase.
+		_states(t, name, "full fixture", _result(proof, WITH_BOTH), "ok", "ok")
+		_states(t, name, "pre-6b fixture", _result(proof, WITHOUT), "absent", "absent")
+		_states(t, name, "no mn", _result(proof, WITH_MD_ONLY), "absent", "ok")
+		_states(t, name, "no md", _result(proof, WITH_MN_ONLY), "ok", "absent")
+		var full := _result(proof, WITH_BOTH)
+		for k in KEPT_KEYS[name]:
+			t.check(full.has(k), "%s: the existing key `%s` is kept" % [name, k])
+		if name == "age_hash_proof":
+			# Item 4: age_hash_proof gains proof_hashes returning {mn_state, md_state, age_absent, check1}.
+			for k in ["mn_state", "md_state", "age_absent", "check1"]:
+				t.check(full.has(k), "age_hash_proof.proof_hashes returns `%s`" % k)
+			t.check(full.get("age_absent", null) is bool and not bool(full.get("age_absent", true)), "age_absent is a bool, false when an age column was stripped")
+			t.check(str(full.get("check1", "")).length() == 64, "check1 is the full SHA-256 hex of the stripped table")
+			t.check(bool(_result(proof, ["# header", "# more", "sol pop web cn", "30 5 L 0.1", ""]).get("age_absent", false)), "age_absent is true when the table has no age column")
+			t.eq(str(proof.proof_hash(WITH_BOTH)), str(full.get("check1", "")), "proof_hash(lines) stays and returns proof_hashes(lines).check1")
 
 
 func test_t31e_the_shared_strip_helper_and_the_delegation(t) -> void:
@@ -151,18 +214,42 @@ func test_t31e_the_shared_strip_helper_and_the_delegation(t) -> void:
 	var plain: Array = WITHOUT.slice(2, 5)
 	var both: Array = WITH_BOTH.slice(2, 5)
 	var only_md: Array = WITH_MD_ONLY.slice(2, 5)
+	var only_mn: Array = WITH_MN_ONLY.slice(2, 5)
 	var r: Dictionary = council.strip_mn_md(both)
+	var keys: Array = r.keys()
+	keys.sort()
+	t.eq(keys, ["body", "md", "mn"], "strip_mn_md returns exactly {body, mn, md}")
 	t.eq(r.body, plain, "strip_mn_md removes mn then md from a table ending `cn md mn`")
-	t.check(r.has("mn") and r.has("md"), "the result carries the states `mn` and `md`")
-	t.eq(council.strip_mn_md(only_md).body, plain, "a table without mn (ABSENT) still has md stripped")
-	t.check(JSON.stringify(council.strip_mn_md(only_md)).to_lower().contains("absent"), "the missing mn is reported ABSENT")
-	for fx in [MN_NOT_LAST, MD_MISPLACED]:
-		var body: Array = (fx as Array).slice(2, 5)
-		t.check(JSON.stringify(council.strip_mn_md(body)).to_lower().contains("misplaced"), "a misplaced column is reported MISPLACED")
-		t.check(council.strip_mn_md(body).body != plain, "a misplaced column is not silently stripped to the plain table")
-	# Delegation: strip_md gives the same body as the shared helper, so the two balance tests need no edit.
-	t.eq(mood.strip_md(both).body, plain, "mood_hash_proof.strip_md strips mn then md (delegates)")
-	t.eq(mood.strip_md(only_md).body, plain, "mood_hash_proof.strip_md on a table without mn still strips md")
+	t.eq([str(r.mn), str(r.md)], ["ok", "ok"], "and reports ok for both")
+	var r_md: Dictionary = council.strip_mn_md(only_md)
+	t.eq(r_md.body, plain, "a table without mn still has md stripped")
+	t.eq([str(r_md.mn), str(r_md.md)], ["absent", "ok"], "the missing mn is reported absent, md ok")
+	var r_mn: Dictionary = council.strip_mn_md(only_mn)
+	t.eq(r_mn.body, plain, "a table without md still has mn stripped")
+	t.eq([str(r_mn.mn), str(r_mn.md)], ["ok", "absent"], "the missing md is reported absent, mn ok")
+	var r_none: Dictionary = council.strip_mn_md(plain)
+	t.eq(r_none.body, plain, "a pre-6b table is returned unchanged")
+	t.eq([str(r_none.mn), str(r_none.md)], ["absent", "absent"], "and reports absent for both")
+	var nl: Array = MN_NOT_LAST.slice(2, 5)
+	var r_nl: Dictionary = council.strip_mn_md(nl)
+	t.eq(str(r_nl.mn), "misplaced", "mn before md: mn is reported misplaced")
+	t.eq(r_nl.body, nl, "and nothing is stripped (the body is returned unchanged from that point)")
+	t.check(str(r_nl.md) in STATES, "md_state of that table is one of the three strings (got %s)" % str(r_nl.md))
+	var mm: Array = MD_MISPLACED.slice(2, 5)
+	var r_mm: Dictionary = council.strip_mn_md(mm)
+	t.eq([str(r_mm.mn), str(r_mm.md)], ["ok", "misplaced"], "md not last after mn: mn ok, md misplaced")
+	t.check(r_mm.body != plain, "and the misplaced md is not silently stripped to the plain table")
+	# Delegation: strip_md gives the same body as the shared helper, so the two balance tests need no edit; its `state`
+	# carries the md state in the new spelling and `md_absent` stays.
+	var s_both: Dictionary = mood.strip_md(both)
+	t.eq(s_both.body, plain, "mood_hash_proof.strip_md strips mn then md (delegates)")
+	t.eq(str(s_both.state), "ok", "strip_md state for a present md is `ok` (was `last`)")
+	var s_md: Dictionary = mood.strip_md(only_md)
+	t.eq(s_md.body, plain, "mood_hash_proof.strip_md on a table without mn still strips md")
+	t.eq(str(s_md.state), "ok", "and its state is `ok`")
+	var s_none: Dictionary = mood.strip_md(plain)
+	t.check(s_none.get("md_absent", false) == true and str(s_none.state) == "absent", "strip_md keeps md_absent and reports `absent` for a table without md")
+	t.eq(str(mood.md_state(only_md)), "ok", "mood_hash_proof.md_state spells `ok`, not `last`")
 	var src := FileAccess.get_file_as_string("res://tests/mood_hash_proof.gd")
 	t.check(src.contains("strip_mn_md"), "mood_hash_proof.gd calls the shared helper strip_mn_md")
 
@@ -170,10 +257,19 @@ func test_t31e_the_shared_strip_helper_and_the_delegation(t) -> void:
 func test_t31b_misplaced_columns_are_refused(t) -> void:
 	for name in PROOFS:
 		var proof: GDScript = load("res://tests/%s.gd" % name)
+		t.check(_has_static(proof, "proof_hashes"), "%s: exposes proof_hashes" % name)
+		if not _has_static(proof, "proof_hashes"):
+			continue
 		var plain := _hashes(proof, WITHOUT)
-		for fx in [["mn before md", MN_NOT_LAST], ["md not last after mn", MD_MISPLACED]]:
-			t.check(_state_text(proof, fx[1]).contains("misplaced"), "%s: %s is reported MISPLACED" % [name, fx[0]])
-			t.check(_hashes(proof, fx[1]) != plain, "%s: %s is not silently stripped to the plain hash" % [name, fx[0]])
+		# `mn` before `md`: mn is the first field stripped and is not last: misplaced (md_state is judged on the unstripped
+		# body; the contract only fixes that it is one of the three strings).
+		var nl := _result(proof, MN_NOT_LAST)
+		_states(t, name, "mn before md", nl, "misplaced", "")
+		t.check(_hashes(proof, MN_NOT_LAST) != plain, "%s: mn before md is not silently stripped to the plain hash" % name)
+		# `md` not last once mn is stripped: mn ok, md misplaced.
+		var mm := _result(proof, MD_MISPLACED)
+		_states(t, name, "md not last after mn", mm, "ok", "misplaced")
+		t.check(_hashes(proof, MD_MISPLACED) != plain, "%s: md not last after mn is not silently stripped to the plain hash" % name)
 
 
 func test_t31c_the_e1f2bdd_history_is_marked_retired(t) -> void:

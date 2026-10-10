@@ -303,6 +303,10 @@ func test_t19_sim_has_no_network_key_or_provider_names(t) -> void:
 	var allowed_minds := ["res://sim/minds.gd", "res://sim/minds_voice.gd", "res://sim/sim_data.gd", "res://sim/world.gd", "res://sim/being.gd"]
 	var files := _gd_files("res://sim")
 	t.check(files.size() >= 15, "sim/ scripts were found (%d)" % files.size())
+	# Word-boundary match (revision 6 review): "reminds" or "minds_x" style words are not a mention of the module.
+	var word_minds := RegEx.create_from_string("\\bminds\\b")
+	t.check(word_minds.search("a reminds b") == null and word_minds.search("world.minds.on_step") != null and word_minds.search("res://sim/minds.gd") != null,
+			"the word-boundary matcher finds `minds` as a word and not inside `reminds`")
 	for f in files:
 		var src := FileAccess.get_file_as_string(f)
 		var low := src.to_lower()
@@ -311,7 +315,7 @@ func test_t19_sim_has_no_network_key_or_provider_names(t) -> void:
 		for n in names:
 			t.check(not low.contains(n), "%s does not name a provider or model (%s)" % [f, n])
 		if not (f in allowed_minds):
-			t.check(not low.contains("minds"), "%s does not mention minds (only minds.gd, minds_voice.gd, sim_data.gd, world.gd, being.gd may)" % f)
+			t.check(word_minds.search(low) == null, "%s does not mention minds (only minds.gd, minds_voice.gd, sim_data.gd, world.gd, being.gd may)" % f)
 
 
 # ---------------------------------------------------------------- 20. repository scan
