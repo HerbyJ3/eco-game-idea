@@ -33,6 +33,8 @@ Seed 2026 loses a green room for 254 h because re-online needs `draw + room ≤ 
 - **Guards (a switch fails if any is broken):** no new air deaths or air turn-backs; T5 power target no worse than baseline per seed; no rise in EVA deaths; births still happen (first birth sol within ±50 of baseline unless the colony was already dead).
 - **Adoption:** a switch is adopted only if it helps and passes guards. E6 must keep ≥ 4 of 5 seeds alive to 1,500 sols; otherwise report and stop (no further tuning in this task).
 - Determinism: with every switch at its default, seed 7 must reproduce the baseline table sha256 `12e3535f2952f04d`.
+- **Neutrality check, recorded (2026-10-09):** after W1-W5 were implemented, with every switch off, seed 7 gave exactly `12e3535f2952f04d` (checked before W3 was switched on). The shipped defaults therefore reproduced the old game until the owner's W3 decision (section 8).
+- **E6 was not run as written.** Section 4 promised E6 as "every switch that passed". Only E3 helped on all seeds and E4 on some, so the combination was replaced by E7 (E4 + 100% re-online) and E8 (E7 + E3), section 7. Reason: the re-online rule was the only untested lever aimed at the power-guard failures, and E3 was the only switch with a real effect, so E8 tested whether the two together reach the 4-of-5 bar. A pure "all passing switches" run would have been E3 alone, which is already row E3.
 
 ## 5. Out of scope
 
@@ -47,8 +49,8 @@ Baseline reproduced (all five extinct; first thirst deaths at sols 380/300/350/5
 | base | none | 0/5 | 380/300/350/530/400 | 76 | 4 pass, 2026 fails | — |
 | E1 | urgent redirect | 0/5 | 360/300/350/360/520 | 67 | same | No help (earlier on 42, 1234). Not adopted |
 | E2 | launch energy ≥ 45 | 0/5 | 310/130/410/350/200 | 53 (smaller colonies) | same | Harmful: tired founders stall, two seeds die before any birth. Not adopted |
-| E3 | no commute pause | 2/5 | 600/580/600/850/700 | 89 | fails on 99 | Helps on all 5 seeds |
-| E4 (valid rerun `E4v`) | children drink less | 0/5 | 800/310/850/390/640 | 93 | fails on 42, 2026 | Delays on 3 seeds, earlier on 1234. Not adopted |
+| E3 | no commute pause | 2/5 | 600/580/600/850/700 | 89 | **fails on 99** | Helps on all 5 seeds. **Failed the section 4 power guard (seed 99) and has more thirst deaths than baseline (89 against 76). It ships under the owner's waiver (section 8), not because it passed.** |
+| E4 (valid rerun `E4v`) | children drink less | 0/5 | 800/310/850/390/640 | 93 | fails on 42, 2026 | Delays on 4 of 5 seeds (seed 7 only 300 to 310), earlier on 1234. Not adopted: it fails the power guard on 2 seeds and has more thirst deaths (93 against 76) |
 | E5 | water before construction | 2/5 | 580/330/660/400/500 | 100 | fails on 99; 2026 locks a building off for 9,055 h | Mixed. Not adopted |
 
 **Correction.** The first E4 run reported 5/5 alive with zero thirst deaths. That run was invalid: the multiplier table reached the runner without its JSON quotes, so `parse_value` returned a String, and `_water_heads` read it as a near-zero head count for everyone, founders included (ice at sol 10 was 69.6 against the baseline 52.3, with no child alive yet). Its outputs are kept as `INVALID-E4_*.txt`. `tests/balance_lib.gd apply_param` now rejects an override whose type differs from the data (int and float are interchangeable), so this cannot recur silently.
@@ -60,7 +62,9 @@ Power-guard failures have the same shape as seed 2026's baseline outage: one sho
 - **E7** = E4 + `buildings.reonline.load_fraction` 1.0. Its table is identical to the valid E4 rerun on every seed, so the 100% re-online rule made no difference in these runs: 0/5 alive. Not adopted.
 - **E8** = E7 + E3. 2/5 alive (7: 9 colonists, 2026: 30), first thirst deaths 820/970/850/1350/1100, power guard fails on 99 and 1234. Not adopted over E3 alone.
 
-No combination met the 4-of-5 survival rule, so tuning stopped here as section 4 requires.
+No combination met the 4-of-5 survival rule, so tuning stopped here as section 4 requires. E7 and E8 stand in for the E6 that section 4 declared (see the note there).
+
+**Implementation follow-ups (advisory, from the PR #5 review; code-reviewer, 2026-10-09), for godot-engineer:** `_water_heads` should validate its data (dictionary type, clamp at 0 or above, `push_error`); add "off" tests for W4 and W5; `tests/balance_lib.gd` checks only the top-level type and the run continues after a PARAM ERROR, it should abort; comment W5's adult guard.
 
 ## 8. Owner decision (Herby, 2026-10-09) and what ships
 
@@ -69,6 +73,8 @@ No combination met the 4-of-5 survival rule, so tuning stopped here as section 4
 1. Unattended decline is **gradual and readable**, not a sudden collapse soon after the first dry tank.
 2. Trouble shows early enough for a watching player to notice and act.
 3. With timely influence the colony can recover. This needs the god powers, which are not yet built in Godot (next task).
+
+**Waiver.** W3 (E3) failed the section 4 power guard on seed 99 and has more thirst deaths (89 against 76) because the colonies live long enough to lose more people. The owner's new direction (gradual decline, not survival) makes the power guard failure a known cost recorded for the separate power-reserve task, and makes thirst-death count the wrong yardstick. W3 ships under this waiver.
 
 **Ships:** W3 only (`throughput.commute_pause` = `false`). It is simply sensible behaviour (no dawdling on the way to a water trip) and turned a sudden collapse into a slow decline on all five seeds: first thirst moved from sols 300–530 to 580–850, and two colonies were still alive at sol 1,500. This is a behaviour change, so the simulation is re-baselined: `docs/balance/water-rebaseline.md`.
 
