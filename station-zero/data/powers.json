@@ -1,0 +1,7 @@
+{
+  "recharge_sols": { "fortune": 3, "inspire": 2, "grace": 2, "sign": 1, "guide": 2 },
+  "inspire": { "duration_sols": 2, "chance": 0.75 },
+  "grace": { "duration_sols": 1.5, "bonus": 0.35 },
+  "sign": { "restless": 0.5, "steady": 0.6, "jitter": 0.15, "threshold": 0.35 },
+  "guide": { "duration_sols": 1, "need_floor": 0.6 }
+}

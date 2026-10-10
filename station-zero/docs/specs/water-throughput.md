@@ -75,3 +75,13 @@ No combination met the 4-of-5 survival rule, so tuning stopped here as section 4
 **Stays off (switches kept, default off):** W1, W2, W4, W5, and the 100% re-online rule. W4 (children drink less) remains available for the owner to turn on.
 
 **Power reserve:** still open. The guard failures above are real (a dark building for 130–350 h) and should get their own small task.
+
+## 9. Bug fix found during Task 7: the endless walk to bed
+
+While testing influence powers on seed 2026, average energy fell to 16 and only 3% of colonist-hours were spent asleep (normal is about 11%). A state probe showed exhausted colonists (energy 0, `sleep_intent` set) in `transit`/`to_door` for whole sols without reaching a bunk.
+
+Cause: `Being.go_sleep` re-chose the habitat on every room arrival with `Buildings.nearest_online_habitat`, which measures straight-line distance from the current room. On some layouts the corridor route to habitat A passes a room from which habitat B is nearer, and the route to B passes a room from which A is nearer, so the colonist cycles forever while energy stays at 0. They cannot mine, build or conceive in that state, which is why that colony died with no births.
+
+Fix: `Being.sleep_target_id` stores the habitat chosen when the colonist first heads to bed. `go_sleep` keeps that target while it stays an online habitat reachable over finished corridors, and re-picks only otherwise. Cleared on falling asleep. Test: `tests/test_water_throughput.gd::test_sleep_walk_keeps_its_habitat`.
+
+The walk also happened in unattended runs, so every pinned 300-sol hash changed; the re-baseline is recorded in `docs/balance/water-rebaseline.md` section "Bed-walk fix".

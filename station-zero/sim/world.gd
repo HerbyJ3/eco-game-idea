@@ -427,6 +427,10 @@ func choose_kind() -> String:
 			or colony.oxygen < floor_h * float(cc.consumption.o2_per_being) \
 			or colony.food < floor_h * float(cc.consumption.food_per_being):
 		return "green_room"
+	# Inspire (influence-powers.md): drawn only while active, so an unused power leaves the RNG untouched.
+	var inspired := powers.inspire_kind(t)
+	if inspired != "" and rng.chance(float(SimData.powers().inspire.chance)):
+		return inspired
 	var habitats := 0
 	var workshops := 0
 	for b in buildings.list:
@@ -456,6 +460,8 @@ func start_site(kind: String, spot: Dictionary = {}) -> bool:
 	var s := buildings.create_site(kind, where, t)
 	colony.regolith -= cost
 	stats.builds_started += 1
+	if powers.inspire_kind(t) == kind:
+		powers.inspire = {}
 	_log("ground_broken", "Ground broken for a new %s." % buildings.cfg.kinds[kind].label.to_lower(),
 			{"building_id": s.building_id})
 	return true
@@ -549,7 +555,7 @@ func _birth_phase() -> void:
 			continue
 		if not lifecycle.conception_cooldown_over(hb.id, t, colony.birth_cooldown_h()):
 			continue
-		if not rng.chance(colony.birth_chance(here)):
+		if not rng.chance(colony.birth_chance(here) + powers.grace_bonus(hb.id, t)):
 			continue
 		var parent: Being = rng.pick(here)
 		lifecycle.conceive(parent, hb.id, t)
@@ -633,6 +639,9 @@ func _water_heads() -> float:
 func choose_site() -> Resources.Site:
 	var wn: Dictionary = SimData.resources().want
 	var limit := resources.trip_limit()
+	var guided := powers.guided_site(t)
+	if guided != null and _site_live(guided):
+		return guided
 	var live_ice: Array[Resources.Site] = []
 	for f in resources.ice_fields:
 		if f.amount > 0.0 and resources.trip_time(f) < limit:
@@ -660,3 +669,84 @@ func choose_site() -> Resources.Site:
 	if not is_ice and colony.regolith > float(wn.stop_factor) * reg_target:
 		return null
 	return rng.pick(pool)
+
+
+# ---------------------------------------------------------------- influence powers (docs/specs/influence-powers.md)
+
+const POWER_NAMES := ["fortune", "inspire", "grace", "sign", "guide"]
+
+
+## Ice left (pits never run dry) and the round trip fits a suit tank.
+func _site_live(site: Resources.Site) -> bool:
+	if site == null or (site.kind == "ice" and site.amount <= 0.0):
+		return false
+	return resources.trip_time(site) < resources.trip_limit()
+
+
+## Resource sites in guide-target order: ice fields, then pits.
+func power_sites() -> Array:
+	var out: Array = []
+	out.append_array(resources.ice_fields)
+	out.append_array(resources.pits)
+	return out
+
+
+func power_ready_in(power_name: String) -> float:
+	return powers.ready_in(power_name, t)
+
+
+## Applies an influence power. target: building id (inspire, grace) or index into power_sites() (guide).
+func use_power(power_name: String, target: int = -1) -> Dictionary:
+	if not power_name in POWER_NAMES:
+		return {"ok": false, "reason": "unknown_power"}
+	if powers.ready_in(power_name, t) > 0.0:
+		return {"ok": false, "reason": "recharging"}
+	var pc: Dictionary = SimData.powers()
+	var sol_h := clock.sol_h
+	match power_name:
+		"fortune":
+			powers.set_power_multiplier(t + float(buildings.cfg.fortune.duration_sols) * sol_h)
+			_log("power_fortune", "Good fortune: the reactors run hot for a sol.")
+		"inspire":
+			var b := buildings.get_building(target)
+			if b == null or not b.finished():
+				return {"ok": false, "reason": "bad_target"}
+			powers.inspire = {"kind": b.kind, "until": t + float(pc.inspire.duration_sols) * sol_h}
+			var label: String = buildings.cfg.kinds[b.kind].label.to_lower()
+			_log("power_inspire", "Inspiration: the builders dream of another %s." % label, {"building_id": b.id})
+		"grace":
+			var h := buildings.get_building(target)
+			if h == null or h.kind != "habitat" or not h.finished() or not h.online():
+				return {"ok": false, "reason": "bad_target"}
+			powers.grace = {"habitat_id": h.id, "until": t + float(pc.grace.duration_sols) * sol_h}
+			_log("power_grace", "Grace: it feels like a good time to start a family here.", {"building_id": h.id})
+		"sign":
+			_send_sign(pc.sign)
+		"guide":
+			var sites := power_sites()
+			if target < 0 or target >= sites.size() or not _site_live(sites[target]):
+				return {"ok": false, "reason": "bad_target"}
+			var site: Resources.Site = sites[target]
+			powers.guide = {"site": site, "until": t + float(pc.guide.duration_sols) * sol_h}
+			var what := "the ice field" if site.kind == "ice" else "the regolith pit"
+			_log("power_guide", "Guidance: the colony feels drawn to %s." % what)
+	powers.ready_at[power_name] = t + float(pc.recharge_sols[power_name]) * sol_h
+	stats["powers_used"] = int(stats.get("powers_used", 0)) + 1
+	return {"ok": true, "reason": ""}
+
+
+## Send a sign: curious, restless colonists go to look; steady ones keep working.
+func _send_sign(sc: Dictionary) -> void:
+	var went := 0
+	var stayed := 0
+	for b in beings:
+		if not b.is_inside() or b.state == "sleep" or lifecycle.stage(b, t) == "baby":
+			continue
+		var tr: Dictionary = b.persona.traits
+		var pull := float(tr.curiosity) + float(sc.restless) * float(tr.restless) - float(sc.steady) * float(tr.steady) \
+				+ rng.randf_range(-float(sc.jitter), float(sc.jitter))
+		if pull > float(sc.threshold) and b.state == "idle" and b.look_at_sign(self):
+			went += 1
+		else:
+			stayed += 1
+	_log("power_sign", "A light crossed the sky. %d went to look, %d stayed put." % [went, stayed])

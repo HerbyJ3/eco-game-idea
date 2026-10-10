@@ -1,5 +1,6 @@
 extends SceneTree
 ## Balance run. godot --headless --path station-zero --script res://tests/balance_run.gd -- --seed N --sols N [--param path=value ...]
+## [--player attentive] runs tools/attentive_player.gd as a scripted player (influence-powers.md section 5).
 ## Exits 0 when every target passes, 1 otherwise (spec section 15); the verdicts are in the output. See tests/balance_lib.gd.
 
 
@@ -11,6 +12,7 @@ func _init() -> void:
 	var every := 30
 	var params := {}
 	var tier := ""
+	var player: RefCounted = null
 	var out_dir := ""
 	var i := 0
 	while i < args.size():
@@ -24,6 +26,9 @@ func _init() -> void:
 			"--every":
 				i += 1
 				every = int(args[i])
+			"--player":
+				i += 1
+				player = load("res://tools/%s_player.gd" % args[i]).new()
 			"--tier":
 				i += 1
 				tier = args[i]
@@ -38,7 +43,7 @@ func _init() -> void:
 				else:
 					print("PARAM ERROR: expected path=value, got %s" % args[i])
 		i += 1
-	var res: Dictionary = lib.run(seed_in, sols, params, every, tier)
+	var res: Dictionary = lib.run(seed_in, sols, params, every, tier, player)
 	var all_pass := true
 	for line in res.lines:
 		print(line)

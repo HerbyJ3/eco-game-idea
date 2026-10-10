@@ -96,7 +96,9 @@ static func _fmt_min(v: Variant) -> String:
 	return "-" if v == null else "%.1f" % float(v)
 
 
-static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int = 30, tier: String = "") -> Dictionary:
+## player: optional scripted player (tools/attentive_player.gd) called after every step; null = unattended.
+static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int = 30, tier: String = "",
+		player: RefCounted = null) -> Dictionary:
 	var saved: Array = []
 	var lines: Array[String] = []
 	for k in params:
@@ -105,8 +107,9 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 			lines.append("PARAM ERROR: %s" % err)
 	var w := SimWorld.new(seed_in)
 	var pstr := " ".join(PackedStringArray(params.keys().map(func(k): return "%s=%s" % [k, str(params[k])])))
-	lines.append("# station zero balance run: seed=%d sols=%d overrides=[%s] fixed_step=%s data_hash=%s" % [
-			seed_in, sols, pstr, str(w.fixed_step), data_hash().substr(0, 16)])
+	lines.append("# station zero balance run: seed=%d sols=%d overrides=[%s] fixed_step=%s data_hash=%s%s" % [
+			seed_in, sols, pstr, str(w.fixed_step), data_hash().substr(0, 16),
+			"" if player == null else " player=%s" % player.call("label")])
 	lines.append("# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window")
 	var body: Array[String] = []
 	var head := "%4s %4s %4s %5s %-23s %7s %7s %7s %7s %6s %6s %5s %-17s %5s %5s %5s %6s %6s %6s %6s %s %s %s" % [
@@ -129,6 +132,8 @@ static func run(seed_in: int, sols: int, params: Dictionary = {}, row_every: int
 	while w.sol() < sols:
 		w.step()
 		total_steps += 1
+		if player != null:
+			player.call("after_step", w)
 		if obs != null:
 			obs.after_step(w)
 		if w._sol_started and w.ages_enabled and w.sol() >= int(SimData.ages().sample.from_sol) \

@@ -145,3 +145,22 @@ func test_w5_water_before_construction(t) -> void:
 		w.colony.ice = 20.0
 		b.decide(w)
 		t.check(b.mine != null and b.job == null, "W5 on: an ice plan beats joining construction when water is short"))
+
+
+## Section 9 bug fix: a colonist heading to bed keeps the habitat it chose, even when another habitat is nearer
+## from a room on the way (re-picking each room could cycle forever).
+func test_sleep_walk_keeps_its_habitat(t) -> void:
+	var s := _world()
+	var w: SimWorld = s.w
+	var hb := w.buildings.add_attached("habitat", s.W, "d", 12, 9, 6)
+	var b := w.add_being(s.W)
+	t.check(w.buildings.nearest_online_habitat(s.W).id == hb.id, "setup: from the workshop, the new habitat is nearest")
+	b.sleep_intent = true
+	b.sleep_target_id = s.A
+	b.go_sleep(w)
+	t.eq(b.corridor_id, w.buildings.next_hop(s.W, s.A), "keeps walking toward the habitat it chose")
+	w.set_offline(s.A, true)
+	b.go_sleep(w)
+	t.eq(b.sleep_target_id, hb.id, "re-picks only when its habitat goes dark")
+	b._enter_sleep(w)
+	t.eq(b.sleep_target_id, 0, "target cleared once asleep")

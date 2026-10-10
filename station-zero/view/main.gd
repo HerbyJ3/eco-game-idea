@@ -1,5 +1,6 @@
 extends Control
-## Text HUD. Reads sim state only; the one thing it changes is _sim.speed (a view setting).
+## Text HUD. Reads sim state; it changes _sim.speed (a view setting) and, as the player, uses influence powers
+## (F1-F5, docs/specs/influence-powers.md section 4).
 ## Labels refresh at REFRESH_S real seconds, never per sim step.
 
 const REFRESH_S := 0.1
@@ -10,6 +11,12 @@ const THROTTLE_NOTE := "The colony is too large to run this fast."
 ## Keyboard speed presets (multiples of real time). 0 pauses.
 const SPEEDS := {KEY_1: 1.0, KEY_2: 10.0, KEY_3: 100.0, KEY_4: 1000.0}
 const STATES: Array[String] = ["idle", "sleep", "work", "mining", "eva", "transit"]
+const POWER_KEYS := {KEY_F1: "fortune", KEY_F2: "inspire", KEY_F3: "grace", KEY_F4: "sign", KEY_F5: "guide"}
+const POWER_LABELS := {"fortune": "Good fortune", "inspire": "Inspire", "grace": "Grace", "sign": "Send a sign",
+		"guide": "Guide"}
+const POWER_REASONS := {"recharging": "still recharging", "bad_target": "select a fitting target first",
+		"unknown_power": "unknown power"}
+const POWER_NOTE_S := 4.0
 
 var _clock: Label
 var _colony: Label
@@ -40,6 +47,9 @@ var _readout_acc := 0.0
 var _achieved := -1.0
 ## Last sampled stocks for the ice and regolith rate readout: [t, ice, regolith].
 var _prev: Array = []
+## Last power result shown under the power line, and its remaining real seconds.
+var _power_note := ""
+var _power_note_s := 0.0
 
 
 func _ready() -> void:
@@ -99,6 +109,7 @@ func apply_shot_view(opts: Dictionary) -> void:
 
 func _process(delta: float) -> void:
 	_sample_speed(delta)
+	_power_note_s = maxf(0.0, _power_note_s - delta)
 	_acc += delta
 	if _acc >= REFRESH_S:
 		_acc = 0.0
@@ -113,6 +124,73 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		toggle_pause()
 	elif SPEEDS.has(k.keycode):
 		set_speed(SPEEDS[k.keycode])
+	elif POWER_KEYS.has(k.keycode):
+		use_power(POWER_KEYS[k.keycode])
+
+
+## The player uses a power. Inspire and Grace target the selected building; Guide targets the site nearest the
+## selected building, or the richest reachable ice field when nothing is selected. Returns the sim result.
+func use_power(power_name: String) -> Dictionary:
+	var w: SimWorld = _sim.world
+	var sel := _selected_id()
+	var target := -1
+	if power_name == "inspire" or power_name == "grace":
+		target = sel
+	elif power_name == "guide":
+		target = _guide_target(w, sel)
+	var res := w.use_power(power_name, target)
+	if res.ok:
+		_power_note = "%s used." % POWER_LABELS[power_name]
+	else:
+		_power_note = "%s: %s." % [POWER_LABELS[power_name], POWER_REASONS.get(res.reason, res.reason)]
+	_power_note_s = POWER_NOTE_S
+	refresh()
+	return res
+
+
+func _selected_id() -> int:
+	if _world == null or _world.vm == null:
+		return -1
+	var id := int(_world.vm.selection.selected)
+	return id if id > 0 else -1
+
+
+static func _guide_target(w: SimWorld, sel: int) -> int:
+	var sites := w.power_sites()
+	var best := -1
+	var b := w.buildings.get_building(sel) if sel > 0 else null
+	if b != null:
+		var door := b.door(float(w.buildings.cfg.tile_px))
+		var best_d := INF
+		for i in sites.size():
+			var s: Resources.Site = sites[i]
+			var d := door.distance_to(Vector2(s.x, s.y))
+			if w._site_live(s) and d < best_d:
+				best = i
+				best_d = d
+		return best
+	var best_amt := -1.0
+	for i in sites.size():
+		var s: Resources.Site = sites[i]
+		if s.kind == "ice" and w._site_live(s) and s.amount > best_amt:
+			best = i
+			best_amt = s.amount
+	return best
+
+
+## One line: each power with its key and readiness, then the last result for a few seconds.
+func _powers_text(w: SimWorld) -> String:
+	var parts: Array[String] = []
+	var i := 1
+	for p in ["fortune", "inspire", "grace", "sign", "guide"]:
+		var left := w.power_ready_in(p)
+		var state := "ready" if left <= 0.0 else "%.1f sols" % (left / w.clock.sol_h)
+		parts.append("[F%d] %s %s" % [i, POWER_LABELS[p], state])
+		i += 1
+	var line := "Influence: " + "  ".join(parts)
+	if _power_note_s > 0.0 and _power_note != "":
+		line += "\n" + _power_note
+	return line
 
 
 func set_speed(s: float) -> void:
@@ -140,7 +218,7 @@ func refresh() -> void:
 	_beings.text = _beings_text(w)
 	_chapters.text = _chapters_text(w)
 	_log.text = _log_text(w)
-	_controls.text = _controls_text()
+	_controls.text = _powers_text(w) + "\n" + _controls_text()
 	_map.queue_redraw()
 	_fit_shade.call_deferred()
 	if not _printed:
