@@ -1,0 +1,4 @@
+# name | args for tools/shot.gd. Task 6a view: OUT_DIR=docs/shots/task-6a SHOT_LIST=tools/shots_task6a.txt tools/shots.sh
+m01_panel_heavy_grief | --seed 42 --hour 12 --setup mood_panel --zoom 6.0 --center showcase_beings --view being=1
+m02_panel_real_dormant | --seed 42 --steps 3000 --setup founders --zoom 3.0 --center founders_colony --view being=first
+m03_no_selection_hud | --seed 42 --steps 3000 --setup founders --zoom 3.0 --center founders_colony

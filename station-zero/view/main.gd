@@ -2,6 +2,9 @@ extends Control
 ## Text HUD. Reads sim state only; the one thing it changes is _sim.speed (a view setting).
 ## Labels refresh at REFRESH_S real seconds, never per sim step.
 
+const PanelText = preload("res://view/model/being_panel.gd")
+const PanelHold = preload("res://view/model/panel_hold.gd")
+
 const REFRESH_S := 0.1
 const LOG_LINES := 8
 ## Slack of the sample's ice comparison, so the word flips at exactly the same stock.
@@ -38,6 +41,17 @@ var _speed_samples: Array = []
 var _last_t := 0.0
 var _readout_acc := 0.0
 var _achieved := -1.0
+## The being inspect panel (docs/specs/emotions.md 7.1): a text box at the bottom left, and the real-time pacing helper.
+var _panel_box: PanelContainer
+var _panel: Label
+var _hold: PanelHold
+## Real seconds since the HUD started (the clock of the panel pacing, independent of game speed).
+var _real_s := 0.0
+var _panel_id := 0
+var _died := false
+## The log entries shown at the last refresh, and the colonist a press on a log line is holding.
+var _log_shown: Array = []
+var _log_press_id := 0
 ## Last sampled stocks for the ice and regolith rate readout: [t, ice, regolith].
 var _prev: Array = []
 
@@ -65,6 +79,7 @@ func setup(sim: Node) -> void:
 	_shade = get_node("HudShade")
 	_vbox = get_node("Margin/HBox/VBox")
 	_world.setup(sim)
+	_build_panel()
 	if not _world.debug_map_changed.is_connected(_show_debug_map):
 		_world.debug_map_changed.connect(_show_debug_map)
 	_show_debug_map(_world.vm != null and _world.vm.debug_map)
@@ -93,16 +108,118 @@ func apply_shot_view(opts: Dictionary) -> void:
 	if opts.has("hud"):
 		_hud_visible = bool(opts.hud)
 		get_node("Margin").visible = _hud_visible
+		_panel_box.get_parent().visible = _hud_visible
 	_world.apply_shot_view(opts)
 	_show_debug_map(_world.vm.debug_map)
 
 
 func _process(delta: float) -> void:
+	_real_s += delta
 	_sample_speed(delta)
+	_update_panel()
 	_acc += delta
 	if _acc >= REFRESH_S:
 		_acc = 0.0
 		refresh()
+
+
+## The panel sits in its own full-rect control so the HUD switch can hide it with the text.
+func _build_panel() -> void:
+	if _panel_box != null:
+		return
+	_hold = PanelHold.new(PanelText.selection_cfg())
+	var holder := Control.new()
+	holder.name = "PanelHolder"
+	holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(holder)
+	_panel_box = PanelContainer.new()
+	_panel_box.name = "BeingPanel"
+	_panel_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.04, 0.03, 0.7)
+	style.set_content_margin_all(10.0)
+	_panel_box.add_theme_stylebox_override("panel", style)
+	_panel_box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 24)
+	_panel_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_panel = Label.new()
+	_panel.custom_minimum_size = Vector2(440, 0)
+	_panel.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel_box.add_child(_panel)
+	_panel_box.visible = false
+	holder.add_child(_panel_box)
+
+
+## The text now in the panel, "" while it is closed (a test seam).
+func panel_text() -> String:
+	return _panel.text if _panel_box != null and _panel_box.visible else ""
+
+
+## One frame of the panel: closed with no colonist selected; the died beat for a colonist who left the world; else the
+## cached lines, rebuilt at most refresh_hz times a second with the shown band held for hold_s (real time, any game speed).
+func _update_panel() -> void:
+	if _panel_box == null or _world.vm == null:
+		return
+	var sel = _world.vm.selection
+	var w: SimWorld = _sim.world
+	var id: int = sel.selected_being
+	if id != _panel_id:
+		_panel_id = id
+		_died = false
+		_hold.reset()
+	if id == 0:
+		_panel_box.visible = false
+		return
+	if not PanelText.alive(w, id):
+		if not _died:
+			_died = true
+			_hold.begin_died(_real_s)
+		var line := PanelText.died_line(w, id)
+		if line == "" or not _hold.died_open(_real_s):
+			sel.deselect()
+			_panel_box.visible = false
+			return
+		_panel.text = line
+		_panel_box.visible = true
+		return
+	if _hold.refresh_due(_real_s) or not _panel_box.visible:
+		var band := _hold.shown_band(_real_s, PanelText.wanted_band(w, id))
+		_panel.text = "\n".join(PackedStringArray(PanelText.lines(w, id, band)))
+		_panel_box.visible = true
+
+
+## The entry under a tap at height `y` (from the top of the first entry line) of the one-label log showing the last `shown`
+## of `entries`, or null; an entry without a being_id is not a target.
+static func log_entry_at(y: float, line_h: float, entries: Array, shown: int) -> Variant:
+	if y < 0.0 or line_h <= 0.0:
+		return null
+	var first := maxi(0, entries.size() - shown)
+	var i := first + int(y / line_h)
+	if i >= entries.size() or i >= first + shown:
+		return null
+	var e: Dictionary = entries[i]
+	return e if e.has("being_id") else null
+
+
+## A press on a log line that carries a being_id takes the press; the release selects that colonist (no camera move).
+func _input(event: InputEvent) -> void:
+	var m := event as InputEventMouseButton
+	if m == null or m.button_index != MOUSE_BUTTON_LEFT or not _hud_visible or _world.vm == null:
+		return
+	if m.pressed:
+		var r := _log.get_global_rect()
+		_log_press_id = 0
+		if r.has_point(m.position):
+			var e: Variant = log_entry_at(m.position.y - r.position.y - _log.get_line_height(), _log.get_line_height(),
+					_log_shown, LOG_LINES)
+			if e != null:
+				_log_press_id = int(e.being_id)
+				get_viewport().set_input_as_handled()
+	elif _log_press_id != 0:
+		_world.vm.selection.select_being(_log_press_id)
+		_log_press_id = 0
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -358,6 +475,7 @@ func _beings_text(w: SimWorld) -> String:
 
 func _log_text(w: SimWorld) -> String:
 	var lines: PackedStringArray = ["Log"]
-	for e: Dictionary in w.log.slice(maxi(0, w.log.size() - LOG_LINES)):
+	_log_shown = w.log.slice(maxi(0, w.log.size() - LOG_LINES))
+	for e: Dictionary in _log_shown:
 		lines.append("  sol %d  %s" % [int(e.clock_sol), e.text])
 	return "\n".join(lines)

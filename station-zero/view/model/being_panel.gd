@@ -12,7 +12,8 @@ const BAND_KEYS: Array[String] = ["heavy", "low", "", "light", "bright"]
 
 ## One element per template group, in this order: who; spirits (the band sentence with the why appended after one space,
 ## omitted when the band is even); nature (only when no why sentence is shown); company.
-static func lines(world: SimWorld, id: int) -> Array:
+## `band_override` (0 to 4) shows that band instead of the stored one: the caller holds the shown band for hold_s (PanelHold).
+static func lines(world: SimWorld, id: int, band_override: int = -1) -> Array:
 	var out: Array = []
 	var b: Being = _find(world, id)
 	if b == null:
@@ -22,7 +23,7 @@ static func lines(world: SimWorld, id: int) -> Array:
 	var friends: Array = world.relationships.friends_of(id)
 	out.append(_fill(str(tx.panel.who), b.name, "").replace("{description}", str(b.persona.description)))
 	var why_text := ""
-	var band: int = b.mood_band
+	var band: int = b.mood_band if band_override < 0 else band_override
 	if band != BAND_EVEN:
 		var sentence := _fill(str(tx.band[BAND_KEYS[band]]), b.name, "")
 		why_text = _why_sentence(world, b, band, friends, cfg)
@@ -33,6 +34,30 @@ static func lines(world: SimWorld, id: int) -> Array:
 			out.append(nature)
 	out.append(_company(world, b, friends, tx.panel))
 	return out
+
+
+## The numbers of the selection and panel rules (data/mood.json selection), for the view helpers that take a cfg.
+static func selection_cfg() -> Dictionary:
+	return SimData.moods().selection
+
+
+## True while the being is in the world.
+static func alive(world: SimWorld, id: int) -> bool:
+	return _find(world, id) != null
+
+
+## The band the sim holds for the being now, or -1 when it is gone.
+static func wanted_band(world: SimWorld, id: int) -> int:
+	var b: Being = _find(world, id)
+	return -1 if b == null else b.mood_band
+
+
+## "{name} has died." for a being no longer in the world (the name from the death record), or "" when none is recorded.
+static func died_line(world: SimWorld, id: int) -> String:
+	for d: Dictionary in world.stats.deaths_list:
+		if int(d.being_id) == id:
+			return _fill(str(SimData.moods().text.panel.died), str(d.name), "")
+	return ""
 
 
 static func _fill(template: String, name: String, other: String) -> String:

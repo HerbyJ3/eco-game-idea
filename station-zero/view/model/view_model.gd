@@ -134,7 +134,7 @@ func press_key(key_name: String) -> void:
 ## A press and release in screen px: a tap selects (or toggles peek, or deselects); a longer move is a drag, ignored.
 func tap_screen(press: Vector2, release: Vector2, viewport: Vector2) -> void:
 	if selection.is_tap(press, release):
-		selection.tap(camera.screen_to_world(release, viewport), world)
+		selection.tap(camera.screen_to_world(release, viewport), world, being_records(), camera.zoom)
 
 
 # ---------------------------------------------------------------- update
@@ -160,11 +160,38 @@ func update(dt_real: float) -> void:
 
 
 func _follow_selection() -> void:
-	if not camera.follow or selection.selected == 0:
+	if not camera.follow or (selection.selected == 0 and selection.selected_being == 0):
 		return
+	var t := follow_target_for_selection()
+	if t != Vector2.INF:
+		camera.follow_target = t
+
+
+## Where the camera follows: the drawn position of the selected colonist, the footprint centre of its building while it is
+## inside a closed roof, else the selected building's footprint centre. Vector2.INF when there is nothing to follow.
+func follow_target_for_selection() -> Vector2:
+	if selection.selected_being != 0:
+		var rec: Variant = _beings.get(selection.selected_being)
+		if rec != null and rec.visible:
+			return rec.pos
+		for g in world.beings:
+			if g.id == selection.selected_being:
+				var gb := world.buildings.get_building(g.building_id)
+				if gb != null:
+					return footprint_rect(gb).get_center()
 	var b := world.buildings.get_building(selection.selected)
-	if b != null:
-		camera.follow_target = footprint_rect(b).get_center()
+	return footprint_rect(b).get_center() if b != null else Vector2.INF
+
+
+## id -> {pos, height_px, visible, inside, building_id} for the hit test (BeingHit.pick), built on a tap only.
+func being_records() -> Dictionary:
+	var out := {}
+	for g in world.beings:
+		var r: Variant = _beings.get(g.id)
+		if r != null:
+			out[g.id] = {"pos": r.pos, "height_px": r.height_px, "visible": r.visible, "inside": r.inside,
+					"building_id": g.building_id}
+	return out
 
 
 func _bucket_beings() -> Dictionary:
@@ -393,5 +420,5 @@ func signature() -> String:
 	for id in _interiors:
 		parts.append("I%d|%s" % [id, str(_interiors[id].positions())])
 	parts.append(str(particles.snapshot()))
-	parts.append("%d|%d|%s" % [selection.selected, 1 if selection.peek else 0, str(selection.peek_cut)])
+	parts.append("%d|%d|%d|%s" % [selection.selected_being, selection.selected, 1 if selection.peek else 0, str(selection.peek_cut)])
 	return "\n".join(parts).sha256_text()

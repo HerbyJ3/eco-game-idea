@@ -191,6 +191,16 @@ func apply_shot_view(opts: Dictionary) -> void:
 			if b.kind == str(want) or str(b.id) == str(want):
 				vm.selection.selected = b.id
 				break
+	if opts.has("being"):
+		var pick: Variant = opts.being
+		var first: Being = vm.world.beings[0] if not vm.world.beings.is_empty() else null
+		if str(pick) != "first":
+			first = null
+			for g in vm.world.beings:
+				if str(g.id) == str(int(float(pick))):
+					first = g
+		if first != null:
+			vm.selection.select_being(first.id)
 	if opts.has("peek"):
 		vm.selection.peek = bool(opts.peek)
 
