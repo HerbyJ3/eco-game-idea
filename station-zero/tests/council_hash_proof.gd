@@ -36,12 +36,19 @@ extends SceneTree
 ##   99: "d31bc86c094bcff4",
 ##   1234: "bc78b23075c71ef4",
 ##   2026: "f404077296a86f66",
+## water-throughput baseline (W3), Task 4-level table hashes, superseded by the bed-walk fix (Being.sleep_target_id;
+## docs/balance/water-rebaseline.md, section Bed-walk fix). History only:
+##   42: "6007d885aa1974ac",
+##   7: "cadbd65b8bffdb9c",
+##   99: "40d46838bb39aee5",
+##   1234: "55c479815f1f47ac",
+##   2026: "27b48573b9aed8e2",
 const EXPECTED_T4 := {
-	42: "6007d885aa1974ac",
-	7: "cadbd65b8bffdb9c",
-	99: "40d46838bb39aee5",
-	1234: "55c479815f1f47ac",
-	2026: "27b48573b9aed8e2",
+	42: "54e0b17c2b95a97e",
+	7: "58c9704fa00c26fc",
+	99: "5d007db82e1a61bf",
+	1234: "88802cc94428993e",
+	2026: "4e6b1638a49280fe",
 }
 const SOLS := 300
 const EVERY := 30
