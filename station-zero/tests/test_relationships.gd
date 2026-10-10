@@ -1436,6 +1436,8 @@ func test_t13_purity_and_determinism(t) -> void:
 	for k in sc.stats:
 		if k == "council":
 			continue  # stats.council exists only with the Council module; test 16 of test_council.gd compares it
+		if k == "moods":
+			continue  # mood ticks ride on the relationships tick (emotions.md 4), so stats.moods differs by construction; test_moods.gd 17 judges it
 		t.eq(sa.stats.get(k), sc.stats[k], "old stats key %s is equal" % k)
 	t.eq(sa.stats.keys().size(), sc.stats.keys().size(), "same set of old stats keys")
 	_end(t)

@@ -7,7 +7,7 @@ extends RefCounted
 ## Setups that need an empty world instead of the founders.
 const BLANK: Array[String] = ["showcase", "showcase_offline", "showcase_door_habitat", "showcase_door_workshop",
 		"showcase_suits", "showcase_born_pair", "showcase_lamp_dusk", "showcase_interior_habitat", "showcase_interior_comms",
-		"showcase_interior_workshop", "showcase_interior_talk"]
+		"showcase_interior_workshop", "showcase_interior_talk", "mood_panel"]
 ## Door setups: name -> kind of the building whose door opens.
 const DOOR_KIND := {"showcase_door_habitat": "habitat", "showcase_door_workshop": "workshop"}
 ## Interior setups: name -> [kind, [[role, state], ...]] of the beings placed inside that building.
@@ -46,6 +46,10 @@ static func apply(name: String, world: SimWorld) -> bool:
 		"showcase_door_habitat", "showcase_door_workshop":
 			_showcase(world)
 			_miner_at_door(world, String(DOOR_KIND[name]))
+			return true
+		"mood_panel":
+			_showcase(world)
+			_mood_panel(world)
 			return true
 		"showcase_suits":
 			_showcase(world)
@@ -211,3 +215,24 @@ static func _council_pledge(world: SimWorld) -> void:
 	world.stats.age = "council"
 	var ptxt := str(cd.dome.text.pledge).replace("{a}", "Lena").replace("{place}", "in the green room").replace("{why}", "because the children need a roof")
 	world.stats.council.chapters = [{"kind": "pledge", "topic": "dome", "text": ptxt, "t": 69.0 * sol_h, "sol": 69, "clock_sol": 70}]
+
+
+## Task 6a panel shot: three named colonists outside; the first (id 1) is heavy because Lena (id 2, a close friend) is
+## mourned, Ravi (id 3) is bright. The mood fields are staged by hand (the gains are 0.0, the panel reads the fields), and
+## two mood log lines carry the being ids so the log shows what a tap on it would open.
+static func _mood_panel(world: SimWorld) -> void:
+	var a := _outside(world, "tender", "eva", 100.0, 112.0, 0.0)
+	var b := _outside(world, "curious", "eva", 126.0, 108.0, PI)
+	var c := _outside(world, "builder", "eva", 150.0, 112.0, 0.0)
+	a.name = "Vana-3"
+	b.name = "Lena-2"
+	c.name = "Ravi-5"
+	a.persona.description = "warm and nurturing"
+	b.persona.description = "quick and curious"
+	c.persona.description = "steady and bold"
+	world.relationships.debug_set_bond(a.id, b.id, 0.8)
+	a.mood_band = 0
+	a.mood_why = {"key": "grief", "id": b.id, "name": "Lena-2", "t": world.t, "clause": "", "sign": -1}
+	c.mood_band = 4
+	world._log("mood_quiet", "Vana-3 has gone quiet since Lena-2 died.", {"being_id": a.id, "other_id": b.id})
+	world._log("mood_relief", "Ravi-5 is smiling again.", {"being_id": c.id})

@@ -1,17 +1,6 @@
 extends RefCounted
-## PARKED (not a test: the .txt suffix keeps run_tests.gd away). Task 6a spec docs/specs/emotions.md section 13 test 33, written
-## at tests-first step 3 and to be moved to tests/test_view_panel_hold.gd (rename, delete this header block) at the view step
-## (plan step 8) when `PanelHold` exists. It is parked because the spec gives the helper's name and its contract ("a small pure
-## helper, `PanelHold`, timestamps passed in") but no method names.
-##
-## API ASSUMED (spec 7.1 rules 5 and 6; res://view/model/panel_hold.gd, a pure RefCounted, no sim, no clock, no RNG):
-##  - PanelHold.new(cfg: Dictionary) with cfg = SimData.moods().selection ({refresh_hz, hold_s, died_beat_s, ...}).
-##  - refresh_due(now_s: float) -> bool : true when a refresh may be served at real time `now_s`; at most refresh_hz times in
-##    any real second.
-##  - shown_band(now_s: float, wanted: int) -> int : the band index to show; follows `wanted` but changes at most once per
-##    hold_s of real time (a pending change shows on the first call after the hold).
-##  - begin_died(now_s: float) and died_open(now_s: float) -> bool : the "has died" beat is open for died_beat_s, then closed.
-## Test 33 also demands that none of it reads or writes sim state: PanelHold takes no world, so the test checks the source.
+## Task 6a view step: spec docs/specs/emotions.md section 13 test 33 (PanelHold: refresh rate, band hold, died beat, purity).
+## Moved out of tests/deferred/ at plan step 8 (view).
 
 const PanelHold = preload("res://view/model/panel_hold.gd")
 

@@ -21,6 +21,15 @@ var relationships: Relationships
 var relationships_enabled := true
 var council: Council
 var council_enabled := true
+## Emotions (emotions.md 3, 4): the module, the constructor option `moods_enabled` (read before the founders are made so
+## they can be neutral) and the two behaviour gains cached once at `Moods.begin` (0.0 when moods are disabled).
+var moods: Moods
+var moods_enabled := true
+var mood_travel_gain := 0.0
+var mood_energy_gain := 0.0
+var mood_clamp_low := 0.0
+var mood_clamp_high := 0.0
+var mood_travel_floor := 0.0
 var resources: Resources
 ## Phase 5 scouting. On for founder worlds; blank test worlds start with it off so that tests that
 ## count rng draws are not disturbed (spec step 5 notes).
@@ -86,6 +95,8 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 	ages = Ages.new()
 	relationships = Relationships.new()
 	council = Council.new()
+	moods_enabled = bool(options.get("moods_enabled", true))
+	moods = Moods.new()
 	_log_cap = int(SimData.colony().log_cap)
 	_init_stats()
 	if not options.get("blank", false):
@@ -98,10 +109,12 @@ func _init(seed_in: Variant = null, options: Dictionary = {}) -> void:
 		ages.begin(self, true)
 		relationships.begin(self, true)
 		council.begin(self, true)
+		moods.begin(self, true)
 	else:
 		ages.begin(self, false)
 		relationships.begin(self, false)
 		council.begin(self, false)
+		moods.begin(self, false)
 
 
 func _init_stats() -> void:
@@ -127,6 +140,7 @@ func _init_stats() -> void:
 		"first_settlement_sol": null, "age_history": [],
 		"relationships": Relationships.new_stats(),
 		"council": Council.new_stats(),
+		"moods": Moods.new_stats(),
 	}
 	reset_window()
 
@@ -195,6 +209,7 @@ func add_being(building_id: int, role: String = "builder") -> Being:
 	var e: Array = SimData.beings().energy.start
 	b.energy = rng.randf_range(float(e[0]), float(e[1]))
 	b.building_id = building_id
+	Moods.set_temperament(b, Moods.neutral(), clock.sol_h)
 	beings.append(b)
 	return b
 
@@ -246,6 +261,7 @@ func _create_founders() -> void:
 		var iw: Array = bc.initial_wait_h
 		b.wait_h = rng.randf_range(float(iw[0]), float(iw[1]))
 		b.building_id = homes[layout[i].home]
+		Moods.set_temperament(b, Moods.temperament(birth.chart) if moods_enabled else Moods.neutral(), clock.sol_h)
 		beings.append(b)
 
 
@@ -313,6 +329,8 @@ func step() -> void:
 	# Phase 11b: relationship tick, once per relationships.tick_h (spec relationships.md section 4).
 	if relationships_enabled and relationships != null:
 		relationships.on_step(self, fixed_step)
+		if moods_enabled and moods != null:
+			moods.on_step(self)
 	if council_enabled and council != null:
 		council.on_step(self)
 	if _sol_started:
@@ -327,6 +345,8 @@ func step() -> void:
 			relationships.on_sol(self)
 		if council_enabled and council != null:
 			council.on_sol(self)
+		if moods_enabled and moods != null:
+			moods.on_sol(self)
 
 
 ## Removes up to `amount` ice from a field and returns what was taken. A field that runs dry leaves
@@ -584,7 +604,8 @@ func _create_newborn(hb: Buildings.Building, parent: Being = null) -> void:
 	var nb := Being.new()
 	nb.id = _next_being_id
 	_next_being_id += 1
-	nb.persona = persona.persona_from(sky.mars_chart(t, clock.lon_of_tile(hb.tx + hb.tw / 2.0)))
+	var nchart := sky.mars_chart(t, clock.lon_of_tile(hb.tx + hb.tw / 2.0))
+	nb.persona = persona.persona_from(nchart)
 	nb.role = nb.persona.role
 	nb.earth_born = false
 	nb.born_t = t
@@ -596,6 +617,7 @@ func _create_newborn(hb: Buildings.Building, parent: Being = null) -> void:
 	nb.building_id = hb.id
 	nb.parent_id = parent.id if parent != null else 0
 	nb.birth_building_id = hb.id
+	Moods.set_temperament(nb, Moods.temperament(nchart) if moods_enabled else Moods.neutral(), clock.sol_h)
 	# Invariant counters (must stay 0): the gates make both unreachable.
 	if colony.pop() >= colony.birth_capacity():
 		stats.births_at_capacity += 1

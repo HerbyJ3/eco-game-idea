@@ -1,0 +1,31 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+# station zero balance run: seed=99 sols=300 overrides=[mood.effects.travel_coef=0.15] fixed_step=0.05 data_hash=aff554b1c8edb2e2
+# deaths and births are cumulative; shorts, trips, energy, asleep, wait, min_* are for the 30-sol window
+ sol  pop  min birth dead a/t/h/o/x           oxygen    food     ice   regol   dmnd   supp short bldg R/H/W/G/A/C  reach trips  avgE asleep%  waitH minIce  minO2 age web cn md
+  30    7    7     0 0/0/0/0/0                 550.0   420.0    87.9   116.2   14.0   28.0     0 2/2/1/1/0/0           2    32  53.4   11.0  495.5   58.9  262.5 L 1.00 - +0.11
+  60    7    7     0 0/0/0/0/0                 700.0   540.0    94.7    48.4   27.0   28.0     0 2/2/2/2/0/1           2    32  54.8   11.3  540.9   80.4  548.5 L 0.71 - +0.07
+  90    7    7     0 0/0/0/0/0                 850.0   660.0    88.8    54.0   32.0   42.0     0 3/3/2/3/0/1           2    30  54.8   11.2  511.4   81.9  698.9 L 0.71 - +0.08
+ 120    7    7     0 0/0/0/0/0                 850.0   660.0    82.7    82.4   37.0   42.0     0 3/4/2/3/0/1           2    33  57.0   11.6  263.1   79.6  848.2 L 0.57 - +0.07
+ 150    7    7     0 0/0/0/0/0                 850.0   660.0    74.2   149.0   37.0   42.0     0 3/4/2/3/0/1           2    18  57.2   11.0  703.0   70.1  849.0 L 0.57 - +0.06
+ 180    7    7     0 0/0/0/0/0                 850.0   660.0    99.8   166.7   41.0   56.0     0 4/4/3/3/0/1           2    39  56.9   11.4  111.1   70.7  848.4 L 0.57 - +0.06
+ 210    7    7     0 0/0/0/0/0                 850.0   660.0    95.8   186.4   44.0   56.0     0 4/5/3/3/1/1           2    25  57.2   11.6  363.4   83.8  849.0 L 0.57 - +0.05
+ 240    7    7     0 0/0/0/0/0                 850.0   660.0    90.5   137.3   49.0   56.0     0 4/6/3/3/2/1           2    29  57.1   11.2  288.0   90.5  849.0 L 0.86 - +0.06
+ 270    7    7     0 0/0/0/0/0                 850.0   660.0    83.0   157.1   51.0   56.0     0 4/6/3/3/2/1           2    25  58.5   11.3  662.0   79.4  849.0 L 0.71 - +0.06
+ 300   10    7     3 0/0/0/0/0                 850.0   660.0    72.2   283.5   51.0   56.0     0 4/6/3/3/2/1           2    24  57.9   10.7  720.3   60.4  849.0 L 0.80 - +0.05
+
+targets for seed 99 (300 sols):
+  T1 PASS run min pop 7 (needs >= 5), final pop 10
+  T2 PASS deaths 0 (air 0 thirst 0 hunger 0 eva 0 other 0), unexplained 0
+  T3 PASS births 3, first_birth_sol 293, at_capacity 0, cooldown_violations 0, pop@30=7, pop@100=7, pop@300=10
+  T4 PASS min O2 262.5, food 203.1; ice never ran dry: min ice 58.9, ice>30 60.4, thirst deaths 0; max ice/target 0.92, regolith/target 0.75
+  T5 PASS demand>supply 0.00% of steps (<=10), max shorts/sol 0 (<=2), max offline 0.0 h (<=24.7), first new reactor sol 12 (<=15)
+  T6 PASS limited 4658.7 h = 62.97% (>=2% provisional; 4 of 5 seeds), site busy 70.4%; waiting_regolith 20.0 h, site_no_crew 4638.7 h
+  T7 PASS turn_backs_air 0, exhausted 74, reachable>=2 at 100.0% of 300 sol samples (>=95), trips 287
+  T8 PASS row avg energy 53.4..58.5 (40..90), row asleep 10.7..11.6% (5..30), max sleep 8.8 h (<=18)
+  T9 N/A  checked by repeating the run and by tests/test_determinism.gd (compare the table sha256)
+  T10 FAIL first settlement sol <null> (40..150), age_changes 0 (<=4), min gap between consecutive history entries - (>=20), history 1 entries (changes+1 = 1); report: sols_in_age landing 300 settlement 0 council 0, age at end landing, changes [], fall back causes [none], not-ok sols 38 (by group, a sol can fail several: ice 0, food 1, oxygen 1, power 0, death 0, unrest 38)
+  T11 PASS (1) list lengths 301/301/301/301 ok; (2) lonely mean of last 50 readings 0.278 (max 0.35) ok; (3) friends_mean 1.60 (1.0..15.0) ok; (4) first_friendship_sol 202 ok; (5) lines_dropped (total) 0 ok; report: web 0.80 second 0.00 lonely 0.20 friends_mean 1.60 friends share of colony 0.178 (pop 10)
+  T12 PASS (1) list lengths 301/301/301 ok; (2) C2 ok; (3) council changes 0 (<=4) ok; (4) proposals 0 ok; (5) one Council line per boundary ok; report: first Council sol <null>, meetings 0, proposals [], pledge sol <null> reason -, lines {}, dropped 0; council_min_seeds 3 pledge_min_seeds 1
+  T13 PASS (1) series lengths ok; (2) mood lines per sol worst 0 (<=1) ok; (3) quiet 0 relief 0 relief-without-quiet 0 ok; (4) heavy share max after sol 30 0.000 (<=0.30) ok; (5) dev [-0.030, 0.298] in [-0.70, 0.70] ok; (6) unexplained 0 ok
+RESULT FAIL (target 9 determinism: table sha256 4e5cec094fe6ee8d)

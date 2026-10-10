@@ -34,7 +34,8 @@ func test_printed_table_ends_with_age_web_cn(t) -> void:
 	t._failures.append(_abort_msg(t))
 	var P: GDScript = load("res://tests/age_hash_proof.gd")
 	var r := _get_run()
-	var body: Array = P.body_of(r.lines)
+	# The trailing debug column `md` (emotions.md 9) follows cn; these tests judge the table without it.
+	var body: Array = load("res://tests/mood_hash_proof.gd").strip_md(P.body_of(r.lines)).body
 	t.eq(body.size(), 3, "header and rows at sols 30 and 60")
 	var head: PackedStringArray = str(body[0]).split(" ", false)
 	t.eq(" ".join(head.slice(head.size() - 3)), "age web cn", "the header ends with the fields age web cn")
@@ -75,7 +76,7 @@ func test_hash_proof_strips_work_on_the_printed_table(t) -> void:
 	var P: GDScript = load("res://tests/age_hash_proof.gd")
 	var H: GDScript = load("res://tests/council_hash_proof.gd")
 	var r := _get_run()
-	var body: Array = P.body_of(r.lines)
+	var body: Array = load("res://tests/mood_hash_proof.gd").strip_md(P.body_of(r.lines)).body
 	var c1: Dictionary = H.drop_cn(body)
 	t.check(not c1.cn_absent, "drop cn: the column is present")
 	t.check(not H.has_last_column(c1.body, "cn"), "and gone from the header")

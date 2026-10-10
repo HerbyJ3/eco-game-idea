@@ -8,7 +8,12 @@ extends RefCounted
 const WorldCtx = preload("res://view/world/world_ctx.gd")
 const Selection = preload("res://view/model/selection.gd")
 const BuildingDraw = preload("res://view/world/building_draw.gd")
+const BeingDraw = preload("res://view/world/being_draw.gd")
+const PanelText = preload("res://view/model/being_panel.gd")
+const SelectionOutline = preload("res://view/model/selection_outline.gd")
 
+## Built colonist rings by "texture id|frame rect": {tex: ImageTexture, pad: int (texels added on every side)}.
+var _being_rings: Dictionary = {}
 ## Built rings by source texture id: {tex: ImageTexture, pad: int (texels added on every side)}.
 var _rings: Dictionary = {}
 
@@ -81,6 +86,7 @@ func ring_for(x: WorldCtx, id: String) -> Dictionary:
 
 
 func draw(c: Object, x: WorldCtx) -> void:
+	_draw_being(c, x)
 	var sel: int = x.vm.selection.selected
 	if sel == 0:
 		return
@@ -107,3 +113,36 @@ func draw(c: Object, x: WorldCtx) -> void:
 func _fallback(c: Object, x: WorldCtx, b: Buildings.Building, interior: bool, rect: Rect2) -> void:
 	var mask := "building.%s.interior_outline" % b.kind if interior else "building.%s.mask.outline" % b.kind
 	x.blit(c, mask, rect, Selection.pulse(x.real_time, x.art))
+
+
+## The selected colonist's outline (docs/specs/emotions.md 7.1 rule 2): a ring built from the alpha of the sprite being drawn,
+## selection.outline_px wide in world px, in selection.outline_color. Nothing while the colonist is not drawn.
+func _draw_being(c: Object, x: WorldCtx) -> void:
+	var id: int = x.vm.selection.selected_being
+	if id == 0:
+		return
+	var rec: Variant = x.vm.being(id)
+	if rec == null or not rec.visible:
+		return
+	var p := BeingDraw.sprite_params(x, id, rec)
+	if p.is_empty():
+		return
+	var tex := x.lib.texture(p.id)
+	if tex == null:
+		return
+	var sel: Dictionary = PanelText.selection_cfg()
+	var scale_px: float = p.scale
+	var radius := maxi(1, roundi(float(sel.outline_px) / scale_px))
+	var key := "%s|%s|%d" % [p.id, str(p.src), radius]
+	if not _being_rings.has(key):
+		var region := tex.get_image().get_region(Rect2i(p.src))
+		region.convert(Image.FORMAT_RGBA8)
+		var padded := Image.create(region.get_width() + radius * 2, region.get_height() + radius * 2, false, Image.FORMAT_RGBA8)
+		padded.blit_rect(region, Rect2i(Vector2i.ZERO, region.get_size()), Vector2i(radius, radius))
+		_being_rings[key] = ImageTexture.create_from_image(SelectionOutline.ring(padded, radius))
+	var oc: Array = sel.outline_color
+	var colour := Color8(int(oc[0]), int(oc[1]), int(oc[2]))
+	var grow := float(radius) * scale_px
+	c.draw_set_transform(p.feet, p.rot, Vector2(-1.0 if p.mirror else 1.0, 1.0))
+	c.draw_texture_rect(_being_rings[key], (p.dest as Rect2).grow(grow), false, colour)
+	c.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
