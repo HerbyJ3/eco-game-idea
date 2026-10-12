@@ -977,6 +977,11 @@ func _hash_run(seed_in: int, sols: int, pull: String, params: Dictionary) -> voi
 	var all := pull_params(pull)
 	all.merge(params, true)
 	var res: Dictionary = lib.run(seed_in, sols, all, 30)
+	if res.get("error", false):
+		for line in res.get("lines", []):
+			printerr(line)
+		quit(2)
+		return
 	var w: SimWorld = res.world
 	print("# hash run: seed=%d sols=%d pull=%s overrides=%s" % [seed_in, sols, pull, str(all)])
 	print("table_sha256 %s" % str(res.table_hash).substr(0, 16))

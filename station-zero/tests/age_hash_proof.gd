@@ -85,7 +85,18 @@ static func strip_age_column(body: Array) -> Array[String]:
 
 ## sha256_text of the stripped body joined with newlines (what balance_lib.gd hashes for a Task 1 run).
 static func proof_hash(lines: Array) -> String:
-	return "\n".join(strip_age_column(body_of(lines))).sha256_text()
+	var body: Array = body_of(lines)
+	# Newer trailing columns go first, last to first (Task 6a md, Task 4 cn, Task 3 web); each only when it is the last header field.
+	for name in ["md", "cn", "web"]:
+		var head: PackedStringArray = str(body[0]).split(" ", false) if not body.is_empty() else PackedStringArray()
+		if head.size() > 0 and head[head.size() - 1] == name:
+			var out: Array[String] = []
+			for l in body:
+				var s := str(l)
+				var i := s.rfind(" ")
+				out.append(s.substr(0, i) if i >= 0 else s)
+			body = out
+	return "\n".join(strip_age_column(body)).sha256_text()
 
 
 func _init() -> void:

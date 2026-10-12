@@ -1,0 +1,7 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+seed 42: md present | drop md 6ee99c980e75c9c5 expected 6ee99c980e75c9c5 MATCH | drop cn 6007d885aa1974ac expected 6007d885aa1974ac MATCH | drop cn and web 3a781ace17210e77 expected 3a781ace17210e77 MATCH | drop cn, web and age 1adcc68e00da901b expected 1adcc68e00da901b MATCH
+seed 7: md present | drop md b65b7fe750c0fc07 expected b65b7fe750c0fc07 MATCH | drop cn cadbd65b8bffdb9c expected cadbd65b8bffdb9c MATCH | drop cn and web d19831ca3d3a9282 expected d19831ca3d3a9282 MATCH | drop cn, web and age 8cc2e6aa756fc04c expected 8cc2e6aa756fc04c MATCH
+seed 99: md present | drop md 1497e05200e3f1b9 expected 1497e05200e3f1b9 MATCH | drop cn 40d46838bb39aee5 expected 40d46838bb39aee5 MATCH | drop cn and web 80407b975e346c1e expected 80407b975e346c1e MATCH | drop cn, web and age 58115f266ae42627 expected 58115f266ae42627 MATCH
+seed 1234: md present | drop md 6b2c0c366472539d expected 6b2c0c366472539d MATCH | drop cn 55c479815f1f47ac expected 55c479815f1f47ac MATCH | drop cn and web 0cc6764008aed14f expected 0cc6764008aed14f MATCH | drop cn, web and age 6f86c2e2daee62c0 expected 6f86c2e2daee62c0 MATCH
+seed 2026: md present | drop md 838596b6725007bc expected 838596b6725007bc MATCH | drop cn 27b48573b9aed8e2 expected 27b48573b9aed8e2 MATCH | drop cn and web 11ff36bd5fe69349 expected 11ff36bd5fe69349 MATCH | drop cn, web and age 2ffb039806dce940 expected 2ffb039806dce940 MATCH

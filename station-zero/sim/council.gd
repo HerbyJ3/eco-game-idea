@@ -237,37 +237,18 @@ func _readings(world: SimWorld, st: Dictionary) -> void:
 	var pa := PackedInt32Array()
 	var pb := PackedInt32Array()
 	var pf := PackedByteArray()
-	var rel: Relationships = world.relationships
-	if rel._sk.size() == rel._sf.size() and rel._sf.size() == rel.pairs.size():
-		# Read-only walk of Relationships' slot mirror of `pairs` (low id, high id, flag bits 1 friends and 2 close, the pair
-		# dictionary), refreshed by its own sol reading just before this one. Only friend pairs touch a dictionary.
-		var sf := rel._sf
-		var sl := rel._sl
-		var sh := rel._sh
-		for i in sf.size():
-			var f := sf[i]
-			if not (f & 1):
-				continue
-			var a := sl[i]
-			var b := sh[i]
-			if a >= top or b >= top or isv[a] == 0 or isv[b] == 0:
-				continue
-			var p: Dictionary = rel._sp[i]
-			pa.append(a)
-			pb.append(b)
-			pf.append((1 if (f & 2) else 0) | (2 if p.kin else 0) | (4 if p.crew else 0))
-	else:
-		for key in rel.pairs:  # mirror not in step (a staged world): the dictionary's own order
-			var p: Dictionary = rel.pairs[key]
-			if not p.friends:
-				continue
-			var a := int(p.lo)
-			var b := int(p.hi)
-			if a >= top or b >= top or isv[a] == 0 or isv[b] == 0:
-				continue
-			pa.append(a)
-			pb.append(b)
-			pf.append((1 if p.close else 0) | (2 if p.kin else 0) | (4 if p.crew else 0))
+	var fp: Dictionary = world.relationships.friend_pairs()
+	var fp_lo: PackedInt32Array = fp.lo
+	var fp_hi: PackedInt32Array = fp.hi
+	var fp_fl: PackedByteArray = fp.flags
+	for i in fp_lo.size():
+		var a := fp_lo[i]
+		var b := fp_hi[i]
+		if a >= top or b >= top or isv[a] == 0 or isv[b] == 0:
+			continue
+		pa.append(a)
+		pb.append(b)
+		pf.append(fp_fl[i])
 	for k in pa.size():
 		var a := pa[k]
 		var b := pb[k]

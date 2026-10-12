@@ -1,27 +1,10 @@
 extends RefCounted
-## PARKED (not a test: the .txt suffix keeps run_tests.gd away). Task 6a spec docs/specs/emotions.md section 13 test 32 (selection
-## rules, view model, pure; revision 3), written at tests-first step 3 and to be moved to tests/test_view_selection.gd (rename,
-## delete this header block) at the view step (plan step 8). It is parked because spec 7.1 names the behaviour but not the
-## functions: "a new pure function in view/model/ takes the tap in world coordinates, the per-being records and the roof cuts".
-##
-## API ASSUMED (the implementer should match or tell the test author; each is the simplest reading of 7.1 and 9.1):
-##  - res://view/model/being_hit.gd, static `pick(world_pt: Vector2, records: Dictionary, cut_of: Callable, zoom: float, cfg:
-##    Dictionary) -> int`: the nearest colonist id or 0. `records` maps id -> {pos: Vector2 (feet), height_px: float, visible:
-##    bool, inside: bool, building_id: int}; `cut_of(building_id) -> float` is Selection.cut(b, zoom); `cfg` is
-##    SimData.moods().selection ({tap_radius_px, open_cut_min, ...}). Distance is measured to pos raised by half height_px, within
-##    tap_radius_px / zoom world units; ties go to the lowest id; an inside record counts only when cut_of >= open_cut_min.
-##  - Selection (view/model/selection.gd) gains `selected_being := 0` and `tap(world_pt, world, records := {}, zoom := 1.0)`:
-##    the colonist test runs before the building loop. `deselect()` clears selected_being, selected and peek.
-##  - ViewModel.follow target for a colonist: `follow_target_for_selection()` -> Vector2 (record position, or the footprint centre
-##    of its building when inside a closed roof).
-##  - res://view/model/selection_outline.gd, static `ring(alpha: Image, outline_px: int) -> Image`: a one-pixel ring mask around
-##    the opaque pixels of a sprite.
-##  - Log tap: ViewModel/main static `log_entry_at(y: float, line_h: float, entries: Array, shown: int) -> Variant` returning the
-##    entry under a tap at height y of the one-label log (the last `shown` entries), or null.
-## Tests below use only these; any rename is a mechanical edit.
+## Task 6a view step: spec docs/specs/emotions.md section 13 test 32 (selection rules, hit test, follow, outline, tap from the
+## log, the died beat). Moved out of tests/deferred/ at plan step 8 (view); the API names are the ones of spec 7.1 rule 1.
 
 const BeingHit = preload("res://view/model/being_hit.gd")
 const Selection = preload("res://view/model/selection.gd")
+const ViewModel = preload("res://view/model/view_model.gd")
 
 
 func _abort_msg(t) -> String:
@@ -91,7 +74,8 @@ func test_t32c_all_roofs_cut_open_one_tap_selects_an_inside_colonist(t) -> void:
 	var tile := float(SimData.buildings().tile_px)
 	var c := Rect2(b.tx * tile, b.ty * tile, b.tw * tile, b.th * tile).get_center()
 	var recs := {7: _rec(c.x, c.y, true, 1)}
-	sel.tap(c, w, recs, 5.4)
+	# The tap is on the drawn position (feet raised by half the height): the radius shrinks with the zoom (18 px / 5.4).
+	sel.tap(c - Vector2(0.0, 10.0), w, recs, 5.4)
 	t.eq(sel.selected_being, 7, "at zoom 5.4 one tap selects the inside colonist")
 	t._failures.erase(_abort_msg(t))
 
@@ -148,9 +132,34 @@ func test_t32e_closing_rules(t) -> void:
 
 func test_t32f_follow_the_selected_colonist(t) -> void:
 	t._failures.append(_abort_msg(t))
-	# ViewModel.follow target for a colonist: its record position; the footprint centre when it is inside a closed building.
-	# Needs a ViewModel on a staged world (see tests/test_view_model.gd for the construction); the call name is assumed.
-	t.check(false, "parked: write against the ViewModel at the view step (follow_selected with a colonist)")
+	var w = _world_with_building()
+	var man = JSON.parse_string(FileAccess.get_file_as_string("res://assets/processed/manifest.json"))
+	var out = w.add_being(1, "builder")
+	out.state = "eva"
+	out.x = 300.0
+	out.y = 200.0
+	out.heading = 0.0
+	out.air_h = 30.0
+	var inn = w.add_being(1, "builder")
+	inn.state = "idle"
+	var vm = ViewModel.new(w, _art(), man)
+	vm.update(1.0 / 60.0)
+	vm.selection.selected_being = out.id
+	var rec = vm.being(out.id)
+	t.check(vm.follow_target_for_selection().is_equal_approx(rec.pos), "an outside colonist: its drawn position")
+	var b = w.buildings.get_building(1)
+	vm.selection.selected_being = inn.id
+	t.check(vm.follow_target_for_selection().is_equal_approx(vm.footprint_rect(b).get_center()),
+			"a colonist inside a closed roof: the footprint centre of its building")
+	vm.selection.selected_being = 0
+	vm.selection.selected = 1
+	t.check(vm.follow_target_for_selection().is_equal_approx(vm.footprint_rect(b).get_center()), "no colonist: the building as before")
+	# tap_screen passes the records: a tap on the outside colonist selects it.
+	vm.selection.deselect()
+	var vp := Vector2(1280, 720)
+	var scr: Vector2 = (rec.pos - Vector2(0.0, float(rec.height_px) * 0.5) - vm.camera.center) * vm.camera.zoom + vp * 0.5
+	vm.tap_screen(scr, scr, vp)
+	t.eq(vm.selection.selected_being, out.id, "tap_screen selects the colonist under the tap")
 	t._failures.erase(_abort_msg(t))
 
 
@@ -177,5 +186,52 @@ func test_t32h_a_log_line_maps_to_its_being_and_a_dead_being_opens_the_died_beat
 	t.check(e != null and int(e.being_id) == 9, "a tap on the third line of three reads its entry's being_id")
 	var none = load_main.call("log_entry_at", 1.0 * 18.0 + 3.0, 18.0, entries, 3)
 	t.check(none == null or not none.has("being_id"), "a line without a being_id is not a target")
-	t.check(false, "parked: a dead being opens the died beat (text.panel.died) - write against the view at step 8")
+	# A dead being: the panel text is its death record's name, "has died".
+	var w = _world_with_building()
+	var g = w.add_being(1, "builder")
+	g.name = "Vana-3"
+	w.beings.erase(g)
+	w.stats.deaths_list.append({"t": 0.0, "sol": 0, "clock_sol": 0, "being_id": g.id, "name": "Vana-3", "cause": "age"})
+	t.eq(load("res://view/model/being_panel.gd").died_line(w, g.id), "Vana-3 has died.", "a dead being opens straight to the died sentence")
+	t._failures.erase(_abort_msg(t))
+
+
+func _hud(w) -> Array:
+	var sim: Node = load("res://view/sim_host.gd").new()
+	sim.world = w
+	var main: Control = (load("res://view/main.tscn") as PackedScene).instantiate()
+	main.setup(sim)
+	return [main, sim]
+
+
+func test_t32i_the_panel_opens_holds_and_closes_through_the_hud(t) -> void:
+	t._failures.append(_abort_msg(t))
+	var w = _world_with_building()
+	var g = w.add_being(1, "builder")
+	g.name = "Vana-3"
+	g.persona.description = "warm and nurturing"
+	var hud := _hud(w)
+	var main: Control = hud[0]
+	main._process(0.016)
+	t.eq(main.panel_text(), "", "closed with nothing selected")
+	main._world.vm.selection.select_being(g.id)
+	main._process(0.016)
+	t.check(main.panel_text().begins_with("Vana-3 is warm and nurturing."), "opens with the who sentence (%s)" % main.panel_text())
+	t.check(main.panel_text().find("knows no one well yet.") >= 0, "and the company sentence")
+	# A band change shows only after the hold; the panel never refreshes faster than refresh_hz.
+	g.mood_band = 0
+	main._process(0.1)
+	t.check(main.panel_text().find("struggling") < 0, "a pending band change waits for the hold")
+	main._process(1.2)
+	t.check(main.panel_text().find("is struggling.") >= 0, "and shows after it")
+	# Death: the died beat for died_beat_s, then closed.
+	w.beings.erase(g)
+	w.stats.deaths_list.append({"t": 0.0, "sol": 0, "clock_sol": 0, "being_id": g.id, "name": "Vana-3", "cause": "age"})
+	main._process(0.5)
+	t.eq(main.panel_text(), "Vana-3 has died.", "the died beat")
+	main._process(2.0)
+	t.eq(main.panel_text(), "", "closes after the beat")
+	t.eq(main._world.vm.selection.selected_being, 0, "and the selection is cleared")
+	main.free()
+	hud[1].free()
 	t._failures.erase(_abort_msg(t))

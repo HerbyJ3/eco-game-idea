@@ -1,5 +1,5 @@
 extends RefCounted
-## Influence powers (Task 7). Spec: docs/specs/influence-powers.md revision 2, sections 2-5.
+## Influence powers (Task 7). Spec: docs/specs/influence-powers.md revision 3, sections 2-5.
 ## World: reactor R, parked reactor, habitat A right of R, workshop W below R (same layout as test_eva.gd).
 
 const SOL_H := 24.6597
@@ -508,6 +508,32 @@ func test_water_outlook_hysteresis_and_log(t) -> void:
 	w._update_water()
 	t.eq(w.water_outlook().state, "dry", "dry")
 	t.eq(_logs(w, "water_low"), 2, "going dry from low is not a new low")
+	t.eq(_logs(w, "water_ok"), 1, "going dry is not 'holding again'")
+
+
+func test_going_dry_does_not_log_holding_again(t) -> void:
+	var w := _water_world(8)
+	w.colony.ice = _ice_for(w, 14.0)
+	w._update_water()
+	t.eq(_logs(w, "water_low"), 1, "low first")
+	w.colony.ice = 0.0
+	w._update_water()
+	t.eq(w.water_outlook().state, "dry", "dry")
+	t.eq(_logs(w, "water_ok"), 0, "no 'holding again' on the way into dry")
+	for line in w.log:
+		t.check(not String(line.text).contains("holding again"), "no holding-again text: " + String(line.text))
+
+
+func test_real_recovery_still_logs_holding_again(t) -> void:
+	var w := _water_world(8)
+	w.colony.ice = _ice_for(w, 14.0)
+	w._update_water()
+	w.colony.ice = _ice_for(w, 21.0)
+	w.ice_at_sol_start = w.colony.ice
+	w._update_water()
+	t.eq(w.water_outlook().state, "steady", "steady again")
+	t.eq(_logs(w, "water_ok"), 1, "one recovery line")
+	t.eq(_last(w, "water_ok"), "The water is holding again.", "recovery text")
 
 
 func test_founder_colony_is_not_low_at_sol_zero(t) -> void:
