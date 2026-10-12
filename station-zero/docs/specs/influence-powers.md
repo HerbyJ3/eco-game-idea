@@ -1,15 +1,16 @@
-# Influence powers (Task 7) — spec revision 2
+# Influence powers (Task 7) — spec revision 3 (owner decisions recorded 2026-10-12)
 
 Date: 2026-10-09. Rev 1 plus the three designer reviews (`docs/design/reviews/powers-emergence.md`, `powers-feel.md`, `powers-clarity.md`) and the owner direction. Influence only: a power changes conditions or probabilities, never orders a colonist.
 
 Owner direction (Herby, 2026-10-09): the colony is **not** meant to survive unattended. Unattended decline must be gradual and readable; trouble must show early enough for a watching player to act; timely influence (never orders) must be able to turn it around. Attention should feel like responsibility and involvement, not a chore.
 
-## Owner questions (short list; each has a recommendation, none blocks the build)
+## Owner questions (answered by Herby on 2026-10-12)
 
-1. **Auto-pause on the first "Water: low" per crossing?** Strong for "responsibility", but it takes control of time from the player. Recommend: no for Task 7; revisit as a setting after playtest.
-2. **Water tension beyond Guide.** Rev 2 gives Guide a cost (section 3) and notes that Grace is a long-term water mortgage (more people, more thirst). Emergence wanted Grace or Inspire to touch water directly. Recommend: leave it; adding a water role would be a new system. Say if you want one.
-3. **Acceptance bars** in section 5 (lead time 10 sols, slope cap, pop-sols ordering) are estimates from arithmetic, not measurements. Confirm they express your intent: "a watching player has at least 10 sols (about 4 real minutes at 1x) to notice and act".
-4. **Choosing the guided field** (nearer and safer against richer and farther) is deferred: fields are not selectable in the view yet. Recommend: later.
+1. **Auto-pause on the first "Water: low" per crossing?** **DECIDED 2026-10-12: No.** The game does not pause when water runs low. Not a setting either, for now.
+2. **Water tension beyond Guide.** **DECIDED 2026-10-12: No.** Grace and Inspire stay as they are; no direct water role.
+3. **Acceptance bars** in section 5 (lead time 10 sols, slope cap, pop-sols ordering). **Not answered 2026-10-12. Owner did not object; using proposed values** as the working bars (lead >= 10 sols; U3 35% per 50 sols; section 5 orderings).
+4. **Choosing the guided field.** **Still deferred (2026-10-12).** Not in Task 7.
+5. **U3, unattended decline speed (raised by the owner).** **DECIDED 2026-10-12:** the decline must be **slow**. A fast unattended collapse is not acceptable. U3 stays a hard acceptance bar.
 
 ## 1. Purpose
 
@@ -118,7 +119,7 @@ U2. **Warned early:** on every unattended seed with a thirst death, `lead >= 10`
 U3. **Declines, does not collapse:** no 50-sol window loses more than 35% of the population at the window start, counted only for windows that start with population >= 10 (small colonies are noisy). Also report, per seed, sols from the first thirst death to population at most half the peak.
 U4. **Not fine alone:** report seeds alive at 1,500 and each seed's final population. Two seeds currently reach 1,500, so this is a margin report, not a pass/fail; the owner's direction needs most unattended colonies to be clearly worse than attended, which U5 and A1 test.
 
-If U2 or U3 fail, the unattended behaviour is already shipped (W3), so do not retune powers: report and make it an owner decision (the lever would be a new water-pressure rule, a separate spec).
+If U2 or U3 fail, do not retune powers (they cannot affect unattended runs). Superseded by the owner decision of 2026-10-12: use the sim-number levers in 5.8.
 
 ### 5.2 Attention helps, in proportion
 
@@ -146,6 +147,24 @@ G3. Report: sols from the first thirst warning to the first death (feel), and `l
 ### 5.6 If it fails
 
 One power number at a time, recorded. Order of suspects: A1 or A3 fail: `guide.duration_sols` 1 to 1.5, then `guide.chance` 0.7 to 0.8, then `recharge_sols.guide` 3 to 2. P2 fails (always low): the attentive player is not turning things around, same suspects. P3 fails: raise recharges (not lower). Anything that changes a sim number repeats step 5 of the task plan.
+
+### 5.7 Owner decisions 2026-10-12
+
+- U3 is a **hard bar**: unattended decline must be slow; a fast collapse is not acceptable. This replaces the line in 5.1 that made a U2/U3 failure a report-only item: a U3 failure now blocks Task 7 until a lever below passes.
+- No auto-pause (owner question 1). Grace and Inspire get no water role (question 2). Question 3: owner did not object; the proposed bars stand. Question 4: still deferred.
+
+### 5.8 Task 7b tuning plan (revised)
+
+Why the old order (5.6) is not enough: `guide.duration_sols`, `guide.chance` and `recharge_sols.guide` only act when a power is used. Unattended runs use none, so they **cannot** move U1, U2, U3 or U4. They can only help A1, A2, A3, P1, P2 (attended runs). U3 and U2 need a change to unattended water pressure or how fast thirst kills. Each lever below is one number, one run, recorded; every one changes sim numbers, so the pinned U1 hashes are **re-baselined after the chosen lever** (owner-approved, since the sim itself changes) and step 5 of the task plan repeats. Current values read from `data/*.json` on 2026-10-12; proposed values are estimates until measured. I have not read the death code to know whether the thirst roll is per colony or per being, so the engineer reports that before run 1.
+
+1. `colony.json` `death.thirst_interval_h`: 5 -> 10. Targets U3 (and widens U2 lead). Slows the death rate without touching supply.
+2. `colony.json` `death.chance`: 0.4 -> 0.25, only if run 1 leaves U3 failing. Targets U3.
+3. `resources.json` `want.ice_urgent_below`: 30 -> 50. Colonists react earlier unattended; targets U3 and U4 (softer slope).
+4. `colony.json` `start.ice`: 60 -> 90, only if `low_sol` is 0 on any seed. Targets U2.
+5. `powers.json` `guide.duration_sols`: 1 -> 1.5. Targets A1/A3 only.
+6. `powers.json` `guide.chance`: 0.7 -> 0.8. Targets A1/A3 only.
+7. `powers.json` `recharge_sols.guide`: 3 -> 2. Targets A1/A3/P2 only.
+Not levers: `colony.json` `consumption.ice_per_being` and mining yields (they are the pressure the owner wants); no new buildings, meters or water systems (naturalism rule). If run 3 still fails U3, stop (three failures) and split the task.
 
 ## 6. Scope
 
