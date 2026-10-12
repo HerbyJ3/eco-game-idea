@@ -1,5 +1,6 @@
 extends Control
-## Text HUD. Reads sim state only; the one thing it changes is _sim.speed (a view setting).
+## Text HUD. Reads sim state; it changes _sim.speed (a view setting) and, as the player, uses influence powers
+## (F1-F5, docs/specs/influence-powers.md section 4).
 ## Labels refresh at REFRESH_S real seconds, never per sim step.
 
 const PanelText = preload("res://view/model/being_panel.gd")
@@ -13,6 +14,9 @@ const THROTTLE_NOTE := "The colony is too large to run this fast."
 ## Keyboard speed presets (multiples of real time). 0 pauses.
 const SPEEDS := {KEY_1: 1.0, KEY_2: 10.0, KEY_3: 100.0, KEY_4: 1000.0}
 const STATES: Array[String] = ["idle", "sleep", "work", "mining", "eva", "transit"]
+const POWER_KEYS := {KEY_F1: "fortune", KEY_F2: "inspire", KEY_F3: "grace", KEY_F4: "sign", KEY_F5: "guide"}
+## Keys of the colony panel's Water line, by water_outlook() state.
+const WATER_WORDS := {"steady": "steady", "falling": "falling", "low": "LOW", "dry": "DRY"}
 
 var _clock: Label
 var _colony: Label
@@ -54,6 +58,9 @@ var _log_shown: Array = []
 var _log_press_id := 0
 ## Last sampled stocks for the ice and regolith rate readout: [t, ice, regolith].
 var _prev: Array = []
+## Last power result shown under the power line, and its remaining real seconds.
+var _power_note := ""
+var _power_note_s := 0.0
 
 
 func _ready() -> void:
@@ -116,6 +123,7 @@ func apply_shot_view(opts: Dictionary) -> void:
 func _process(delta: float) -> void:
 	_real_s += delta
 	_sample_speed(delta)
+	_power_note_s = maxf(0.0, _power_note_s - delta)
 	_update_panel()
 	_acc += delta
 	if _acc >= REFRESH_S:
@@ -230,6 +238,92 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		toggle_pause()
 	elif SPEEDS.has(k.keycode):
 		set_speed(SPEEDS[k.keycode])
+	elif POWER_KEYS.has(k.keycode):
+		use_power(POWER_KEYS[k.keycode])
+
+
+## The player uses a power. Inspire and Grace target the selected building; Guide ignores the selection and draws
+## toward the richest live ice field (the sim names it in the log). Returns the sim result.
+func use_power(power_name: String) -> Dictionary:
+	var w: SimWorld = _sim.world
+	var sel := _selected_id()
+	var target := -1
+	if power_name == "inspire" or power_name == "grace":
+		target = sel
+	var res := w.use_power(power_name, target)
+	if res.ok:
+		_power_note = "%s used." % _power_label(power_name)
+	else:
+		_power_note = w.power_fail_text(res.reason)
+	_power_note_s = float(SimData.powers().hud.note_s)
+	refresh()
+	return res
+
+
+func _selected_id() -> int:
+	if _world == null or _world.vm == null:
+		return -1
+	var id := int(_world.vm.selection.selected)
+	return id if id > 0 else -1
+
+
+static func _power_label(power_name: String) -> String:
+	return str(SimData.powers().names[power_name])
+
+
+## "ready", "soon" (under hud.soon_below_sols), or the sols left with one decimal.
+static func _ready_word(left_h: float, sol_h: float) -> String:
+	if left_h <= 0.0:
+		return "ready"
+	var sols := left_h / sol_h
+	if sols < float(SimData.powers().hud.soon_below_sols):
+		return "soon"
+	return "%.1f sols" % sols
+
+
+## The button text for one power: `[F5] Guide - ice low` when ready and it would help right now.
+static func _button_text(w: SimWorld, power_name: String, key_n: int) -> String:
+	var label := _power_label(power_name)
+	var left := w.power_active_left(power_name)
+	if left > 0.0:
+		var name_part := ""
+		if power_name == "guide":
+			name_part = ": field %d" % int(w.powers.guide.number)
+		return "[F%d] %s on%s (%.1f sols)" % [key_n, label, name_part, left / w.clock.sol_h]
+	var ready_in := w.power_ready_in(power_name)
+	if ready_in > 0.0:
+		return "[F%d] %s %s" % [key_n, label, _ready_word(ready_in, w.clock.sol_h)]
+	var mark := ""
+	if power_name == "guide":
+		var st: String = w.water_outlook().state
+		if st == "low" or st == "dry":
+			mark = " - ice low"
+	elif power_name == "fortune" and w.dark_building_count() > 0:
+		mark = " - a room is dark"
+	return "[F%d] %s%s" % [key_n, label, mark] if mark != "" else "[F%d] %s ready" % [key_n, label]
+
+
+## The Water line of the colony panel.
+static func _water_text(w: SimWorld) -> String:
+	var o := w.water_outlook()
+	var st: String = o.state
+	var line := "Water    " + str(WATER_WORDS[st])
+	if st == "falling" or st == "low":
+		line += " (about %d sols)" % int(round(float(o.sols)))
+	return line
+
+
+## The Influence line (beside the Water line): each power with its key and state, then the last failure text.
+func _powers_text(w: SimWorld) -> String:
+	var parts: Array[String] = []
+	var i := 1
+	for p in ["fortune", "inspire", "grace", "sign", "guide"]:
+		parts.append(_button_text(w, p, i))
+		i += 1
+	var line := "Influence: " + "  ".join(parts)
+	if _power_note_s > 0.0 and _power_note != "":
+		line += "\n" + _power_note
+	return line
 
 
 func set_speed(s: float) -> void:
@@ -313,7 +407,7 @@ func _controls_text() -> String:
 		line += " (running about %dx)" % int(round(_achieved))
 		if _achieved < float(SimData.sim().speed_throttle_below) * _sim.speed:
 			line += "  " + THROTTLE_NOTE
-	return line + "   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x"
+	return line + "   [Space] pause  [1] 1x  [2] 10x  [3] 100x  [4] 1000x  [F1-F5] influence"
 
 
 func _clock_text(w: SimWorld) -> String:
@@ -420,6 +514,8 @@ func _colony_text(w: SimWorld) -> String:
 		"Oxygen   %7.1f / %.0f   %+.2f /h%s" % [col.oxygen, col.o2_cap(), col.o2_net(), _low_word(w, "oxygen")],
 		"Food     %7.1f / %.0f   %+.2f /h%s" % [col.food, col.food_cap(), col.food_net(), _low_word(w, "food")],
 		"Ice      %7.1f (target %.0f)   %+.2f /h%s" % [col.ice, col.ice_target(), ice_rate, _low_word(w, "ice")],
+		_water_text(w),
+		_powers_text(w),
 		"Regolith %7.1f (target %.0f)   %+.2f /h" % [col.regolith, col.regolith_target(), reg_rate],
 	])
 

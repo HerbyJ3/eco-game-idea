@@ -36,12 +36,19 @@ extends SceneTree
 ##   99: "d31bc86c094bcff4",
 ##   1234: "bc78b23075c71ef4",
 ##   2026: "f404077296a86f66",
+## water-throughput baseline (W3), Task 4-level table hashes, superseded by the bed-walk fix (Being.sleep_target_id;
+## docs/balance/water-rebaseline.md, section Bed-walk fix). History only:
+##   42: "6007d885aa1974ac",
+##   7: "cadbd65b8bffdb9c",
+##   99: "40d46838bb39aee5",
+##   1234: "55c479815f1f47ac",
+##   2026: "27b48573b9aed8e2",
 const EXPECTED_T4 := {
-	42: "6007d885aa1974ac",
-	7: "cadbd65b8bffdb9c",
-	99: "40d46838bb39aee5",
-	1234: "55c479815f1f47ac",
-	2026: "27b48573b9aed8e2",
+	42: "54e0b17c2b95a97e",
+	7: "58c9704fa00c26fc",
+	99: "5d007db82e1a61bf",
+	1234: "88802cc94428993e",
+	2026: "4e6b1638a49280fe",
 }
 const SOLS := 300
 const EVERY := 30
@@ -89,20 +96,23 @@ static func strip_last(body: Array, name: String) -> Dictionary:
 
 ## Check 1: {body, cn_absent}.
 static func drop_cn(body: Array) -> Dictionary:
-	var r := strip_last(body, "cn")
+	var m := strip_last(body, "md")  # Task 6a: drop `md` first, as in mood_hash_proof
+	var r := strip_last(m.body, "cn")
 	return {"body": r.body, "cn_absent": not r.stripped}
 
 
 ## Check 2: {body, cn_absent, web_absent}. `cn` is stripped when present, then `web` when it is then the last field.
 static func drop_cn_web(body: Array) -> Dictionary:
-	var c := strip_last(body, "cn")
+	var m := strip_last(body, "md")
+	var c := strip_last(m.body, "cn")
 	var w := strip_last(c.body, "web")
 	return {"body": w.body, "cn_absent": not c.stripped, "web_absent": not w.stripped}
 
 
 ## Check 3: {body, cn_absent, web_absent, age_absent}. Then `age` when it is the last field.
 static func drop_cn_web_age(body: Array) -> Dictionary:
-	var c := strip_last(body, "cn")
+	var m := strip_last(body, "md")
+	var c := strip_last(m.body, "cn")
 	var w := strip_last(c.body, "web")
 	var a := strip_last(w.body, "age")
 	return {"body": a.body, "cn_absent": not c.stripped, "web_absent": not w.stripped, "age_absent": not a.stripped}

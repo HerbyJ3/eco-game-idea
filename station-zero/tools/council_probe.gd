@@ -912,6 +912,11 @@ func _report(s: Dictionary) -> Array[String]:
 func _hash_run(seed_in: int, sols: int, params: Dictionary) -> void:
 	var lib: GDScript = load(BL)
 	var res: Dictionary = lib.run(seed_in, sols, params, 30)
+	if res.get("error", false):
+		for line in res.get("lines", []):
+			printerr(line)
+		quit(2)
+		return
 	var w: SimWorld = res.world
 	print("# hash run: seed=%d sols=%d overrides=%s" % [seed_in, sols, str(params)])
 	print("table_sha256 %s" % str(res.table_hash).substr(0, 16))

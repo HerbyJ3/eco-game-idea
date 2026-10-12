@@ -1,0 +1,16 @@
+UN 42 exit 1
+C1 42 exit 1
+C2 42 exit 1
+UN 7 exit 1
+C1 7 exit 1
+C2 7 exit 1
+UN 99 exit 1
+C1 99 exit 1
+C2 99 exit 1
+UN 1234 exit 1
+C1 1234 exit 1
+C2 1234 exit 1
+UN 2026 exit 1
+C1 2026 exit 1
+C2 2026 exit 1
+ALLDONE

@@ -1,0 +1,7 @@
+Godot Engine v4.5.stable.official.876b29033 - https://godotengine.org
+
+seed 42: cn present, web present, age present | drop cn 54e0b17c2b95a97e expected 6007d885aa1974ac DIFFERENT | drop cn and web 03c17dd97277fc8f expected 3a781ace17210e77 DIFFERENT | drop cn, web and age 86bcffaefbd102f4 expected 1adcc68e00da901b DIFFERENT
+seed 7: cn present, web present, age present | drop cn 58c9704fa00c26fc expected cadbd65b8bffdb9c DIFFERENT | drop cn and web fda95dbc1385fd85 expected d19831ca3d3a9282 DIFFERENT | drop cn, web and age 6f987c9875a7af2d expected 8cc2e6aa756fc04c DIFFERENT
+seed 99: cn present, web present, age present | drop cn 5d007db82e1a61bf expected 40d46838bb39aee5 DIFFERENT | drop cn and web 4b8dd16b6c183a2e expected 80407b975e346c1e DIFFERENT | drop cn, web and age bb3ae2236d650e4f expected 58115f266ae42627 DIFFERENT
+seed 1234: cn present, web present, age present | drop cn 88802cc94428993e expected 55c479815f1f47ac DIFFERENT | drop cn and web 7b60e6bb79e2e0e0 expected 0cc6764008aed14f DIFFERENT | drop cn, web and age eb4ebd1c13282752 expected 6f86c2e2daee62c0 DIFFERENT
+seed 2026: cn present, web present, age present | drop cn 4e6b1638a49280fe expected 27b48573b9aed8e2 DIFFERENT | drop cn and web 35cbd40fb54f2114 expected 11ff36bd5fe69349 DIFFERENT | drop cn, web and age 14c71f23478a7b4c expected 2ffb039806dce940 DIFFERENT

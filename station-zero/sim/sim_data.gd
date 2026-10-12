@@ -74,5 +74,9 @@ static func council() -> Dictionary:
 	return load_json("council.json")
 
 
+static func powers() -> Dictionary:
+	return load_json("powers.json")
+
+
 static func moods() -> Dictionary:
 	return load_json("mood.json")

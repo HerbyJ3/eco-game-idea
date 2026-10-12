@@ -21,6 +21,9 @@ var state := "idle"
 var building_id: int
 var wait_h := 0.0
 var sleep_intent := false
+## Habitat chosen when heading to bed; kept until arrival so the walk cannot cycle between two "nearest"
+## habitats (spec water-throughput.md section 9). 0 = none.
+var sleep_target_id := 0
 var suit_up := false
 var job: Variant = null
 var mine: Variant = null
@@ -245,12 +248,21 @@ func _door_action(w: SimWorld) -> void:
 func _enter_sleep(w: SimWorld) -> void:
 	state = "sleep"
 	sleep_intent = false
+	sleep_target_id = 0
 	sleep_started_t = w.t
 
 
 ## Sleep in the nearest online habitat, or on the floor (spec 6.1).
 func go_sleep(w: SimWorld) -> void:
-	var h := w.buildings.nearest_online_habitat(building_id)
+	var h: Buildings.Building = null
+	if sleep_intent and sleep_target_id > 0:
+		var kept := w.buildings.get_building(sleep_target_id)
+		if kept != null and kept.kind == "habitat" and kept.online() \
+				and (kept.id == building_id or w.buildings.next_hop(building_id, kept.id) != 0):
+			h = kept
+	if h == null:
+		h = w.buildings.nearest_online_habitat(building_id)
+	sleep_target_id = h.id if h != null else 0
 	if h == null or h.id == building_id:
 		_enter_sleep(w)
 		return
@@ -468,6 +480,9 @@ func _finish_eva(w: SimWorld) -> void:
 		var site: Resources.Site = mine.site
 		if site.kind == "ice":
 			w.colony.ice += load
+			if mine.has("guide"):
+				w.stats.guide_hauled += load
+				mine.guide.hauled += load
 		else:
 			w.colony.regolith += load
 		load = 0.0
@@ -648,8 +663,11 @@ func _try_new_mining(w: SimWorld) -> bool:
 	var mw: Dictionary = rs.mine_will
 	var will := float(mw.steady) * _trait("steady") + float(mw.drive) * _trait("drive") \
 			+ float(mw.restless) * _trait("restless")
-	var need_max := maxf(0.0, maxf(1.0 - w.colony.ice / w.colony.ice_target(),
-			1.0 - w.colony.regolith / w.colony.regolith_target()))
+	# Guide (influence-powers.md 3.3): the floor lifts only the ice term; the regolith term is untouched.
+	var ice_need := 1.0 - w.colony.ice / w.colony.ice_target()
+	if w.powers.guided_site(w.t) != null:
+		ice_need = maxf(ice_need, float(SimData.powers().guide.need_floor))
+	var need_max := maxf(0.0, maxf(ice_need, 1.0 - w.colony.regolith / w.colony.regolith_target()))
 	var ma: Dictionary = rs.mine_attempt
 	if not w.rng.chance(float(ma.chance) * will * (float(ma.floor) + (1.0 - float(ma.floor)) * need_max)):
 		return false
@@ -692,6 +710,8 @@ func _suit_up_miner(w: SimWorld) -> void:
 	x = door.x
 	y = door.y
 	w.stats.mining_trips += 1
+	if site.kind == "ice" and w.note_ice_trip(self, site):
+		mine["guide"] = w.powers.guide
 	var arrive := _field_point(w, site, rm.arrive_radius_frac)
 	heading = (arrive - door).angle()
 	state = "eva"
@@ -747,3 +767,19 @@ func _end_mining(w: SimWorld) -> void:
 	state = "eva"
 	after = "haul"
 	path = [Vector2(mine.door)]
+
+
+## Send a sign (influence-powers.md): walk to a neighbouring comms or archive room, else any neighbour.
+func look_at_sign(w: SimWorld) -> bool:
+	var nb := _neighbours(w)
+	if nb.is_empty():
+		return false
+	var pick: Dictionary = nb[0]
+	for n in nb:
+		if n.to.kind == "comms" or n.to.kind == "archive":
+			pick = n
+			break
+	corridor_id = pick.corridor
+	state = "to_door"
+	wait_h = door_time(w.rng)
+	return true
