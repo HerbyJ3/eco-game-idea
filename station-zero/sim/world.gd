@@ -221,7 +221,7 @@ func add_being(building_id: int, role: String = "builder") -> Being:
 	return b
 
 
-func _kill(b: Being, cause: String) -> void:
+func _kill(b: Being, cause: String, text := "") -> void:
 	beings.erase(b)
 	lifecycle.remove_being(b.id)
 	var key := cause.replace(" ", "_")
@@ -231,7 +231,7 @@ func _kill(b: Being, cause: String) -> void:
 	if not known or (shortage and colony.oxygen > 0.0 and colony.ice > 0.0 and colony.food > 0.0):
 		stats.deaths_unexplained += 1
 	stats.deaths_list.append({"t": t, "sol": sol(), "clock_sol": clock.sol_index(t), "being_id": b.id, "name": b.name, "cause": cause})
-	_log("died", "%s died (%s)." % [b.name, cause], {"being_id": b.id, "cause": cause})
+	_log("died", text if text != "" else "%s died (%s)." % [b.name, cause], {"being_id": b.id, "cause": cause})
 
 
 func _create_founders() -> void:
@@ -326,7 +326,10 @@ func step() -> void:
 	_build_decision()
 	_construction_progress()
 	var death := colony.shortage_check(fixed_step)
-	if not death.is_empty():
+	if death.has("victims"):
+		for v: Being in death.victims:
+			_kill(v, death.cause, "%s died of thirst." % v.name)
+	elif not death.is_empty():
 		_kill(death.victim, death.cause)
 	var silent := colony.pop() == 0
 	if silent and not colony.extinct:
