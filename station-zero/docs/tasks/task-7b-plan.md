@@ -49,6 +49,14 @@ All numbers are estimates until a run measures them. Inputs: `tools/acceptance_s
 - KEEP when the targeted items improve (levers 5, 6: A1 or A3; lever 7: A1, A3 or P2; improved means one more seed passing, or one more seed alive at 1,500 for C1) and P1, P3 and G1 hold.
 - REVERT when P1, P3 or G1 breaks (for example an air death or an EVA death in any C1 or C2 seed), or no targeted item improves.
 
+## Lever 1 decision (2026-10-12, game-designer): REVERT, stop, split
+
+Run result: `docs/balance/task-7b-results.md`. 50 h gives U3 fail on seed 7 only, but 4/5 alive (guard allows 3). Verdict REVERT stands: `thirst_interval_h` stays 5.
+
+**(a) No per-colony interval passes both.** Dry rate = 9.86 / interval_h deaths per sol (24.66 x 0.4 / interval), independent of population. Seed 7 (pop 10, 50 sols) may lose at most 3 (35% of 10 = 3.5). Even if only part of the window is dry, 50 h already produced 5 deaths there, so the rate must fall below about 0.06/sol, i.e. interval >= ~165 h. At that rate a big colony loses at most ~3 per 50 dry sols, which is already below the 50 h behaviour that left 4/5 alive. Any value from 5 to 50 h is worse for seed 7 than 50 h (which already fails it) and only moves the alive count back toward the baseline. Intervals above 50 h fail the U4 guard harder. The two bars cannot both be met by one per-colony number; that is a property of the rule, not of the tuning. (Estimate until measured; arithmetic only.)
+
+**(b) Recommendation.** Do not run lever 2 (`death.chance`): it scales the same per-colony rate and has the same trade-off. Apply the stop rule: record in `task-7b-log.md` and HANDOFF, and split a small task "Task 7c: thirst scales with population". Spec change: one new data switch in `colony.json` `death` (for example `thirst_mode`: `colony` default = current behaviour, hashes unchanged; `per_being` = each living colonist rolls its own thirst chance when ice is 0). Per-being makes loss a fraction of the population, so a big and a small colony lose at the same rate, U3 becomes a rate choice, and the U4 alive guard is tuned by that rate. Code is needed (godot-engineer), so it needs a spec first and is the owner's go. Levers 3-7 stay unrun. The step 8 attended set and steps 10-14 wait for 7c; the 7b data to date is the baseline for it.
+
 ## Definition of done (task)
 - `docs/balance/task-7b-acceptance.md` shows the acceptance set passing (or the owner restated the failing targets).
 - Files exist: this plan with step 1 to 3 sections, `task-7b-log.md`, `task-7b-data/`, `task-7b-rebaseline.md`, `task-7b-acceptance.md`.
