@@ -2,6 +2,10 @@
 
 Branch `claude/task-7c-per-being-thirst`. Queue entry: HANDOFF section 8, "7c" (owner approved 2026-10-12). Evidence: `docs/balance/task-7b-results.md` and "Lever 1 decision" in `docs/tasks/task-7b-plan.md`. Baseline bars: `docs/balance/task-7-acceptance.md`. Task 7b stays paused until 7c is done.
 
+## Status: DONE 2026-10-12
+Checked off in HANDOFF section 8. Built `thirst_mode` ("colony" | "per_being"), `thirst_roll_h` 6, `thirst_being_chance` 0.002; per_being is the default (owner chose spec section 9 Option A after the 3-run stop). Results: Run 1 0.002 U2 PASS, U3 PASS (worst 18%), guard FAIL 5/5 alive; Run 2 0.0028 U3 FAIL (seed 7 64%), guard FAIL 4/5; Run 3 0.0024 U3 FAIL, guard FAIL 5/5. Re-baseline: 300-sol hashes unchanged, data_hash e1d5e1add9f157c4, suite 802/0. Reviewer advisories: none blocking.
+Departure from the definition of done below: the guard bar (3 or fewer alive) was NOT met; the owner moved it to task 7d. Lesson: the guard is a water-access problem, not a death-rate problem (seeds 99/1234/2026 are dry only about 20-150 of 1,500 sols); U3 at pop 10-14 is near single-death noise.
+
 ## Goal
 Make unattended thirst loss scale with population, so U3 and the 3-alive-or-fewer guard can both be met. The thirst roll is per colony today (`sim/colony.gd:169-184`; about 9.86 / `thirst_interval_h` deaths per sol at ice 0, whatever the population), and no per-colony `thirst_interval_h` or `death.chance` value met both bars. Change: one new data switch `colony.death.thirst_mode` in `data/colony.json`, `"colony"` (default, current behaviour, hashes unchanged) or `"per_being"` (each living colonist rolls its own thirst chance while ice is 0). Code is behind the switch; the data default is flipped only in step 6.
 
