@@ -49,3 +49,46 @@ Verdicts:
 - Guard: FAIL, 4 of 5 alive (limit 3). Only seed 7 went extinct.
 
 Next step per spec: Run 1 failed the guard (5 alive, U3 passed) and Run 2 fails U3 (the opposite way), so row 3 applies: geometric midpoint of runs 1 and 2, `thirst_being_chance` = 0.0024 (spec lists 0.0024 after 2b failing U3). Not run; awaiting instruction. Note 2b also still fails the guard (4 alive), so if Run 3 also fails the spec's stop rule is an owner decision.
+
+## Run 3 (pre-declared midpoint): `thirst_mode` = "per_being", `thirst_being_chance` = 0.0024
+
+Same harness and flags as Run 2 with 0.0028 replaced by 0.0024 (JSON number, float); script `docs/balance/task-7c-data/run3/run.sh`. Headers: all 5 show exactly `overrides=[colony.death.thirst_mode=per_being colony.death.thirst_being_chance=0.0024]`. 0 PARAM ERROR, 0 SCRIPT ERROR, 0 ABORTED, 150 sample rows per file. Raw: `docs/balance/task-7c-data/run3/UN_<seed>.txt`.
+
+| seed | low_sol | first thirst sol | lead | worst 50-sol window (start sol, start pop, loss) | pop at 1,500 | thirst deaths |
+|---|---|---|---|---|---|---|
+| 42 | 292 | 574 | 282 | 960, 12, 42% | 9 (alive) | 16 |
+| 7 | 320 | 379 | 59 | 980, 14, 43% | 1 (alive) | 26 |
+| 99 | 371 | 1267 | 896 | 1380, 30, 10% | 29 (alive) | 8 |
+| 1234 | 310 | 625 | 315 | 1170, 19, 16% | 14 (alive) | 15 |
+| 2026 | 327 | 464 | 137 | 1190, 21, 24% | 16 (alive) | 16 |
+
+Verdicts:
+- U2: PASS (min lead 59).
+- U3: FAIL (seed 42 42%, seed 7 43%).
+- Guard: FAIL, 5 of 5 alive at sol 1,500 (seed 7 with a single colonist).
+
+Run 3 fails both U3 and the guard; per the spec's stop rule this goes to the owner. No Run 4 was run.
+
+## Across runs (measured facts only)
+
+Run 1 = 0.0020, Run 2 = 0.0028, Run 3 = 0.0024. Worst-window loss and population at sol 1,500, per seed:
+
+| seed | R1 pop@1500 | R2 pop@1500 | R3 pop@1500 | R1 worst | R2 worst | R3 worst |
+|---|---|---|---|---|---|---|
+| 42 | 15 | 8 | 9 | 18% | 30% | 42% |
+| 7 | 22 | 0 (extinct 1,220) | 1 | 15% | 64% | 43% |
+| 99 | 35 | 29 | 29 | 3% | 10% | 10% |
+| 1234 | 15 | 22 | 14 | 16% | 14% | 16% |
+| 2026 | 15 | 24 | 16 | 14% | 10% | 24% |
+
+Dry sols: count of sample rows (every 10 sols) with population > 0 and the `ice` stock column exactly 0.0, times 10. This is the ice stock at the sample instant only, so it undercounts dips between samples and is not the window `minIce`. First-low and first-thirst sols are identical across runs for seeds 42, 7, 2026 and 1234 up to the first divergence (e.g. first thirst 574/379/625/464 in all three runs).
+
+| seed | R1 dry sols | R2 dry sols | R3 dry sols |
+|---|---|---|---|
+| 42 | 290 | 160 | 240 |
+| 7 | 190 | 310 | 370 |
+| 99 | 30 | 70 | 70 |
+| 1234 | 70 | 20 | 60 |
+| 2026 | 150 | 90 | 130 |
+
+Thirst deaths per seed (R1/R2/R3): 42: 11/15/16; 7: 13/25/26; 99: 2/8/8; 1234: 14/9/15; 2026: 17/11/16.
