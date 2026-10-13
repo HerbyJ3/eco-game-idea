@@ -117,8 +117,33 @@ If run 3 fails: stop (three failed runs, plan rule), record, and bring the owner
 
 **Dissent recorded: grace.** Clarity (and a little Feel) wanted a one-sol grace after the dry line. Decision: no extra grace. The real warning is the low outlook, 21 or more sols before the dry line on every baseline seed; the 6 h before the first roll already exists; at 0.002 the first death among 20 colonists arrives about 6 sols after the dry line on average (1 / (20 x 0.0082)), which is itself a grace; and an extra grace would lower the effective rate and hide the interaction from the calibration run (it would have to be tuned with the chance). Reversible: if playtest says the first death feels sudden, add `death.thirst_grace_h` as a later task.
 
-## 9. Owner questions
+## 8b. Owner questions (asked before the runs)
 
 See the reply to the main session; recorded here once answered:
 1. Children and newborns: eligible for thirst deaths? (A, all colonists, preferred; B, adults only; C, children at half chance.)
 2. How hard should a fully dry colony fall? (A, middle: 34% per 50 dry sols = 0.002, preferred; B, gentler: 25% = 0.0014; C, harder: 44% = 0.0028.) This only picks the starting value; the pre-declared runs move it by the evidence anyway.
+
+## 9. After Run 3 — options for the owner
+
+Status: stop rule reached (three runs, 0.0020 / 0.0028 / 0.0024; `docs/balance/task-7c-results.md`). Nothing was run for this section. Numbers below are the measured ones from those runs.
+
+What the data says. Seeds 99, 1234 and 2026 are dry for only about 20-150 of 1,500 sols, so they survive at every rate tried (pop at 1,500: 14-35). Seeds 42 and 7 are dry 160-370 sols and swing from 15% to 64% worst-window loss as the rate moves. So the guard (at most 3 of 5 alive) is mostly a water-access outcome (how long ice sits at 0), not a death-rate outcome; no rate in 0.0020-0.0028 moved more than two seeds. U3 at pop 10-14 is close to single-roll noise (4 deaths of 10 is already 40%), and the only run that passed it (0.0020) did so by 17 points on seed 42 and 20 on seed 7, which is partly luck.
+
+**Option A (preferred): adopt `per_being` at 0.002; move the guard to a water-access follow-up.**
+- Changes: `thirst_mode` default to `"per_being"`, `thirst_being_chance` stays 0.002 (Run 1: U2 pass, U3 pass, worst 18%). Guard moves to a new task that tunes ice reach (`start.ice`, `want.ice_urgent_below`, mining/ice want priority), one lever per run.
+- Expected effect: unattended colonies still lose 11-17 colonists to thirst on seeds 42/1234/2026, 13 on seed 7, but 5 of 5 stay alive at 1,500; the follow-up must make seeds 42 and 7 spend more of their time dry for the guard to bite.
+- Cost: data only for 7c (a default flip plus re-baseline of hashes); the guard bar is deferred, not changed; the follow-up is a data task.
+
+**Option B: add a dry-duration ramp** (chance rises with consecutive dry sols, resets when ice > 0).
+- Changes: new code and a new hidden counter plus two numbers (start chance, ramp per sol), then another calibration cycle.
+- Expected effect: seeds 99/1234/2026 (short dry spells) barely change and still survive; seeds 42/7 (long dry spells) die faster, so the guard might pass at 2 of 5 but U3 on those two seeds gets worse (long spells at pop 10-14 are exactly where 42%/43% appeared).
+- Cost: new code; contradicts the section 2 choice of a flat, readable rate; fixes the symptom on two seeds only.
+
+**Option C: restate the bars, keep a higher rate.**
+- Changes: U3 counts only windows starting at pop >= 15, or fails only when losses exceed 35% and 5 or more deaths (removes the small-pop noise case); guard stays 3 of 5; rate 0.0028 or 0.0024.
+- Expected effect: Run 3 would pass U3 (42%/43% windows start at pop 12 and 14), but 5 of 5 still alive, so the guard still fails; Run 2 (4 alive, seed 7 extinct at 64%) still fails. It trades bar integrity for no guard gain.
+- Cost: bar change only, no code, but weakens the "gradual and readable" test and does not solve the guard.
+
+Design team views. Emergence: A keeps the exponential, per-person decay and lets water set the carrying capacity; B bolts a clock onto it. Feel: A keeps one plain line per death, spaced by sols; no hidden counters. Clarity: A keeps cause and effect readable (low outlook, dry line, named deaths, stop when ice returns); B adds a rule the player cannot see. Dissent: Emergence would accept a small-colony noise bar in C if the guard were kept honest; the other two lenses held that moving a bar to fit a result is the wrong habit.
+
+Adopt now or stay off: adopt (switch on) at 0.002 under Option A. It is the only tested setting that passes U2 and U3, it is gentler on small colonies than the colony-mode rule, and it is the rule the section 1 fiction describes. Staying off keeps the colony-mode rule that failed U3 on 4 of 5 seeds at 5 h. Switching on shifts the RNG stream, so the pinned 300-sol hashes need a re-baseline in the same change (spec section 4).
