@@ -41,6 +41,15 @@ func _world(_t, seed_in: int, green_rooms: int, beings: int) -> SimWorld:
 	return w
 
 
+## Colony-mode mechanics tests: the data default is now "per_being" (task 7c), so pin "colony" explicitly.
+## SimData caches the dict, so the caller restores it with _set_thirst_mode(old).
+func _set_thirst_mode(mode: String) -> String:
+	var d: Dictionary = SimData.colony().death
+	var old: String = str(d.get("thirst_mode", "colony"))
+	d["thirst_mode"] = mode
+	return old
+
+
 func _steps(w: SimWorld, n: int) -> void:
 	for i in n:
 		w.step()
@@ -240,6 +249,7 @@ func test_death_timer_fires_on_step_40_air(t) -> void:
 
 
 func test_death_timer_fires_on_step_100_thirst(t) -> void:
+	var old_mode := _set_thirst_mode("colony")
 	var w = _world(t, 42, 0, 7)
 	w.colony.ice = 0.0
 	_steps(w, 40)
@@ -248,6 +258,7 @@ func test_death_timer_fires_on_step_100_thirst(t) -> void:
 	t.near(w.colony.death_timer_h, 99 * DT, 1e-6, "timer after 99 steps")
 	w.step()
 	t.eq(w.colony.death_timer_h, 0.0, "check fired on step 100")
+	_set_thirst_mode(old_mode)
 
 
 func test_death_timer_fires_on_step_120_hunger(t) -> void:
@@ -283,6 +294,7 @@ func test_timer_resets_when_shortage_ends(t) -> void:
 
 
 func test_deaths_only_on_check_steps(t) -> void:
+	var old_mode := _set_thirst_mode("colony")
 	var air := _death_steps(t, "oxygen", 20, 400)
 	t.check(air.size() > 0, "some deaths happened (p 0.4 per check, 10 checks per run)")
 	for s in air:
@@ -295,6 +307,7 @@ func test_deaths_only_on_check_steps(t) -> void:
 	t.check(hunger.size() > 0, "hunger deaths happened")
 	for s in hunger:
 		t.eq(s % 120, 0, "hunger death on step %d is a multiple of 120" % s)
+	_set_thirst_mode(old_mode)
 
 
 func test_death_chance_is_point_four_per_check(t) -> void:
@@ -338,6 +351,7 @@ func test_cause_priority_air_over_thirst(t) -> void:
 
 
 func test_cause_priority_thirst_over_hunger(t) -> void:
+	var old_mode := _set_thirst_mode("colony")
 	var total := 0
 	for seed_in in range(1, 41):
 		var w = _world(t, seed_in, 0, 7)
@@ -348,6 +362,7 @@ func test_cause_priority_thirst_over_hunger(t) -> void:
 		t.eq(w.stats.deaths.hunger, 0, "thirst beats hunger")
 		t.eq(w.stats.deaths.air, 0, "no air death with oxygen > 0")
 	t.check(total > 0, "deaths happened at the thirst interval (step 100)")
+	_set_thirst_mode(old_mode)
 
 
 func test_cause_priority_all_three_is_air(t) -> void:
