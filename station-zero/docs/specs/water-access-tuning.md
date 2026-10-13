@@ -1,6 +1,6 @@
 # Water access tuning (Task 7d)
 
-Status: pre-declared plan, nothing run yet. Author: game-designer (lenses applied below). All predicted numbers are estimates until measured.
+Status: executed 2026-10-13, all three runs failed the guard (results in task-7d-results.md); the plan below is as pre-declared. Author: game-designer (lenses applied below). All predicted numbers are estimates until measured.
 
 ## 1. Problem
 
