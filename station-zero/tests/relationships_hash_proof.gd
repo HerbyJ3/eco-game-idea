@@ -38,6 +38,7 @@ extends SceneTree
 ##   99: "80407b975e346c1e",
 ##   1234: "0cc6764008aed14f",
 ##   2026: "11ff36bd5fe69349",
+## pre-7c (colony thirst) pins, kept as history: identical to the values below. Task 7c (thirst_mode per_being by default) did not change any 300-sol hash: no run has a thirst death by sol 300 (docs/balance/task-7c-rebaseline.md).
 const EXPECTED_T3 := {
 	42: "03c17dd97277fc8f",
 	7: "fda95dbc1385fd85",

@@ -24,6 +24,7 @@ var sol_h: float
 var _beings: Array
 var _buildings: Buildings
 var _rng: SimRng
+var _mode_error_logged := false
 
 
 ## `beings` is the world's live array (shared, never copied).
@@ -37,6 +38,7 @@ func _init(beings_in: Array, buildings_in: Buildings, rng_in: SimRng, sol_hours:
 	food = cfg.start.food
 	ice = cfg.start.ice
 	regolith = cfg.start.regolith
+	thirst_mode()  # reports an unknown mode once, at setup
 
 
 # ---------------------------------------------------------------- derived values
@@ -165,20 +167,53 @@ func birth_chance(here: Array) -> float:
 	return float(cfg.birth.base_chance) + float(cfg.birth.warmth_coef) * warmth
 
 
+## Resolved thirst mode ("colony" or "per_being"). An unknown string logs one error and falls back to "colony".
+func thirst_mode() -> String:
+	var m: Variant = cfg.death.get("thirst_mode", "colony")
+	if m == "colony" or m == "per_being":
+		return m
+	if not _mode_error_logged:
+		_mode_error_logged = true
+		push_error("colony.death.thirst_mode: unknown value '%s', falling back to 'colony'" % str(m))
+	return "colony"
+
+
+## Per-being thirst roll (spec per-being-thirst.md section 2): one draw per inside colonist in ascending id order,
+## victims collected first so removal never changes the draw count.
+func _thirst_victims() -> Array:
+	var eligible: Array = []
+	for b: Being in _beings:
+		if b.is_inside():
+			eligible.append(b)
+	eligible.sort_custom(func(a: Being, c: Being) -> bool: return a.id < c.id)
+	var p := float(cfg.death.thirst_being_chance)
+	var victims: Array = []
+	for b: Being in eligible:
+		if _rng.chance(p):
+			victims.append(b)
+	return victims
+
+
 ## Phase 10. Returns {} or {victim: Being, cause: String}; the world removes and logs the victim.
+## In per_being thirst mode returns {victims: Array of Being (id order), cause: "thirst"} instead.
 func shortage_check(dt: float) -> Dictionary:
 	var lacking := oxygen <= 0.0 or food <= 0.0 or ice <= 0.0
 	if pop() == 0 or not lacking:
 		death_timer_h = 0.0
 		return {}
 	var d: Dictionary = cfg.death
+	var per_being := oxygen > 0.0 and ice <= 0.0 and thirst_mode() == "per_being"
+	var thirst_h: float = float(d.thirst_roll_h) if per_being else float(d.thirst_interval_h)
 	var interval_h: float = float(d.air_interval_h) if oxygen <= 0.0 \
-			else (float(d.thirst_interval_h) if ice <= 0.0 else float(d.hunger_interval_h))
+			else (thirst_h if ice <= 0.0 else float(d.hunger_interval_h))
 	var cause := "air" if oxygen <= 0.0 else ("thirst" if ice <= 0.0 else "hunger")
 	death_timer_h += dt
 	if death_timer_h < interval_h - SimWorld.STEP_EPS:
 		return {}
 	death_timer_h = 0.0
+	if per_being:
+		var victims := _thirst_victims()
+		return {} if victims.is_empty() else {"victims": victims, "cause": "thirst"}
 	if not _rng.chance(float(d.chance)):
 		return {}
 	return {"victim": _rng.pick(shortage_victim_candidates()), "cause": cause}
