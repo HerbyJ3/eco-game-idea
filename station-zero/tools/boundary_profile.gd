@@ -149,7 +149,11 @@ func _step(w: SimWorld, ph: Array) -> void:
 	w._construction_progress()
 	var death := w.colony.shortage_check(w.fixed_step)
 	if not death.is_empty():
-		w._kill(death.victim, death.cause)
+		if death.has("victims"):
+			for v: Being in death.victims:
+				w._kill(v, death.cause, "%s died of thirst." % v.name)
+		else:
+			w._kill(death.victim, death.cause)
 	var silent := w.colony.pop() == 0
 	if silent and not w.colony.extinct:
 		w._log("colony_silent", "The colony has fallen silent.")

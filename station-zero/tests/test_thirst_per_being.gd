@@ -44,7 +44,7 @@ func _logs(w: SimWorld, kind: String) -> Array:
 
 func test_data_defaults(t) -> void:
 	var d: Dictionary = SimData.colony().death
-	t.eq(d.thirst_mode, "colony", "default mode is colony")
+	t.eq(d.thirst_mode, "per_being", "default mode is per_being")
 	t.eq(float(d.thirst_roll_h), 6.0, "roll interval")
 	t.eq(float(d.thirst_being_chance), 0.002, "per-being chance")
 
@@ -179,7 +179,7 @@ func test_expected_loss_is_a_share_of_the_colony(t) -> void:
 			w.colony.ice = 0.0
 			for roll in 205:
 				_kill_all(w, w.colony.shortage_check(6.0).get("victims", []))
-		# count survivors after each world below
+			# count survivors after each world below
 			lost += pop - w.beings.size()
 		var frac := float(lost) / float(runs * pop)
 		t.near(frac, 0.337, 0.03, "pop %d loses about 33.7%% over 205 dry rolls (got %.3f)" % [pop, frac])
@@ -221,6 +221,7 @@ func test_unknown_mode_errors_once_and_falls_back(t) -> void:
 func test_colony_mode_ignores_the_new_keys(t) -> void:
 	var out: Array = []
 	for variant in [false, true]:
+		_edit("thirst_mode", "colony")
 		if variant:
 			_edit("thirst_being_chance", 0.9)
 			_edit("thirst_roll_h", 1.0)
