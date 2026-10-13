@@ -164,7 +164,7 @@ Why the old order (5.6) is not enough: `guide.duration_sols`, `guide.chance` and
 5. `powers.json` `guide.duration_sols`: 1 -> 1.5. Targets A1/A3 only.
 6. `powers.json` `guide.chance`: 0.7 -> 0.8. Targets A1/A3 only.
 7. `powers.json` `recharge_sols.guide`: 3 -> 2. Targets A1/A3/P2 only.
-Not levers: `colony.json` `consumption.ice_per_being` and mining yields (they are the pressure the owner wants); no new buildings, meters or water systems (naturalism rule). If run 3 still fails U3, stop (three failures) and split the task.
+~~Not levers: mining yields~~ **STRUCK 2026-10-13 (owner decision, Task 7d):** ice supply keys (`ice_field.amount`, `spawn.ice_px`, `mining.yield_ice`, `mining.shift_h`, `mine_attempt.chance`, `scout.chance_per_h`, `want.ice_bias`, `start.ice`, `want.ice_urgent_below`) ARE levers, in the direction of less water; see `docs/specs/water-access-tuning.md`. Still not levers: `colony.json` `consumption.ice_per_being` (the pressure the owner wants); no new buildings, meters or water systems (naturalism rule). If run 3 still fails U3, stop (three failures) and split the task.
 
 ## 6. Scope
 
